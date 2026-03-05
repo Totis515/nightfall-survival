@@ -168,39 +168,31 @@ class SoundManager {
     bgAudio: HTMLAudioElement | null = null;
 
     startMenuMusic() {
-        // Detener cualquier música anterior primero
+        // Detener cualquier rastro de música anterior
         this.stopMusic();
         if (this.ctx.state === 'suspended') this.ctx.resume();
-        // Música ambiente siniestra en el menú usando oscilador procedural
-        this.musicGain = this.ctx.createGain();
-        this.musicGain.gain.setValueAtTime(0.02, this.ctx.currentTime);
-        this.menuOsc = this.ctx.createOscillator();
-        this.menuOsc.type = 'sine';
-        this.menuOsc.frequency.setValueAtTime(55, this.ctx.currentTime); // Low A
-        // Modulación LFO para tensión y misterio
-        const lfo = this.ctx.createOscillator();
-        lfo.type = 'sine'; lfo.frequency.value = 0.2;
-        const lfoGain = this.ctx.createGain(); lfoGain.gain.value = 5;
-        lfo.connect(lfoGain); lfoGain.connect(this.menuOsc.frequency);
-        lfo.start();
-        this.menuOsc.connect(this.musicGain);
-        this.musicGain.connect(this.masterGain);
-        this.menuOsc.start();
+
+        // Cargar canción local para el menú (la misma que el juego, para que empiece desde el inicio)
+        this.bgAudio = new Audio('/tu-cancion.mp3');
+        this.bgAudio.loop = true;
+        this.bgAudio.volume = 0.05; // Más suave en el menú
+        this.bgAudio.play().catch(() => {
+            console.log('Audio blocked by browser, waiting for user interaction.');
+        });
     }
 
     startGameMusic() {
-        // Detener música anterior (oscilador del menú)
-        this.stopMusic();
-        // Cargar la canción local desde la carpeta /public del proyecto
-        // El archivo se llama "tu-cancion.mp3" y fue colocado ahí manualmente
+        // Si ya hay música sonando (del menú), solo ajustamos el volumen y seguimos
+        if (this.bgAudio) {
+            this.bgAudio.volume = 0.08; // Volumen un poco más alto en acción
+            return;
+        }
+
+        // Si por alguna razón no estaba, la creamos
         this.bgAudio = new Audio('/tu-cancion.mp3');
-        this.bgAudio.loop = true;       // Reproducir en bucle infinito
-        this.bgAudio.volume = 0.08;     // Volumen bajo (8%) para no tapar los efectos de sonido (pistolas, etc.)
-        // Intentar reproducir (puede fallar si el navegador bloquea audio sin interacción previa)
-        this.bgAudio.play().catch(() => {
-            // Si falla por política de autoplay, se reintentará en la próxima interacción
-            console.log('Audio autoplay blocked, will retry on next interaction.');
-        });
+        this.bgAudio.loop = true;
+        this.bgAudio.volume = 0.08;
+        this.bgAudio.play().catch(() => { });
     }
 
     stopMusic() {
@@ -1709,16 +1701,15 @@ class ParticleSystem {
         this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
 
         // Material de las particulas de sangre:
-        // - Color rojo brillante para que sea visible sobre cualquier fondo oscuro
-        // - depthTest: false hace que siempre se dibujen encima de otros objetos
-        // - depthWrite: false para evitar que tapen objetos que están detrás
-        // - El tamaño grande (0.8) las hace visibles incluso desde lejos
+        // - Color rojo brillante
+        // - Tamaño reducido (0.18) para que parezcan "gotas" o cuadrados pequeños de píxel
+        // - depthTest: false hace que siempre se dibujen encima
         const mat = new THREE.PointsMaterial({
-            color: 0xff1100,    // Rojo brillante y vivo
-            size: 0.8,          // Grande para ser visible a distancia
+            color: 0xff1100,    // Rojo brillante
+            size: 0.18,         // Cuadrados pequeños (sangre granulada)
             transparent: true,
-            opacity: 0.95,
-            depthTest: false,   // Siempre visible, nunca oculto por geometría
+            opacity: 0.9,
+            depthTest: false,
             depthWrite: false,
             sizeAttenuation: true
         });
@@ -2456,3 +2447,12 @@ function animate() {
 }
 
 animate();
+
+// ---- AUDIOPLAY SATISFACTION ----
+// Los navegadores modernos bloquean el sonido hasta que el usuario interactúa.
+// Este listener activa la música del menú en el primer clic que haga el usuario.
+document.addEventListener('click', () => {
+    if (!gameStarted) {
+        soundManager.startMenuMusic();
+    }
+}, { once: true });
