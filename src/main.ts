@@ -157,67 +157,63 @@ class SoundManager {
         o.connect(g); g.connect(this.masterGain); o.start(); o.stop(this.ctx.currentTime + 0.2);
     }
 
-    // Background Music System
+    // ---- SISTEMA DE MÚSICA DE FONDO ----
+    // La música del menú usa el oscilador procedural (sin necesidad de cargar archivo)
+    // La música del juego usará la canción de Suno cargada desde su CDN
     menuOsc: OscillatorNode | null = null;
     gameOsc: OscillatorNode | null = null;
     musicGain: GainNode | null = null;
 
+    // Elemento HTML <audio> para reproducir la canción de Suno en bucle
+    bgAudio: HTMLAudioElement | null = null;
+
     startMenuMusic() {
-        if (this.ctx.state === 'suspended') this.ctx.resume();
+        // Detener cualquier música anterior primero
         this.stopMusic();
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        // Música ambiente siniestra en el menú usando oscilador procedural
         this.musicGain = this.ctx.createGain();
         this.musicGain.gain.setValueAtTime(0.02, this.ctx.currentTime);
         this.menuOsc = this.ctx.createOscillator();
         this.menuOsc.type = 'sine';
         this.menuOsc.frequency.setValueAtTime(55, this.ctx.currentTime); // Low A
-
-        // Eerie modulation
+        // Modulación LFO para tensión y misterio
         const lfo = this.ctx.createOscillator();
         lfo.type = 'sine'; lfo.frequency.value = 0.2;
         const lfoGain = this.ctx.createGain(); lfoGain.gain.value = 5;
         lfo.connect(lfoGain); lfoGain.connect(this.menuOsc.frequency);
         lfo.start();
-
         this.menuOsc.connect(this.musicGain);
         this.musicGain.connect(this.masterGain);
         this.menuOsc.start();
     }
 
     startGameMusic() {
-        if (this.ctx.state === 'suspended') this.ctx.resume();
+        // Detener música anterior (oscilador del menú)
         this.stopMusic();
-        this.musicGain = this.ctx.createGain();
-        this.musicGain.gain.setValueAtTime(0.04, this.ctx.currentTime);
-        this.gameOsc = this.ctx.createOscillator();
-        this.gameOsc.type = 'sawtooth';
-
-        // Fast Action Bass Sequence
-        const lfo = this.ctx.createOscillator();
-        lfo.type = 'square'; lfo.frequency.value = 6; // Fast action beats
-        const lfoGain = this.ctx.createGain(); lfoGain.gain.value = 30;
-        lfo.connect(lfoGain); lfoGain.connect(this.gameOsc.frequency);
-        lfo.start();
-
-        this.gameOsc.frequency.setValueAtTime(55, this.ctx.currentTime); // Low A
-        const filter = this.ctx.createBiquadFilter();
-        filter.type = 'lowpass'; filter.frequency.value = 400;
-
-        const filterLFO = this.ctx.createOscillator();
-        filterLFO.type = 'sine'; filterLFO.frequency.value = 0.5;
-        const fLfoGain = this.ctx.createGain(); fLfoGain.gain.value = 200;
-        filterLFO.connect(fLfoGain); fLfoGain.connect(filter.frequency);
-        filterLFO.start();
-
-        this.gameOsc.connect(filter);
-        filter.connect(this.musicGain);
-        this.musicGain.connect(this.masterGain);
-        this.gameOsc.start();
+        // Crear elemento de audio HTML5 apuntando al CDN de Suno
+        // El formato del CDN es: https://cdn1.suno.ai/{song-id}.mp3
+        this.bgAudio = new Audio('https://cdn1.suno.ai/nHVrQJYx3mZgIynu.mp3');
+        this.bgAudio.loop = true;       // Reproducir en bucle infinito
+        this.bgAudio.volume = 0.35;     // Volumen moderado para no tapar los efectos de sonido
+        // Intentar reproducir (puede fallar si el navegador bloquea audio sin interacción previa)
+        this.bgAudio.play().catch(() => {
+            // Si falla por política de autoplay, se reintentará en la próxima interacción
+            console.log('Audio autoplay blocked, will retry on next interaction.');
+        });
     }
 
     stopMusic() {
+        // Detener el oscilador del menú si está activo
         if (this.menuOsc) { this.menuOsc.stop(); this.menuOsc.disconnect(); this.menuOsc = null; }
         if (this.gameOsc) { this.gameOsc.stop(); this.gameOsc.disconnect(); this.gameOsc = null; }
         if (this.musicGain) { this.musicGain.disconnect(); this.musicGain = null; }
+        // Detener y limpiar el audio de Suno si existe
+        if (this.bgAudio) {
+            this.bgAudio.pause();
+            this.bgAudio.src = '';
+            this.bgAudio = null;
+        }
     }
 }
 const soundManager = new SoundManager();
@@ -1565,6 +1561,8 @@ controls.addEventListener('unlock', () => {
         // Mantener el HUD visible detrás de la pausa
         uiLayer.style.display = 'block';
         crosshair.style.display = 'none';
+        // Pausar la música de fondo mientras el juego está en pausa
+        if (soundManager.bgAudio) soundManager.bgAudio.pause();
         // Congelar movimiento
         moveForward = false;
         moveBackward = false;
@@ -1594,6 +1592,8 @@ function resumeGame() {
     // Esconder la pantalla de pausa y restaurar el HUD
     pauseScreen.style.display = 'none';
     crosshair.style.display = 'block';
+    // Reanudar la música de fondo después de volver del menú de pausa
+    if (soundManager.bgAudio) soundManager.bgAudio.play().catch(() => { });
     // Volver a bloquear el puntero para reanudar el juego
     controls.lock();
 }
