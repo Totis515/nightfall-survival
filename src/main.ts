@@ -29,7 +29,10 @@ let playerCoins = 0;
 const MAX_STAMINA = 100;
 const MAX_FUEL = 100;
 
+// Estado principal del juego: si ya comenzó, si está pausado, y otros estados globales
 let gameStarted = false;
+// isPaused: true cuando el jugador presiona ESC estando en partida (muestra la pantalla de pausa)
+let isPaused = false;
 
 // ---- UPGRADES STATE (Phase 4) ----
 // Variables que guardan el progreso y las mejoras compradas por el jugador
@@ -37,8 +40,11 @@ let maxPlayerHealth = 100;
 let damageMultiplier = 1.0;
 let walkSpeedMultiplier = 1.0;
 let shopOpen = false;
-let isUIShowing = false; // New flag to prevent menu on shop unlock
-const BLACK_MARKET_POS = new THREE.Vector3(30, 0, -40); // Must match createBlackMarketBuilding position in scene
+// Referencia a la pantalla de pausa (div HTML con id="pause-screen")
+const pauseScreen = document.getElementById('pause-screen') as HTMLElement;
+// Flag general para proteger el sistema de 'unlock' del mouse de abrir el menú equivocado
+let isUIShowing = false; // Se activa cuando hay una UI del juego abierta (tienda, pausa)
+const BLACK_MARKET_POS = new THREE.Vector3(30, 0, -40); // Posición del Black Market en el mundo 3D
 
 interface Weapon {
     name: string;
@@ -1201,8 +1207,13 @@ class Enemy {
         this.mesh.visible = false; // Initially hidden during pre-spawn
         scene.add(this.mesh);
 
-        // Fix visibility issues by disabling frustum culling on enemy parts
-        this.mesh.traverse(c => { c.frustumCulled = false; });
+        // IMPORTANT: Desactivar el "Frustum Culling" en cada parte del enemigo.
+        // Sin esto, Three.js oculta los meshes cuando su bounding box no está en la cámara,
+        // lo que causa el bug donde los enemigos desaparecen al girar la cámara.
+        this.mesh.frustumCulled = false; // El grupo principal
+        this.mesh.traverse(child => {
+            child.frustumCulled = false; // Cada parte individual (torso, cabeza, brazos, etc)
+        });
 
         // (torso set in type-conditional blocks above)
     }
@@ -1544,14 +1555,17 @@ controls.addEventListener('lock', () => {
 });
 
 controls.addEventListener('unlock', () => {
-    // If the user presses ESC, show the menu again
-    // GUARD: Don't show menu if we unlocked for a game UI (like the shop)
+    // Este evento se dispara cuando el puntero se libera (ESC del navegador)
+    // GUARD: No mostrar el menú principal si se desbloqueó por una UI interna (tienda, pausa)
     if (gameStarted && !isUIShowing) {
-        uiLayer.style.display = 'none';
+        // El jugador presionó ESC durante la partida → mostrar pantalla de PAUSA
+        isPaused = true;
+        isUIShowing = true;
+        pauseScreen.style.display = 'flex';
+        // Mantener el HUD visible detrás de la pausa
+        uiLayer.style.display = 'block';
         crosshair.style.display = 'none';
-        mainMenu.style.display = 'flex';
-        gameStarted = false;
-        // Reset inputs
+        // Congelar movimiento
         moveForward = false;
         moveBackward = false;
         moveLeft = false;
@@ -1561,7 +1575,7 @@ controls.addEventListener('unlock', () => {
 
 // Loading flow triggered via PointerLock to respect browser security policies
 btnStart.addEventListener('click', () => {
-    controls.lock(); // Request lock IMMEDIATELY upon user click interaction
+    controls.lock(); // Solicita el bloqueo del puntero al hacer clic en Start
 });
 
 document.getElementById('btn-options')?.addEventListener('click', () => {
@@ -1571,13 +1585,32 @@ document.getElementById('btn-exit')?.addEventListener('click', () => {
     alert("You cannot escape the night!");
 });
 
+// ---- PAUSE / RESUME LOGIC ----
+// Función que reanuda la partida desde la pantalla de pausa
+function resumeGame() {
+    if (!isPaused) return;
+    isPaused = false;
+    isUIShowing = false;
+    // Esconder la pantalla de pausa y restaurar el HUD
+    pauseScreen.style.display = 'none';
+    crosshair.style.display = 'block';
+    // Volver a bloquear el puntero para reanudar el juego
+    controls.lock();
+}
+
+// El botón "RESUME" en la pantalla de pausa llama a resumeGame
+document.getElementById('btn-resume')?.addEventListener('click', resumeGame);
+
+// ---- START GAME FUNCTION ----
+// Esta función esconde la pantalla de carga y muestra la interfaz de juego real
 function startGame() {
     gameStarted = true;
-    loadingScreen.style.display = 'none'; // Hide loading screen
-    uiLayer.style.display = 'block';
-    crosshair.style.display = 'block';
-    prevTime = performance.now(); // RESET time so we don't calculate massive delta skip
-    waveManager.startNextWave();
+    isPaused = false;                         // Asegurarse de que no estamos en pausa
+    loadingScreen.style.display = 'none';    // Esconder la pantalla de carga
+    uiLayer.style.display = 'block';         // Mostrar el HUD del juego
+    crosshair.style.display = 'block';       // Mostrar la mira de apuntado
+    prevTime = performance.now();            // Resetear el tiempo para evitar un delta enorme
+    waveManager.startNextWave();             // Iniciar la primera oleada de enemigos
 }
 
 // Low Poly Gun attached to camera
@@ -2194,9 +2227,17 @@ function animate() {
         lastFpsTime = time;
     }
 
-    // PERFORMANCE & MOVEMENT FIX: Cap delta max to 0.1 (100ms) to prevent teleporting
+    // PERFORMANCE & MOVEMENT FIX: Cap delta max to 0.1 (100ms) to prevent teleporting on lag spikes
     const delta = Math.min((time - prevTime) / 1000, 0.1);
 
+    // Si el juego está en pausa, no actualizamos físicas ni enemigos, solo renderizamos el frame
+    if (isPaused) {
+        prevTime = time;
+        renderer.render(scene, camera);
+        return;
+    }
+
+    // El juego solo procesa movimiento y físicas cuando el puntero está bloqueado (modo juego activo)
     if (controls.isLocked === true && gameStarted) {
         handleShooting(time);
 

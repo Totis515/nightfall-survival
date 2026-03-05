@@ -544,7 +544,7 @@
             transform: scale(1.1);
         }
 
-        /* DAMAGE VIGNETTE */
+        /* DAMAGE VIGNETTE - Efecto visual de daño en la pantalla */
         #damage-vignette {
             position: absolute;
             top: 0;
@@ -556,6 +556,58 @@
             opacity: 0;
             transition: opacity 0.3s;
             box-shadow: inset 0 0 50px rgba(255, 0, 0, 0.5);
+        }
+
+        /* ===================== PAUSE SCREEN ===================== */
+        /* Pantalla de pausa que aparece cuando el jugador presiona ESC */
+        #pause-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 60;
+            backdrop-filter: blur(4px);
+        }
+
+        #pause-screen h1 {
+            color: white;
+            font-size: 72px;
+            letter-spacing: 8px;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+            margin-bottom: 40px;
+        }
+
+        #pause-screen p {
+            color: #aaa;
+            font-family: monospace;
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+
+        #btn-resume {
+            background: #aa0000;
+            color: white;
+            border: 2px solid #ff3333;
+            padding: 15px 50px;
+            font-size: 24px;
+            font-family: inherit;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            transition: all 0.15s;
+            box-shadow: 0 0 15px rgba(255, 50, 50, 0.3);
+        }
+
+        #btn-resume:hover {
+            background: #ff3333;
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(255, 50, 50, 0.6);
         }
     </style>
 </head>
@@ -616,6 +668,13 @@
         <h1 class="game-over-title">YOU DIED</h1>
         <p id="final-stats">Waves Survived: 0</p>
         <button class="menu-btn" onclick="location.reload()">Restart</button>
+    </div>
+
+    <!-- PAUSE SCREEN: Aparece al presionar ESC durante la partida -->
+    <div id="pause-screen">
+        <h1>PAUSED</h1>
+        <p>Press ESC or click the button to resume</p>
+        <button id="btn-resume">▶ RESUME</button>
     </div>
 
     <!-- Interact Prompt -->
