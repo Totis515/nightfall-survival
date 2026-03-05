@@ -195,7 +195,7 @@ class SoundManager {
         // El archivo se llama "tu-cancion.mp3" y fue colocado ahí manualmente
         this.bgAudio = new Audio('/tu-cancion.mp3');
         this.bgAudio.loop = true;       // Reproducir en bucle infinito
-        this.bgAudio.volume = 0.18;     // Volumen bajo (18%) para no tapar efectos de sonido
+        this.bgAudio.volume = 0.08;     // Volumen bajo (8%) para no tapar los efectos de sonido (pistolas, etc.)
         // Intentar reproducir (puede fallar si el navegador bloquea audio sin interacción previa)
         this.bgAudio.play().catch(() => {
             // Si falla por política de autoplay, se reintentará en la próxima interacción
@@ -1209,6 +1209,9 @@ class Enemy {
         this.mesh.frustumCulled = false; // El grupo principal
         this.mesh.traverse(child => {
             child.frustumCulled = false; // Cada parte individual (torso, cabeza, brazos, etc)
+            if ((child as THREE.Mesh).geometry) {
+                (child as THREE.Mesh).geometry.computeBoundingSphere(); // Refrescar bounding sphere
+            }
         });
 
         // (torso set in type-conditional blocks above)
@@ -1248,14 +1251,21 @@ class Enemy {
         // Spawn blood particles BEFORE removing the mesh so position is still valid
         const deathPos = this.mesh.position.clone();
         deathPos.y += 1.0;
-        bloodParticles.spawn(deathPos, 40); // Visible gore burst
+        bloodParticles.spawn(deathPos, 60); // Aumentar cantidad de partículas al morir para mejor feedback visual
 
-        // Remove from collidables first
+        // En lugar de remover instantáneamente, podemos hacerlo invisible o esperar un frame
+        // para asegurar que las partículas se originen en el lugar correcto.
+        this.mesh.visible = false;
+
+        // Remove from collidables
         const torso = (this as any)._torso as THREE.Mesh;
         const collIdx = collidables.indexOf(torso);
         if (collIdx > -1) collidables.splice(collIdx, 1);
 
-        scene.remove(this.mesh);
+        // Remover de la escena después de un micro-delay
+        setTimeout(() => {
+            scene.remove(this.mesh);
+        }, 50);
     }
 
     update(delta: number, playerPos: THREE.Vector3, time: number) {
@@ -1715,6 +1725,7 @@ class ParticleSystem {
 
         this.particles = new THREE.Points(this.geometry, mat);
         this.particles.renderOrder = 999; // Renderizar por encima de todo
+        this.particles.frustumCulled = false; // EVITAR que el sistema de partículas desaparezca
         scene.add(this.particles);
 
         // Pre-inicializar arrays de velocidades y tiempos de vida
