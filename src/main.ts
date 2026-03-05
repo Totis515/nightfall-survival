@@ -191,11 +191,11 @@ class SoundManager {
     startGameMusic() {
         // Detener música anterior (oscilador del menú)
         this.stopMusic();
-        // Crear elemento de audio HTML5 apuntando al CDN de Suno
-        // El formato del CDN es: https://cdn1.suno.ai/{song-id}.mp3
-        this.bgAudio = new Audio('https://cdn1.suno.ai/nHVrQJYx3mZgIynu.mp3');
+        // Cargar la canción local desde la carpeta /public del proyecto
+        // El archivo se llama "tu-cancion.mp3" y fue colocado ahí manualmente
+        this.bgAudio = new Audio('/tu-cancion.mp3');
         this.bgAudio.loop = true;       // Reproducir en bucle infinito
-        this.bgAudio.volume = 0.35;     // Volumen moderado para no tapar los efectos de sonido
+        this.bgAudio.volume = 0.18;     // Volumen bajo (18%) para no tapar efectos de sonido
         // Intentar reproducir (puede fallar si el navegador bloquea audio sin interacción previa)
         this.bgAudio.play().catch(() => {
             // Si falla por política de autoplay, se reintentará en la próxima interacción
@@ -1698,20 +1698,31 @@ class ParticleSystem {
         this.positions = new Float32Array(this.maxParticles * 3);
         this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
 
+        // Material de las particulas de sangre:
+        // - Color rojo brillante para que sea visible sobre cualquier fondo oscuro
+        // - depthTest: false hace que siempre se dibujen encima de otros objetos
+        // - depthWrite: false para evitar que tapen objetos que están detrás
+        // - El tamaño grande (0.8) las hace visibles incluso desde lejos
         const mat = new THREE.PointsMaterial({
-            color: 0x880000,    // Darker, more vivid blood
-            size: 0.35,         // Slightly bigger
+            color: 0xff1100,    // Rojo brillante y vivo
+            size: 0.8,          // Grande para ser visible a distancia
             transparent: true,
-            blending: THREE.AdditiveBlending,
+            opacity: 0.95,
+            depthTest: false,   // Siempre visible, nunca oculto por geometría
+            depthWrite: false,
             sizeAttenuation: true
         });
 
         this.particles = new THREE.Points(this.geometry, mat);
+        this.particles.renderOrder = 999; // Renderizar por encima de todo
         scene.add(this.particles);
 
+        // Pre-inicializar arrays de velocidades y tiempos de vida
         for (let i = 0; i < this.maxParticles; i++) {
             this.velocities.push(new THREE.Vector3());
             this.lifetimes.push(0);
+            // Esconder todas las partículas debajo del mapa al inicio
+            this.positions[i * 3 + 1] = -100;
         }
     }
 
