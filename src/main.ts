@@ -75,9 +75,10 @@ camera.position.set(0, 1.6, 0);
 
 const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.BasicShadowMap;
+// Limit pixel ratio to 1 for best performance on low-end machines
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.0));
+// Disable shadows entirely for a significant FPS boost
+renderer.shadowMap.enabled = false;
 document.body.appendChild(renderer.domElement);
 
 // ---- SOUND SYSTEM ----
@@ -883,7 +884,7 @@ function createTower() {
     return tower;
 }
 
-// Separate house creation for reuse
+// Casa con colisiones en las paredes Y en el techo para que el jetpack aterrice sobre ella
 function createHouse() {
     const house = new THREE.Group();
     const wallMat = new THREE.MeshLambertMaterial({ color: 0x4e342e });
@@ -894,10 +895,20 @@ function createHouse() {
     house.add(base);
     playerCollidables.push(base);
 
+    // Roof visual
     const roof = new THREE.Mesh(new THREE.ConeGeometry(4, 3, 4), roofMat);
     roof.position.y = 5.5;
     roof.rotation.y = Math.PI / 4;
     house.add(roof);
+
+    // Invisible flat collider on top of the walls so player can land on the flat roof area
+    const roofCollider = new THREE.Mesh(
+        new THREE.BoxGeometry(5, 0.2, 5),
+        new THREE.MeshBasicMaterial({ visible: false })
+    );
+    roofCollider.position.y = 4.1; // just above the top of the walls
+    house.add(roofCollider);
+    playerCollidables.push(roofCollider);
 
     return house;
 }
@@ -917,11 +928,30 @@ for (let i = 0; i < 10; i++) {
     scene.add(house);
 }
 
-// Add POIs to scene
+// Add the Black Market building at a FIXED position that aligns with the sky marker
+const BM_X = 30, BM_Z = -40; // matches shopMarker position defined later
 const blackMarket = createBlackMarketBuilding();
-blackMarket.position.set(20, 0, -30);
-blackMarket.rotation.y = Math.PI / 4;
+blackMarket.position.set(BM_X, 0, BM_Z);
 scene.add(blackMarket);
+
+// Floating "BLACK MARKET" 3D text label above the building
+const bmCanvas = document.createElement('canvas');
+bmCanvas.width = 512; bmCanvas.height = 128;
+const bmCtx = bmCanvas.getContext('2d')!;
+bmCtx.fillStyle = 'rgba(0,0,0,0)';
+bmCtx.fillRect(0, 0, 512, 128);
+bmCtx.font = 'bold 52px Impact';
+bmCtx.textAlign = 'center';
+bmCtx.strokeStyle = '#ff0000'; bmCtx.lineWidth = 6;
+bmCtx.strokeText('☠ BLACK MARKET', 256, 80);
+bmCtx.fillStyle = '#ffcc00';
+bmCtx.fillText('☠ BLACK MARKET', 256, 80);
+const bmTex = new THREE.CanvasTexture(bmCanvas);
+const bmSpriteMat = new THREE.SpriteMaterial({ map: bmTex, depthTest: false });
+const bmSprite = new THREE.Sprite(bmSpriteMat);
+bmSprite.position.set(BM_X, 7.5, BM_Z);
+bmSprite.scale.set(6, 1.5, 1);
+scene.add(bmSprite);
 
 // Scatter cars
 for (let i = 0; i < 8; i++) {
@@ -1208,15 +1238,17 @@ class Enemy {
         playerCoins += ENEMY_DATA[this.type].reward;
         updateStatsHUD();
 
-        // COMPACT GORE BURST (Reduced for lag)
+        // Spawn blood particles BEFORE removing the mesh so position is still valid
         const deathPos = this.mesh.position.clone();
         deathPos.y += 1.0;
-        bloodParticles.spawn(deathPos, 25); // Smaller, less spread
+        bloodParticles.spawn(deathPos, 40); // Visible gore burst
 
-        scene.remove(this.mesh);
+        // Remove from collidables first
         const torso = (this as any)._torso as THREE.Mesh;
         const collIdx = collidables.indexOf(torso);
         if (collIdx > -1) collidables.splice(collIdx, 1);
+
+        scene.remove(this.mesh);
     }
 
     update(delta: number, playerPos: THREE.Vector3, time: number) {
@@ -1295,11 +1327,12 @@ class Enemy {
         if (this.isDead) return;
 
         if (this.type === EnemyType.ROBOT || this.type === EnemyType.BOSS_SENTINEL) {
-            // RANGED LOGIC: Create laser
-            const ray = new THREE.Raycaster();
-            const dir = new THREE.Vector3().subVectors(camera.position, this.mesh.position).normalize();
+            // RANGED LOGIC: Aim directly at the player camera height
             const spawnPos = this.mesh.position.clone();
-            spawnPos.y += 1.5;
+            spawnPos.y += 1.5 * ENEMY_DATA[this.type].size; // fire from the "eye" of the robot
+            // Target the camera's actual world position (includes height when flying)
+            const targetPos = camera.position.clone();
+            const dir = new THREE.Vector3().subVectors(targetPos, spawnPos).normalize();
             const laser = new Laser(spawnPos, dir);
             enemyProjectiles.push(laser);
             soundManager.playBeep();
@@ -2259,8 +2292,24 @@ function animate() {
             }
         }
 
-        // Ground Collision
+        // Vertical movement
         camera.position.y += (velocity.y * delta);
+
+        // Ground and roof collision: raycast downward to land on buildings / terrain
+        const downRay = new THREE.Raycaster(
+            camera.position.clone(),
+            new THREE.Vector3(0, -1, 0),
+            0,
+            0.8  // check within 0.8 units below the camera
+        );
+        const downHits = downRay.intersectObjects(playerCollidables, false);
+        if (downHits.length > 0 && velocity.y <= 0) {
+            // Land on the surface
+            camera.position.y = downHits[0].point.y + 1.6;
+            velocity.y = 0;
+        }
+
+        // Hard floor at ground level (y=1.6)
         if (camera.position.y < 1.6) {
             velocity.y = 0;
             camera.position.y = 1.6;
