@@ -221,7 +221,8 @@
             font-family: inherit;
             cursor: pointer;
             width: 250px;
-            margin-bottom: 20px;
+            margin-bottom: 35px;
+            /* Separados un poco más */
             text-transform: uppercase;
             transition: all 0.2s;
             border-radius: 5px;
@@ -779,44 +780,61 @@
 
         /* Responsive Black Market for Mobile */
         @media (max-width: 768px) {
+            #shop-menu {
+                padding: 15px;
+            }
+
             #shop-menu h2 {
-                font-size: 24px;
-                margin-bottom: 20px;
+                font-size: 22px;
+                margin-top: 10px;
+                margin-bottom: 10px;
+            }
+
+            #shop-balance {
+                font-size: 16px;
+                margin-bottom: 10px;
             }
 
             #shop-grid {
-                gap: 10px;
-                padding: 10px;
+                gap: 8px;
+                padding: 5px;
                 max-width: 100%;
+                max-height: 50vh;
+                overflow-y: auto;
             }
 
             .shop-card {
-                width: 110px;
-                padding: 10px;
+                width: 95px;
+                padding: 8px;
+                border-width: 1px;
             }
 
             .card-icon {
-                font-size: 24px;
-                margin-bottom: 5px;
+                font-size: 20px;
+                margin-bottom: 2px;
             }
 
             .card-name {
-                font-size: 14px;
-                margin-bottom: 5px;
+                font-size: 11px;
+                margin-bottom: 2px;
             }
 
             .card-desc {
-                font-size: 10px;
-                margin-bottom: 5px;
+                font-size: 9px;
+                margin-bottom: 2px;
+                line-height: 1.2;
             }
 
             .card-price {
-                font-size: 14px;
+                font-size: 12px;
+                margin-top: 5px;
             }
 
             #shop-close {
                 font-size: 14px;
-                padding: 10px 20px;
+                padding: 8px 15px;
+                margin-top: 10px;
+                border-width: 1px;
             }
         }
     </style>
