@@ -33,6 +33,8 @@ const MAX_FUEL = 100;
 let gameStarted = false;
 // isPaused: true cuando el jugador presiona ESC estando en partida (muestra la pantalla de pausa)
 let isPaused = false;
+// isMobile: true si el usuario seleccionó la modalidad de celular. Evita el uso de PointerLock.
+let isMobile = false;
 
 // ---- UPGRADES STATE (Phase 4) ----
 // Variables que guardan el progreso y las mejoras compradas por el jugador
@@ -45,6 +47,9 @@ const pauseScreen = document.getElementById('pause-screen') as HTMLElement;
 // Flag general para proteger el sistema de 'unlock' del mouse de abrir el menú equivocado
 let isUIShowing = false; // Se activa cuando hay una UI del juego abierta (tienda, pausa)
 const BLACK_MARKET_POS = new THREE.Vector3(30, 0, -40); // Posición del Black Market en el mundo 3D
+
+// Phase 9 Kill Feed tracking
+let lastAttackerName = "UNKNOWN";
 
 interface Weapon {
     name: string;
@@ -218,22 +223,44 @@ document.body.addEventListener('click', () => {
 // ---- PROJECTILES ----
 // Clases que controlan el disparo y el movimiento de los proyectiles visibles (láser y cohetes)
 class Laser {
-    mesh: THREE.Mesh; velocity: THREE.Vector3; isDead: boolean = false; lifetime: number = 3.0;
-    constructor(pos: THREE.Vector3, dir: THREE.Vector3) {
-        this.mesh = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.4, 8), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
-        this.mesh.position.copy(pos); this.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
-        this.velocity = dir.multiplyScalar(25); scene.add(this.mesh);
+    mesh: THREE.Mesh;
+    velocity: THREE.Vector3;
+    isDead: boolean = false;
+    shooterName: string;
+
+    constructor(pos: THREE.Vector3, dir: THREE.Vector3, shooterName: string = "ROBOT") {
+        this.mesh = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.8), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
+        this.mesh.position.copy(pos);
+        // Look in direction of travel
+        const target = pos.clone().add(dir);
+        this.mesh.lookAt(target);
+        this.velocity = dir.multiplyScalar(20); // Laser speed
+        this.shooterName = shooterName;
+        scene.add(this.mesh);
+        soundManager.playShot(); // Reuse shoot sound for laser
     }
+
     update(delta: number) {
-        this.mesh.position.add(this.velocity.clone().multiplyScalar(delta));
-        this.lifetime -= delta; if (this.lifetime <= 0) this.isDead = true;
-        if (this.mesh.position.distanceTo(camera.position) < 1.0) {
-            playerHealth -= 10; updateStatsHUD(); this.isDead = true;
-            const f = document.createElement('div'); f.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(255,0,0,0.2);pointer-events:none;z-index:200;';
-            document.body.appendChild(f); setTimeout(() => f.remove(), 100);
+        this.mesh.position.addScaledVector(this.velocity, delta);
+
+        // Raycast against player geometry
+        const dist = camera.position.distanceTo(this.mesh.position);
+        if (dist < 1.0) {
+            lastAttackerName = this.shooterName;
+            takeDamage(15);
+            this.isDead = true;
+            return;
+        }
+
+        // Environment collision (simple Y check or bounds)
+        if (this.mesh.position.y < 0 || Math.abs(this.mesh.position.x) > 60 || Math.abs(this.mesh.position.z) > 60) {
+            this.isDead = true;
         }
     }
-    destroy() { scene.remove(this.mesh); }
+
+    destroy() {
+        scene.remove(this.mesh);
+    }
 }
 const enemyProjectiles: Laser[] = [];
 
@@ -457,15 +484,53 @@ function updateStatsHUD() {
     if (playerHealth <= 0 && gameStarted) gameOver();
 }
 
+function takeDamage(amount: number) {
+    if (!gameStarted || playerHealth <= 0) return;
+
+    playerHealth -= amount;
+
+    // Sangre en pantalla
+    const dmgOverlay = document.createElement('div');
+    dmgOverlay.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(255,0,0,0.4);pointer-events:none;z-index:100;transition:opacity 0.2s;';
+    document.body.appendChild(dmgOverlay);
+    setTimeout(() => {
+        dmgOverlay.style.opacity = '0';
+        setTimeout(() => dmgOverlay.remove(), 200);
+    }, 50);
+
+    updateStatsHUD();
+
+    // Play hurt sound if available (or grunt)
+    if ((soundManager as any).playHurt) {
+        (soundManager as any).playHurt();
+    } else {
+        soundManager.playGroan(); // Fallback
+    }
+
+    if (playerHealth <= 0) {
+        playerHealth = 0;
+        gameOver();
+    }
+}
+
 function gameOver() {
     gameStarted = false;
+    soundManager.stopMusic();
     controls.unlock();
-    const gameOverScreen = document.getElementById('game-over');
-    const finalStats = document.getElementById('final-stats');
-    if (gameOverScreen) gameOverScreen.style.display = 'flex';
-    if (finalStats) finalStats.innerText = `Waves Survived: ${waveManager.currentWave - 1}`;
+
+    const goScreen = document.getElementById('game-over');
+    if (goScreen) {
+        goScreen.style.display = 'flex';
+        // Mostrar quién nos mató
+        const killedByEl = document.getElementById('killed-by');
+        if (killedByEl) {
+            killedByEl.innerText = `KILLED BY: ${lastAttackerName}`;
+        }
+    }
+
     uiLayer.style.display = 'none';
     crosshair.style.display = 'none';
+    document.getElementById('mobile-controls')!.style.display = 'none'; // ocultar en móvil
 }
 
 // ---- CLOUD SYSTEM ----
@@ -1008,21 +1073,22 @@ interface EnemyStats {
     attackRange: number;
     attackCooldown: number;
     reward: number;
+    name: string; // Added name for kill feed
 }
 
 const ENEMY_DATA: Record<EnemyType, EnemyStats> = {
     // Standard: Purple shirt (matches video!), green zombie skin
-    [EnemyType.STANDARD]: { health: 70, speed: 2.2, damage: 10, shirtColor: 0x673ab7, skinColor: 0x558b2f, size: 1.0, attackRange: 1.5, attackCooldown: 1000, reward: 15 },
+    [EnemyType.STANDARD]: { health: 70, speed: 2.2, damage: 10, shirtColor: 0x673ab7, skinColor: 0x558b2f, size: 1.0, attackRange: 1.5, attackCooldown: 1000, reward: 15, name: "ZOMBIE" },
     // Tank: Pale gray-green skin, dark jacket
-    [EnemyType.TANK]: { health: 180, speed: 1.3, damage: 25, shirtColor: 0x37474f, skinColor: 0x6d4c41, size: 1.4, attackRange: 1.8, attackCooldown: 1500, reward: 50 },
+    [EnemyType.TANK]: { health: 180, speed: 1.3, damage: 25, shirtColor: 0x37474f, skinColor: 0x6d4c41, size: 1.4, attackRange: 1.8, attackCooldown: 1500, reward: 50, name: "TANK ZOMBIE" },
     // Fast: Yellow-green Skin, red shirt
-    [EnemyType.FAST]: { health: 40, speed: 3.8, damage: 5, shirtColor: 0xb71c1c, skinColor: 0x827717, size: 0.85, attackRange: 1.2, attackCooldown: 500, reward: 30 },
+    [EnemyType.FAST]: { health: 40, speed: 3.8, damage: 5, shirtColor: 0xb71c1c, skinColor: 0x827717, size: 0.85, attackRange: 1.2, attackCooldown: 500, reward: 30, name: "FAST ZOMBIE" },
     // Robot: Grey metal, cyan glow (Wave 3+)
-    [EnemyType.ROBOT]: { health: 250, speed: 2.5, damage: 15, shirtColor: 0x444444, skinColor: 0x888888, size: 1.1, attackRange: 15.0, attackCooldown: 2000, reward: 100 },
+    [EnemyType.ROBOT]: { health: 250, speed: 2.5, damage: 15, shirtColor: 0x444444, skinColor: 0x888888, size: 1.1, attackRange: 15.0, attackCooldown: 2000, reward: 100, name: "ROBOT" },
     // Boss Goliath: Massive, slow zombie (Wave 5)
-    [EnemyType.BOSS_GOLIATH]: { health: 1200, speed: 1.8, damage: 45, shirtColor: 0x1a1a1a, skinColor: 0x2d3d1d, size: 2.5, attackRange: 2.5, attackCooldown: 1200, reward: 500 },
+    [EnemyType.BOSS_GOLIATH]: { health: 1200, speed: 1.8, damage: 45, shirtColor: 0x1a1a1a, skinColor: 0x2d3d1d, size: 2.5, attackRange: 2.5, attackCooldown: 1200, reward: 500, name: "GOLIATH" },
     // Boss Sentinel: Advanced Robot (Wave 10)
-    [EnemyType.BOSS_SENTINEL]: { health: 2000, speed: 1.2, damage: 20, shirtColor: 0x222222, skinColor: 0x555555, size: 2.2, attackRange: 18.0, attackCooldown: 250, reward: 1000 },
+    [EnemyType.BOSS_SENTINEL]: { health: 2000, speed: 1.2, damage: 20, shirtColor: 0x222222, skinColor: 0x555555, size: 2.2, attackRange: 18.0, attackCooldown: 250, reward: 1000, name: "SENTINEL" },
 };
 
 class Enemy {
@@ -1312,7 +1378,7 @@ class Enemy {
             this.mesh.lookAt(playerPos.x, this.mesh.position.y, playerPos.z);
         } else if (dist <= this.attackRange) {
             if (time - this.lastAttackTime > this.attackCooldown) {
-                this.attackPlayer();
+                this.attackPlayer(playerPos);
                 this.lastAttackTime = time;
             }
         }
@@ -1332,7 +1398,7 @@ class Enemy {
         }
     }
 
-    attackPlayer() {
+    attackPlayer(playerPos: THREE.Vector3) {
         if (this.isDead) return;
 
         if (this.type === EnemyType.ROBOT || this.type === EnemyType.BOSS_SENTINEL) {
@@ -1342,14 +1408,13 @@ class Enemy {
             // Target the camera's actual world position (includes height when flying)
             const targetPos = camera.position.clone();
             const dir = new THREE.Vector3().subVectors(targetPos, spawnPos).normalize();
-            const laser = new Laser(spawnPos, dir);
+            const laser = new Laser(spawnPos, dir, ENEMY_DATA[this.type].name); // Pass shooter name
             enemyProjectiles.push(laser);
             soundManager.playBeep();
         } else {
             // MELEE LOGIC
-            playerHealth -= this.damage;
-            if (playerHealth < 0) playerHealth = 0;
-            updateStatsHUD();
+            lastAttackerName = ENEMY_DATA[this.type].name; // Set attacker name
+            takeDamage(this.damage); // Use global takeDamage
             soundManager.playGroan();
 
             const flash = document.createElement('div');
@@ -1513,49 +1578,61 @@ const waveManager = new WaveManager();
 // Configuración de los controles del ratón (vista cámara) y eventos del teclado
 const controls = new PointerLockControls(camera, document.body);
 
+// Función que extrae la lógica de carga para poder llamarla desde PC o Móvil
+function beginLoadingSequence() {
+    if (gameStarted) return;
+
+    document.getElementById('main-menu')!.style.display = 'none';
+    loadingScreen.style.display = 'flex';
+    uiLayer.style.display = 'none';
+    crosshair.style.display = 'none';
+
+    // Si es móvil, mostramos los controles virtuales (el contenedor invisible por ahora)
+    if (isMobile) {
+        document.getElementById('mobile-controls')!.style.display = 'block';
+    }
+
+    // Pre-compile shaders for fluidity
+    renderer.compile(scene, camera);
+
+    let progress = 0;
+    const loadInterval = setInterval(() => {
+        progress += 1; // Even slower loading for more "work" feel
+        loadBar.style.width = `${progress}%`;
+
+        if (progress === 10) bloodParticles.warmUp();
+        if (loadingText) {
+            if (progress < 15) loadingText.innerText = `INITIALIZING VOXELS... ${progress}%`;
+            else if (progress < 30) loadingText.innerText = `OPTIMIZING SHADERS... ${progress}%`;
+            else if (progress < 45) loadingText.innerText = `BUFFERING AUDIO... ${progress}%`;
+            else if (progress < 60) loadingText.innerText = `CALIBRATING PHYSICS... ${progress}%`;
+            else if (progress < 75) loadingText.innerText = `PRE-RENDERING MESHES... ${progress}%`;
+            else if (progress < 90) loadingText.innerText = `GENERATING HORDES... ${progress}%`;
+            else loadingText.innerText = `READYING WORLD... ${progress}%`;
+        }
+
+        if (progress >= 100) {
+            clearInterval(loadInterval);
+            startGame();
+            soundManager.startGameMusic();
+        }
+    }, 30);
+
+    // INITIAL WAVE PRE-SPAWN
+    waveManager.preSpawnWave();
+}
+
 controls.addEventListener('lock', () => {
-    // Show loading screen IMMEDIATELY upon getting lock permission (user clicked start)
+    // Show loading screen IMMEDIATELY upon getting lock permission (si es PC)
     if (!gameStarted) {
-        mainMenu.style.display = 'none';
-        loadingScreen.style.display = 'flex';
-        uiLayer.style.display = 'none';
-        crosshair.style.display = 'none';
-
-        // Pre-compile shaders for fluidity
-        renderer.compile(scene, camera);
-
-        let progress = 0;
-        const loadInterval = setInterval(() => {
-            progress += 1; // Even slower loading for more "work" feel
-            loadBar.style.width = `${progress}%`;
-
-            if (progress === 10) bloodParticles.warmUp();
-            if (loadingText) {
-                if (progress < 15) loadingText.innerText = `INITIALIZING VOXELS... ${progress}%`;
-                else if (progress < 30) loadingText.innerText = `OPTIMIZING SHADERS... ${progress}%`;
-                else if (progress < 45) loadingText.innerText = `BUFFERING AUDIO... ${progress}%`;
-                else if (progress < 60) loadingText.innerText = `CALIBRATING PHYSICS... ${progress}%`;
-                else if (progress < 75) loadingText.innerText = `PRE-RENDERING MESHES... ${progress}%`;
-                else if (progress < 90) loadingText.innerText = `GENERATING HORDES... ${progress}%`;
-                else loadingText.innerText = `READYING WORLD... ${progress}%`;
-            }
-
-            if (progress >= 100) {
-                clearInterval(loadInterval);
-                startGame();
-                soundManager.startGameMusic();
-            }
-        }, 30);
-
-        // INITIAL WAVE PRE-SPAWN
-        waveManager.preSpawnWave();
+        beginLoadingSequence();
     }
 });
 
 controls.addEventListener('unlock', () => {
     // Este evento se dispara cuando el puntero se libera (ESC del navegador)
-    // GUARD: No mostrar el menú principal si se desbloqueó por una UI interna (tienda, pausa)
-    if (gameStarted && !isUIShowing) {
+    // GUARD: No mostrar el menú principal si se desbloqueó por una UI interna o si es móvil
+    if (gameStarted && !isUIShowing && !isMobile) {
         // El jugador presionó ESC durante la partida → mostrar pantalla de PAUSA
         isPaused = true;
         isUIShowing = true;
@@ -1573,9 +1650,35 @@ controls.addEventListener('unlock', () => {
     }
 });
 
-// Loading flow triggered via PointerLock to respect browser security policies
+// UI Elements for Platform Selection
+const menuButtonsDiv = document.getElementById('menu-buttons') as HTMLElement;
+const platformSelectionDiv = document.getElementById('platform-selection') as HTMLElement;
+
 btnStart.addEventListener('click', () => {
-    controls.lock(); // Solicita el bloqueo del puntero al hacer clic en Start
+    // En lugar de lockear de inmediato, preguntamos la plataforma
+    menuButtonsDiv.style.display = 'none';
+    platformSelectionDiv.style.display = 'flex';
+});
+
+document.getElementById('btn-platform-back')?.addEventListener('click', () => {
+    platformSelectionDiv.style.display = 'none';
+    menuButtonsDiv.style.display = 'block';
+});
+
+document.getElementById('btn-platform-pc')?.addEventListener('click', () => {
+    isMobile = false;
+    controls.lock(); // Solicita el bloqueo del puntero (esto dispara el evento 'lock' y carga)
+});
+
+document.getElementById('btn-platform-mobile')?.addEventListener('click', () => {
+    isMobile = true;
+    (async () => {
+        // Intenta poner en pantalla completa si es posible en móvil
+        if (document.documentElement.requestFullscreen) {
+            try { await document.documentElement.requestFullscreen(); } catch (e) { }
+        }
+    })();
+    beginLoadingSequence(); // Móvil no usa PointerLock, inicia directo
 });
 
 document.getElementById('btn-options')?.addEventListener('click', () => {
@@ -1683,6 +1786,265 @@ const flashMat = new THREE.MeshBasicMaterial({ color: 0xffdd00, transparent: tru
 const flash = new THREE.Mesh(flashGeo, flashMat);
 flash.position.set(0, -0.05, -0.85);
 weaponGroup.add(flash);
+
+// ---- SHOOTING LOGIC ----
+// Sistema de disparo (trazado de rayos o "hitscan") para detectar si la bala le dio a un enemigo
+const raycaster = new THREE.Raycaster();
+const screenCenter = new THREE.Vector2(0, 0);
+
+function reloadWeapon() {
+    const w = weapons[currentWeaponIndex];
+    if (w.isReloading || w.ammoCurrent === w.magSize || w.ammoReserve <= 0) return;
+
+    w.isReloading = true;
+    if (weaponNameEl) weaponNameEl.innerText = "RELOADING...";
+
+    // Animate weapon down
+    weaponGroup.position.y = -0.5;
+
+    setTimeout(() => {
+        const ammoNeeded = w.magSize - w.ammoCurrent;
+        const ammoToLoad = Math.min(ammoNeeded, w.ammoReserve);
+        w.ammoCurrent += ammoToLoad;
+        w.ammoReserve -= ammoToLoad;
+        w.isReloading = false;
+        weaponGroup.position.y = -0.3;
+        updateWeaponHUD();
+    }, w.reloadTime);
+}
+
+let isShooting = false;
+document.addEventListener('mousedown', (e) => {
+    if (e.button === 0 && controls.isLocked && gameStarted) isShooting = true;
+});
+document.addEventListener('mouseup', (e) => {
+    if (e.button === 0) isShooting = false;
+});
+
+// ==== VIRTUAL TOUCH CONTROLS (MOBILE) ==== //
+
+// Helpers to get elements
+const getEl = (id: string) => document.getElementById(id);
+
+// 1. Action Buttons
+getEl('btn-mobile-jump')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (camera.position.y <= 1.61) velocity.y += 20; });
+getEl('btn-mobile-reload')?.addEventListener('touchstart', (e) => { e.preventDefault(); reloadWeapon(); });
+
+getEl('btn-mobile-shoot')?.addEventListener('touchstart', (e) => { e.preventDefault(); isShooting = true; });
+getEl('btn-mobile-shoot')?.addEventListener('touchend', (e) => { e.preventDefault(); isShooting = false; });
+
+getEl('btn-mobile-jetpack')?.addEventListener('touchstart', (e) => { e.preventDefault(); isJetpacking = true; });
+getEl('btn-mobile-jetpack')?.addEventListener('touchend', (e) => { e.preventDefault(); isJetpacking = false; });
+
+getEl('btn-mobile-interact')?.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    if (uiLayer.style.display !== 'none' && !shopOpen) { openShop(); } // Check distance logic omitted for brevity, keeping simple for mobile layout
+});
+
+// 2. Camera Look Area
+const lookArea = getEl('mobile-look-area');
+lookArea?.addEventListener('touchstart', (e: TouchEvent) => {
+    e.preventDefault();
+    if (lookTouchId === null) {
+        const touch = e.changedTouches[0];
+        lookTouchId = touch.identifier;
+        lastLookX = touch.clientX;
+        lastLookY = touch.clientY;
+    }
+}, { passive: false });
+
+lookArea?.addEventListener('touchmove', (e: TouchEvent) => {
+    e.preventDefault();
+    for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        if (touch.identifier === lookTouchId && isMobile && gameStarted && !isPaused) {
+            const movementX = touch.clientX - lastLookX;
+            const movementY = touch.clientY - lastLookY;
+            lastLookX = touch.clientX;
+            lastLookY = touch.clientY;
+
+            // Sensibilidad móvil (escala)
+            const lookSens = 0.003;
+            const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+            euler.setFromQuaternion(camera.quaternion);
+
+            euler.y -= movementX * lookSens;
+            euler.x -= movementY * lookSens;
+            euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.x));
+
+            camera.quaternion.setFromEuler(euler);
+        }
+    }
+}, { passive: false });
+
+lookArea?.addEventListener('touchend', (e: TouchEvent) => {
+    e.preventDefault();
+    for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        if (touch.identifier === lookTouchId) {
+            lookTouchId = null;
+        }
+    }
+}, { passive: false });
+
+lookArea?.addEventListener('touchcancel', (e: TouchEvent) => {
+    e.preventDefault();
+    lookTouchId = null;
+});
+
+// 3. Virtual Joystick
+const joystickBase = getEl('mobile-joystick-base');
+const joystickPad = getEl('mobile-joystick-pad');
+const JOYSTICK_MAX_RADIUS = 40;
+
+joystickBase?.addEventListener('touchstart', (e: TouchEvent) => {
+    e.preventDefault();
+    if (!joystickActive) {
+        const touch = e.changedTouches[0];
+        currentTouchId = touch.identifier;
+        joystickActive = true;
+        const rect = joystickBase.getBoundingClientRect();
+        joystickCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+        updateJoystickVector(touch.clientX, touch.clientY);
+    }
+}, { passive: false });
+
+joystickBase?.addEventListener('touchmove', (e: TouchEvent) => {
+    e.preventDefault();
+    for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        if (touch.identifier === currentTouchId) {
+            updateJoystickVector(touch.clientX, touch.clientY);
+        }
+    }
+}, { passive: false });
+
+const handleJoystickEnd = (e: TouchEvent) => {
+    e.preventDefault();
+    for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === currentTouchId) {
+            joystickActive = false;
+            currentTouchId = null;
+            if (joystickPad) {
+                joystickPad.style.transform = `translate(-50%, -50%)`;
+            }
+            moveForward = false; moveBackward = false; moveLeft = false; moveRight = false;
+        }
+    }
+};
+joystickBase?.addEventListener('touchend', handleJoystickEnd, { passive: false });
+joystickBase?.addEventListener('touchcancel', handleJoystickEnd, { passive: false });
+
+function updateJoystickVector(clientX: number, clientY: number) {
+    let dx = clientX - joystickCenter.x;
+    let dy = clientY - joystickCenter.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // Configurar transform del stick pad visual
+    if (distance > JOYSTICK_MAX_RADIUS) {
+        dx = (dx / distance) * JOYSTICK_MAX_RADIUS;
+        dy = (dy / distance) * JOYSTICK_MAX_RADIUS;
+    }
+    if (joystickPad) {
+        joystickPad.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+    }
+
+    // Normalizar deadzone
+    const deadzone = 10;
+    moveForward = false; moveBackward = false; moveLeft = false; moveRight = false;
+
+    if (distance > deadzone) {
+        // En 3D Forward = -z, backward = +z, left = -x, right = +x
+        // En la pantalla: Arriba = -y de pantalla, Abajo = +y, Izq = -x, Der = +x
+        if (dy < -deadzone) moveForward = true;
+        if (dy > deadzone) moveBackward = true;
+        if (dx < -deadzone) moveLeft = true;
+        if (dx > deadzone) moveRight = true;
+    }
+}
+
+function handleShooting(time: number) {
+    if (!isShooting || (!controls.isLocked && !isMobile) || !gameStarted) return;
+    const w = weapons[currentWeaponIndex];
+    if (w.isReloading) return;
+
+    if (time - w.lastShotTime < w.fireRate) return;
+
+    if (w.ammoCurrent <= 0) {
+        if (!w.isReloading) reloadWeapon();
+        if (!w.isAutomatic) isShooting = false;
+        return;
+    }
+
+    w.ammoCurrent--;
+    w.lastShotTime = time;
+    updateWeaponHUD();
+
+    if (!w.isAutomatic) isShooting = false;
+    shoot(w);
+}
+
+function shoot(w: Weapon) {
+    // Basic Recoil Animation
+    weaponGroup.position.z += w.recoilAmount;
+    weaponGroup.position.y += Math.min(w.recoilAmount, 0.1);
+    weaponGroup.rotation.x += w.recoilAmount / 2;
+
+    flashMat.opacity = 1;
+    flash.rotation.z = Math.random() * Math.PI * 2;
+    setTimeout(() => { flashMat.opacity = 0; }, 50);
+
+    // Sound & Projectile
+    if (w.name === "ROCKET LAUNCHER") {
+        soundManager.playExplosion(); // Launch burst
+        const dir = new THREE.Vector3();
+        camera.getWorldDirection(dir);
+        playerRockets.push(new Rocket(camera.position.clone(), dir));
+    } else if (w.name === "LASER PISTOL") {
+        soundManager.playLaser();
+    } else {
+        soundManager.playShot();
+    }
+
+    if (w.name !== "ROCKET LAUNCHER") {
+        // Hitscan (Standard & Laser Pistol)
+        raycaster.setFromCamera(screenCenter, camera);
+        const enemyMeshes = waveManager.activeEnemies.map(en => (en as any)._torso).filter(m => m);
+
+        for (let p = 0; p < w.pellets; p++) {
+            const dir = raycaster.ray.direction.clone();
+            if (w.pellets > 1) {
+                dir.x += (Math.random() - 0.5) * 0.1;
+                dir.y += (Math.random() - 0.5) * 0.1;
+                dir.normalize();
+            }
+
+            const hitRay = new THREE.Raycaster(raycaster.ray.origin, dir, 0, 100);
+            const intersects = hitRay.intersectObjects(enemyMeshes);
+            if (intersects.length > 0) {
+                if (w.name === "LASER PISTOL") {
+                    const hitEnemies = new Set<any>();
+                    for (const hit of intersects) {
+                        const hitMesh = hit.object as THREE.Mesh;
+                        const enemy = waveManager.activeEnemies.find(en => (en as any)._torso === hitMesh);
+                        if (enemy && !hitEnemies.has(enemy)) {
+                            hitEnemies.add(enemy);
+                            enemy.takeDamage(w.damage * damageMultiplier, dir.clone().multiplyScalar(0.5));
+                            showHitMarker();
+                        }
+                    }
+                } else {
+                    const hitMesh = intersects[0].object as THREE.Mesh;
+                    const enemy = waveManager.activeEnemies.find(en => (en as any)._torso === hitMesh);
+                    if (enemy) {
+                        enemy.takeDamage(w.damage * damageMultiplier, dir.clone().multiplyScalar(0.5));
+                        showHitMarker();
+                    }
+                }
+            }
+        }
+    }
+}
 
 // ---- PARTICLE SYSTEM ----
 // Sistema optimizado de partículas utilizado para dibujar la sangre de los enemigos
@@ -1881,7 +2243,15 @@ let moveBackward = false;
 let moveLeft = false;
 let moveRight = false;
 let isSprinting = false;
-let isJetpacking = false; // State for Spacebar hold
+let isJetpacking = false;
+
+// Variables para el joystick táctil
+let joystickActive = false;
+let joystickCenter = { x: 0, y: 0 };
+let currentTouchId: number | null = null;
+let lookTouchId: number | null = null;
+let lastLookX = 0;
+let lastLookY = 0; // State for Spacebar hold
 
 // Increased speeds for faster ground movement
 const walkSpeed = 60.0;
@@ -2094,132 +2464,6 @@ document.getElementById('wc-next-btn')?.addEventListener('click', () => {
     // No controls.lock() needed - pointer lock was never released
 });
 
-// ---- SHOOTING LOGIC ----
-// Sistema de disparo (trazado de rayos o "hitscan") para detectar si la bala le dio a un enemigo
-const raycaster = new THREE.Raycaster();
-const screenCenter = new THREE.Vector2(0, 0);
-
-
-
-function reloadWeapon() {
-    const w = weapons[currentWeaponIndex];
-    if (w.isReloading || w.ammoCurrent === w.magSize || w.ammoReserve <= 0) return;
-
-    w.isReloading = true;
-    if (weaponNameEl) weaponNameEl.innerText = "RELOADING...";
-
-    // Animate weapon down
-    weaponGroup.position.y = -0.5;
-
-    setTimeout(() => {
-        const ammoNeeded = w.magSize - w.ammoCurrent;
-        const ammoToLoad = Math.min(ammoNeeded, w.ammoReserve);
-        w.ammoCurrent += ammoToLoad;
-        w.ammoReserve -= ammoToLoad;
-        w.isReloading = false;
-        weaponGroup.position.y = -0.3;
-        updateWeaponHUD();
-    }, w.reloadTime);
-}
-
-let isShooting = false;
-document.addEventListener('mousedown', (e) => {
-    if (e.button === 0 && controls.isLocked && gameStarted) isShooting = true;
-});
-document.addEventListener('mouseup', (e) => {
-    if (e.button === 0) isShooting = false;
-});
-
-function handleShooting(time: number) {
-    if (!isShooting || !controls.isLocked || !gameStarted) return;
-    const w = weapons[currentWeaponIndex];
-    if (w.isReloading) return;
-
-    if (time - w.lastShotTime < w.fireRate) return;
-
-    if (w.ammoCurrent <= 0) {
-        if (!w.isReloading) reloadWeapon();
-        if (!w.isAutomatic) isShooting = false;
-        return;
-    }
-
-    w.ammoCurrent--;
-    w.lastShotTime = time;
-    updateWeaponHUD();
-
-    if (!w.isAutomatic) isShooting = false;
-    shoot(w);
-}
-
-function shoot(w: Weapon) {
-    // Basic Recoil Animation
-    weaponGroup.position.z += w.recoilAmount;
-    weaponGroup.position.y += Math.min(w.recoilAmount, 0.1);
-    weaponGroup.rotation.x += w.recoilAmount / 2;
-
-    flashMat.opacity = 1;
-    flash.rotation.z = Math.random() * Math.PI * 2;
-    setTimeout(() => { flashMat.opacity = 0; }, 50);
-
-    // Sound & Projectile
-    if (w.name === "ROCKET LAUNCHER") {
-        soundManager.playExplosion(); // Launch burst
-        const dir = new THREE.Vector3();
-        camera.getWorldDirection(dir);
-        playerRockets.push(new Rocket(camera.position.clone(), dir));
-    } else if (w.name === "LASER PISTOL") {
-        soundManager.playLaser();
-    } else {
-        soundManager.playShot();
-    }
-
-    if (w.name !== "ROCKET LAUNCHER") {
-        // Hitscan (Standard & Laser Pistol)
-        raycaster.setFromCamera(screenCenter, camera);
-        const enemyMeshes = waveManager.activeEnemies.map(en => (en as any)._torso).filter(m => m);
-
-        for (let p = 0; p < w.pellets; p++) {
-            const dir = raycaster.ray.direction.clone();
-            if (w.pellets > 1) {
-                dir.x += (Math.random() - 0.5) * 0.1;
-                dir.y += (Math.random() - 0.5) * 0.1;
-                dir.normalize();
-            }
-
-            const hitRay = new THREE.Raycaster(raycaster.ray.origin, dir, 0, 100);
-            const intersects = hitRay.intersectObjects(enemyMeshes);
-            if (intersects.length > 0) {
-                if (w.name === "LASER PISTOL") {
-                    const hitEnemies = new Set<any>();
-                    for (const hit of intersects) {
-                        const hitMesh = hit.object as THREE.Mesh;
-                        const enemy = waveManager.activeEnemies.find(en => (en as any)._torso === hitMesh);
-                        if (enemy && !hitEnemies.has(enemy)) {
-                            hitEnemies.add(enemy);
-                            enemy.takeDamage(w.damage * damageMultiplier, dir.clone().multiplyScalar(0.5));
-                            showHitMarker();
-                        }
-                    }
-                } else {
-                    const hitMesh = intersects[0].object as THREE.Mesh;
-                    const enemy = waveManager.activeEnemies.find(en => (en as any)._torso === hitMesh);
-                    if (enemy) {
-                        enemy.takeDamage(w.damage * damageMultiplier, dir.clone().multiplyScalar(0.5));
-                        showHitMarker();
-                    }
-                }
-            }
-        }
-    }
-}
-
-// ---- RESIZE HANDLER ----
-window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
 // ---- ANIMATION LOOP ----
 // Ciclo principal que corre en cada frame: dibuja la escena y actualiza todas las físicas
 let bobAngle = 0;
@@ -2250,8 +2494,8 @@ function animate() {
         return;
     }
 
-    // El juego solo procesa movimiento y físicas cuando el puntero está bloqueado (modo juego activo)
-    if (controls.isLocked === true && gameStarted) {
+    // El juego procesa movimiento en PC solo si el ratón está bloqueado, o SIEMPRE en celular mientras esté activo
+    if ((controls.isLocked === true || isMobile) && gameStarted) {
         handleShooting(time);
 
         // Stamina logic
@@ -2380,7 +2624,7 @@ function animate() {
     if (gameStarted) {
         // Weapon Bobbing & Recoil Recover (Independent of lock for smoothness)
         const isMoving = moveForward || moveBackward || moveLeft || moveRight;
-        if (controls.isLocked) {
+        if (controls.isLocked || isMobile) {
             if (isMoving && camera.position.y <= 1.7) {
                 bobAngle += delta * 15;
                 weaponGroup.position.y = -0.3 + Math.sin(bobAngle) * 0.015;
@@ -2395,7 +2639,14 @@ function animate() {
         weaponGroup.position.z = THREE.MathUtils.lerp(weaponGroup.position.z, -0.4, 0.15);
         weaponGroup.rotation.x = THREE.MathUtils.lerp(weaponGroup.rotation.x, 0, 0.15);
 
-        // UPDATE LOGIC
+        // ---- RESIZE HANDLER ----
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Update the logic loop call
         if (frameCount % 2 === 0) {
             waveManager.update(delta * 2, camera.position, time);
         }

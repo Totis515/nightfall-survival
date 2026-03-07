@@ -198,30 +198,65 @@
         .title {
             color: white;
             font-size: 60px;
+            text-shadow: 0 0 20px rgba(255, 50, 50, 0.8);
             margin-bottom: 50px;
-            text-shadow: 4px 4px 0px #aa0000;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #ffaa00;
+            font-size: 24px;
+            margin-top: -40px;
+            margin-bottom: 50px;
             letter-spacing: 5px;
+            text-shadow: 0 0 10px rgba(255, 170, 0, 0.5);
         }
 
         .menu-btn {
-            background: #333;
+            background: rgba(50, 50, 50, 0.8);
             color: white;
-            border: 2px solid #555;
+            border: 2px solid #aaa;
             padding: 15px 40px;
             font-size: 24px;
             font-family: inherit;
-            margin: 10px;
             cursor: pointer;
             width: 250px;
+            margin-bottom: 20px;
             text-transform: uppercase;
-            box-shadow: 2px 2px 0px black;
-            transition: all 0.1s;
+            transition: all 0.2s;
+            border-radius: 5px;
         }
 
         .menu-btn:hover {
-            background: #aa0000;
-            border-color: #ff3333;
+            background: #fff;
+            color: #000;
             transform: scale(1.05);
+            box-shadow: 0 0 15px white;
+        }
+
+        /* PLATFORM SELECTION OVERLAY */
+        #platform-selection {
+            display: none;
+            /* Hidden until Start is clicked */
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .platform-row {
+            display: flex;
+            gap: 20px;
+        }
+
+        .platform-btn {
+            background: rgba(200, 50, 50, 0.8);
+            border-color: #ff5555;
+        }
+
+        .platform-btn:hover {
+            background: #ff5555;
+            color: white;
+            box-shadow: 0 0 15px #ff5555;
         }
 
         .menu-btn:active {
@@ -609,6 +644,116 @@
             transform: scale(1.05);
             box-shadow: 0 0 25px rgba(255, 50, 50, 0.6);
         }
+
+        /* ===================== MOBILE CONTROLS ===================== */
+        #mobile-controls {
+            display: none;
+            /* Hidden by default, shown only if Mobile is selected */
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            /* Let events pass through where no buttons exist */
+        }
+
+        /* Joystick background (visual only) */
+        #mobile-joystick-base {
+            position: absolute;
+            bottom: 40px;
+            left: 40px;
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            pointer-events: auto;
+            /* Catch touches here */
+            touch-action: none;
+        }
+
+        /* Joystick thumb pad */
+        #mobile-joystick-pad {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        /* Invisible area on the right half of the screen for camera looking */
+        #mobile-look-area {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 50%;
+            height: 100%;
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        .mobile-btn {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            color: white;
+            font-family: monospace;
+            font-size: 16px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            touch-action: none;
+            user-select: none;
+        }
+
+        .mobile-btn:active {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Right side action buttons */
+        #btn-mobile-shoot {
+            bottom: 40px;
+            right: 120px;
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 50, 50, 0.3);
+            border-color: rgba(255, 50, 50, 0.6);
+        }
+
+        #btn-mobile-jump {
+            bottom: 120px;
+            right: 40px;
+        }
+
+        #btn-mobile-reload {
+            bottom: 40px;
+            right: 40px;
+        }
+
+        #btn-mobile-interact {
+            bottom: 160px;
+            right: 120px;
+        }
+
+        #btn-mobile-jetpack {
+            bottom: 150px;
+            left: 40px;
+            background: rgba(0, 238, 255, 0.2);
+            border-color: rgba(0, 238, 255, 0.5);
+            display: none;
+            /* Show only when jetpack picked up */
+        }
     </style>
 </head>
 
@@ -617,11 +762,24 @@
     <!-- Main Menu -->
     <!-- Menú principal que aparece al iniciar, contiene el título y los botones de comienzo -->
     <div id="main-menu">
-        <h1 class="title">NIGHTFALL SURVIVAL<br><span style="font-size: 24px; color: #ff3333;">Phase 8: Jetpack</span>
-        </h1>
-        <button class="menu-btn" id="btn-start">Start Game</button>
-        <button class="menu-btn" id="btn-options">Options</button>
-        <button class="menu-btn" id="btn-exit">Exit</button>
+        <h1 class="title">NIGHTFALL SURVIVAL</h1>
+        <h2 class="subtitle">PHASE 8</h2>
+
+        <div id="menu-buttons">
+            <button class="menu-btn" id="btn-start">Start Game</button>
+            <button class="menu-btn" id="btn-options">Options</button>
+            <button class="menu-btn" id="btn-exit">Exit</button>
+        </div>
+
+        <div id="platform-selection">
+            <h3 style="color: white; font-family: monospace; margin-bottom: 10px;">SELECT YOUR PLATFORM</h3>
+            <div class="platform-row">
+                <button class="menu-btn platform-btn" id="btn-platform-pc">Computer</button>
+                <button class="menu-btn platform-btn" id="btn-platform-mobile">Mobile</button>
+            </div>
+            <button class="menu-btn" id="btn-platform-back"
+                style="width: 150px; font-size: 16px; padding: 10px; margin-top: 10px;">Back</button>
+        </div>
     </div>
 
     <!-- Pantalla de carga que se muestra temporalmente mientras el motor 3D prepara el nivel -->
@@ -752,6 +910,27 @@
 
     <!-- Elemento para mostrar la mira de apuntado al centro de la pantalla -->
     <div id="crosshair"></div>
+
+    <!-- MOBILE VIRTUAL CONTROLS -->
+    <!-- Controles táctiles que se mostrarán solo si el jugador elige la modalidad Mobile -->
+    <div id="mobile-controls">
+        <!-- Area invisible derecha para mover la cámara -->
+        <div id="mobile-look-area"></div>
+
+        <!-- Joystick izquierdo para movimiento -->
+        <div id="mobile-joystick-base">
+            <div id="mobile-joystick-pad"></div>
+        </div>
+
+        <!-- Botones de acción derechos -->
+        <div class="mobile-btn" id="btn-mobile-jump">JUMP</div>
+        <div class="mobile-btn" id="btn-mobile-reload">RLD</div>
+        <div class="mobile-btn" id="btn-mobile-shoot">FIRE</div>
+        <div class="mobile-btn" id="btn-mobile-interact" style="display: none;">USE</div>
+
+        <!-- Botón de Jetpack flotante en la izquierda arriba del joystick -->
+        <div class="mobile-btn" id="btn-mobile-jetpack">FLY</div>
+    </div>
     <!-- Carga del código principal del juego escrito en TypeScript -->
     <script type="module" src="/src/main.ts"></script>
 </body>
