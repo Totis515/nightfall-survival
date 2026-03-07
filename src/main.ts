@@ -521,10 +521,15 @@ function gameOver() {
     const goScreen = document.getElementById('game-over');
     if (goScreen) {
         goScreen.style.display = 'flex';
+        // Mostrar cuántas oleadas se sobrevivió
+        const finalStats = document.getElementById('final-stats');
+        if (finalStats) {
+            finalStats.innerText = `Waves Survived: ${waveManager.currentWave > 0 ? waveManager.currentWave - 1 : 0}`;
+        }
         // Mostrar quién nos mató
         const killedByEl = document.getElementById('killed-by');
         if (killedByEl) {
-            killedByEl.innerText = `KILLED BY: ${lastAttackerName}`;
+            killedByEl.innerText = `KILLED BY: ${lastAttackerName == 'UNKNOWN' ? 'A GRUESOME MONSTER' : lastAttackerName}`;
         }
     }
 
