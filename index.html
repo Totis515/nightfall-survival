@@ -746,13 +746,78 @@
             right: 120px;
         }
 
-        #btn-mobile-jetpack {
-            bottom: 150px;
-            left: 40px;
-            background: rgba(0, 238, 255, 0.2);
-            border-color: rgba(0, 238, 255, 0.5);
-            display: none;
-            /* Show only when jetpack picked up */
+        #mobile-weapons {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            pointer-events: auto;
+        }
+
+        .mobile-weapon-btn {
+            width: 45px;
+            height: 45px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 5px;
+            color: white;
+            font-family: monospace;
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: none;
+            user-select: none;
+        }
+
+        .mobile-weapon-btn:active {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Responsive Black Market for Mobile */
+        @media (max-width: 768px) {
+            #shop-menu h2 {
+                font-size: 24px;
+                margin-bottom: 20px;
+            }
+
+            #shop-grid {
+                gap: 10px;
+                padding: 10px;
+                max-width: 100%;
+            }
+
+            .shop-card {
+                width: 110px;
+                padding: 10px;
+            }
+
+            .card-icon {
+                font-size: 24px;
+                margin-bottom: 5px;
+            }
+
+            .card-name {
+                font-size: 14px;
+                margin-bottom: 5px;
+            }
+
+            .card-desc {
+                font-size: 10px;
+                margin-bottom: 5px;
+            }
+
+            .card-price {
+                font-size: 14px;
+            }
+
+            #shop-close {
+                font-size: 14px;
+                padding: 10px 20px;
+            }
         }
     </style>
 </head>
@@ -763,7 +828,7 @@
     <!-- Menú principal que aparece al iniciar, contiene el título y los botones de comienzo -->
     <div id="main-menu">
         <h1 class="title">NIGHTFALL SURVIVAL</h1>
-        <h2 class="subtitle">PHASE 8</h2>
+        <h2 class="subtitle">PHASE 9: Mobile</h2>
 
         <div id="menu-buttons">
             <button class="menu-btn" id="btn-start">Start Game</button>
@@ -928,8 +993,13 @@
         <div class="mobile-btn" id="btn-mobile-shoot">FIRE</div>
         <div class="mobile-btn" id="btn-mobile-interact" style="display: none;">USE</div>
 
-        <!-- Botón de Jetpack flotante en la izquierda arriba del joystick -->
-        <div class="mobile-btn" id="btn-mobile-jetpack">FLY</div>
+        <!-- Botones de armas arriba al centro -->
+        <div id="mobile-weapons">
+            <div class="mobile-weapon-btn" id="btn-mw-1">1</div>
+            <div class="mobile-weapon-btn" id="btn-mw-2">2</div>
+            <div class="mobile-weapon-btn" id="btn-mw-3">3</div>
+            <div class="mobile-weapon-btn" id="btn-mw-4">4</div>
+        </div>
     </div>
     <!-- Carga del código principal del juego escrito en TypeScript -->
     <script type="module" src="/src/main.ts"></script>

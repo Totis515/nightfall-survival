@@ -1827,14 +1827,31 @@ document.addEventListener('mouseup', (e) => {
 const getEl = (id: string) => document.getElementById(id);
 
 // 1. Action Buttons
-getEl('btn-mobile-jump')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (camera.position.y <= 1.61) velocity.y += 20; });
+getEl('btn-mobile-jump')?.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    if (camera.position.y <= 1.61 && playerStamina > 15 && !hasJetpack) {
+        velocity.y += 20;
+        playerStamina -= 15;
+        updateStatsHUD();
+    } else if (hasJetpack) {
+        isJetpacking = true;
+    }
+});
+getEl('btn-mobile-jump')?.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    isJetpacking = false;
+});
+
 getEl('btn-mobile-reload')?.addEventListener('touchstart', (e) => { e.preventDefault(); reloadWeapon(); });
 
 getEl('btn-mobile-shoot')?.addEventListener('touchstart', (e) => { e.preventDefault(); isShooting = true; });
 getEl('btn-mobile-shoot')?.addEventListener('touchend', (e) => { e.preventDefault(); isShooting = false; });
 
-getEl('btn-mobile-jetpack')?.addEventListener('touchstart', (e) => { e.preventDefault(); isJetpacking = true; });
-getEl('btn-mobile-jetpack')?.addEventListener('touchend', (e) => { e.preventDefault(); isJetpacking = false; });
+// 1.5 Weapon Buttons
+getEl('btn-mw-1')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(0)) switchWeapon(0); });
+getEl('btn-mw-2')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(5)) switchWeapon(5); });
+getEl('btn-mw-3')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(4)) switchWeapon(4); });
+getEl('btn-mw-4')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(3)) switchWeapon(3); });
 
 getEl('btn-mobile-interact')?.addEventListener('touchstart', (e) => {
     e.preventDefault();
