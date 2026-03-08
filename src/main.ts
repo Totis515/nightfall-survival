@@ -1826,33 +1826,37 @@ document.addEventListener('mouseup', (e) => {
     if (e.button === 0) isShooting = false;
 });
 
-// ==== VIRTUAL TOUCH CONTROLS (MOBILE) ==== //
+// ==== CONTROLES TÁCTILES VIRTUALES (MÓVIL) ==== //
 
-// Helpers to get elements
+// Función auxiliar acortada para recuperar elementos del DOM
 const getEl = (id: string) => document.getElementById(id);
 
-// 1. Action Buttons
+// 1. Botones de Acción (Salto/Jetpack, Recarga, Disparo)
 getEl('btn-mobile-jump')?.addEventListener('touchstart', (e) => {
     e.preventDefault();
+    // Maneja el salto o el uso del jetpack al tocar el botón de salto.
+    // Si el jugador no tiene jetpack y tiene suficiente resistencia, realiza un salto normal.
+    // Si el jugador tiene jetpack, activa el modo jetpack.
     if (camera.position.y <= 1.61 && playerStamina > 15 && !hasJetpack) {
         velocity.y += 20;
         playerStamina -= 15;
         updateStatsHUD();
     } else if (hasJetpack) {
-        isJetpacking = true;
+        isJetpacking = true; // Activa el jetpack
     }
 });
 getEl('btn-mobile-jump')?.addEventListener('touchend', (e) => {
     e.preventDefault();
-    isJetpacking = false;
+    isJetpacking = false; // Desactiva el jetpack al soltar el botón
 });
 
-getEl('btn-mobile-reload')?.addEventListener('touchstart', (e) => { e.preventDefault(); reloadWeapon(); });
+getEl('btn-mobile-reload')?.addEventListener('touchstart', (e) => { e.preventDefault(); reloadWeapon(); }); // Inicia la recarga del arma al tocar el botón de recarga
 
-getEl('btn-mobile-shoot')?.addEventListener('touchstart', (e) => { e.preventDefault(); isShooting = true; });
-getEl('btn-mobile-shoot')?.addEventListener('touchend', (e) => { e.preventDefault(); isShooting = false; });
+getEl('btn-mobile-shoot')?.addEventListener('touchstart', (e) => { e.preventDefault(); isShooting = true; }); // Activa el disparo continuo al tocar el botón de disparo
+getEl('btn-mobile-shoot')?.addEventListener('touchend', (e) => { e.preventDefault(); isShooting = false; }); // Desactiva el disparo al soltar el botón de disparo
 
-// 1.5 Weapon Buttons
+// 1.5 Botones de Selección Rápida de Armas (HUD Superior numérico)
+// Permiten al jugador cambiar rápidamente de arma si la tiene en su inventario.
 getEl('btn-mw-1')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(0)) switchWeapon(0); });
 getEl('btn-mw-2')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(5)) switchWeapon(5); });
 getEl('btn-mw-3')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(4)) switchWeapon(4); });
@@ -1860,13 +1864,16 @@ getEl('btn-mw-4')?.addEventListener('touchstart', (e) => { e.preventDefault(); i
 
 getEl('btn-mobile-interact')?.addEventListener('touchstart', (e) => {
     e.preventDefault();
-    if (uiLayer.style.display !== 'none' && !shopOpen) { openShop(); } // Check distance logic omitted for brevity, keeping simple for mobile layout
+    // Al tocar el botón de interacción, si la UI está visible y la tienda no está abierta, abre la tienda.
+    if (uiLayer.style.display !== 'none' && !shopOpen) { openShop(); }
 });
 
-// 2. Camera Look Area
+// 2. Área Invisible Derecha para Rotación de Cámara
 const lookArea = getEl('mobile-look-area');
 lookArea?.addEventListener('touchstart', (e: TouchEvent) => {
     e.preventDefault();
+    // Registra el primer toque en el área de la cámara para controlar la rotación.
+    // Guarda el ID del toque y las coordenadas iniciales.
     if (lookTouchId === null) {
         const touch = e.changedTouches[0];
         lookTouchId = touch.identifier;
@@ -1910,11 +1917,12 @@ lookArea?.addEventListener('touchend', (e: TouchEvent) => {
 }, { passive: false });
 
 lookArea?.addEventListener('touchcancel', (e: TouchEvent) => {
+    // Se ejecuta al remover el dedo de la pantalla derecha
     e.preventDefault();
     lookTouchId = null;
 });
 
-// 3. Virtual Joystick
+// 3. Joystick Virtual de Movimiento (Área Izquierda)
 const joystickBase = getEl('mobile-joystick-base');
 const joystickPad = getEl('mobile-joystick-pad');
 const JOYSTICK_MAX_RADIUS = 40;
@@ -2364,14 +2372,17 @@ function openShop() {
 }
 
 function closeShop() {
-    isUIShowing = false; // Reset flag
+    isUIShowing = false; // Bandera de estado UI libre
     shopOpen = false;
-    shopMenu.style.display = 'none';
+    shopMenu.style.display = 'none'; // Ocultar interfaz visual del mercado negro
 
-    // DIRECTLY START NEXT WAVE WITH LOADING
+    // Iniciar directamente la siguiente oleada con la barra de progreso
     if (gameStarted) {
         mainMenu.style.display = 'none';
-        controls.lock(); // LOCK IMMEDIATELY on user click to avoid browser blockage
+        // En plataformas móviles, "controls.lock()" lanzará error, por lo que solo se ejecuta en Computer
+        if (!isMobile) {
+            controls.lock();
+        }
         startNextWaveWithLoading();
     }
 }

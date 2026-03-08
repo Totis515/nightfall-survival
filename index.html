@@ -5,7 +5,7 @@
     <!-- Aquí inicia la configuración del documento y los estilos visuales -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Nightfall Survival - Phase 8: Jetpack</title>
+    <title>Nightfall Survival - Phase 9: Mobile</title>
     <style>
         /* Todo este bloque define la apariencia visual del juego y de la interfaz de usuario (CSS) */
         body {
@@ -733,13 +733,13 @@
         }
 
         #btn-mobile-jump {
-            bottom: 120px;
-            right: 40px;
+            bottom: 150px;
+            right: 60px;
         }
 
         #btn-mobile-reload {
-            bottom: 40px;
-            right: 40px;
+            bottom: 60px;
+            right: 60px;
         }
 
         #btn-mobile-interact {
@@ -796,16 +796,18 @@
             }
 
             #shop-grid {
+                grid-template-columns: repeat(3, 1fr);
                 gap: 8px;
-                padding: 5px;
+                padding: 10px;
                 max-width: 100%;
-                max-height: 50vh;
+                max-height: 60vh;
                 overflow-y: auto;
             }
 
             .shop-card {
-                width: 80px;
-                padding: 5px;
+                width: 100%;
+                box-sizing: border-box;
+                padding: 10px;
                 border-width: 1px;
             }
 
@@ -836,6 +838,12 @@
                 margin-top: 10px;
                 border-width: 1px;
             }
+
+            .bottom-right {
+                top: 60px;
+                right: 20px;
+                bottom: auto;
+            }
         }
     </style>
 </head>
@@ -846,7 +854,7 @@
     <!-- Menú principal que aparece al iniciar, contiene el título y los botones de comienzo -->
     <div id="main-menu">
         <h1 class="title">NIGHTFALL SURVIVAL</h1>
-        <h2 class="subtitle">PHASE 9: Mobile</h2>
+        <h2 class="subtitle">PHASE 9</h2>
 
         <div id="menu-buttons">
             <button class="menu-btn" id="btn-start">Start Game</button>
