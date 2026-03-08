@@ -67,12 +67,20 @@ interface Weapon {
 }
 
 const weapons: Weapon[] = [
+    // Índice 0: Pistola estándar - arma inicial del jugador
     { name: "PISTOL", damage: 25, fireRate: 200, magSize: 12, ammoCurrent: 12, ammoReserve: 48, reloadTime: 1200, recoilAmount: 0.1, isReloading: false, lastShotTime: 0, isAutomatic: false, pellets: 1 },
+    // Índice 1: Escopeta - disparo de perdigones en abanico
     { name: "SHOTGUN", damage: 15, fireRate: 800, magSize: 6, ammoCurrent: 6, ammoReserve: 24, reloadTime: 2000, recoilAmount: 0.3, isReloading: false, lastShotTime: 0, isAutomatic: false, pellets: 8 },
+    // Índice 2: Rifle de asalto - disparo automático rápido
     { name: "ASSAULT RIFLE", damage: 20, fireRate: 100, magSize: 30, ammoCurrent: 30, ammoReserve: 120, reloadTime: 1800, recoilAmount: 0.05, isReloading: false, lastShotTime: 0, isAutomatic: true, pellets: 1 },
+    // Índice 3: Minigun - cadencia de disparo extremely alta, mucho daño sostenido
     { name: "MINIGUN", damage: 12, fireRate: 50, magSize: 200, ammoCurrent: 200, ammoReserve: 400, reloadTime: 3000, recoilAmount: 0.02, isReloading: false, lastShotTime: 0, isAutomatic: true, pellets: 1 },
+    // Índice 4: Lanzacohetes - proyectil explosivo con daño de área
     { name: "ROCKET LAUNCHER", damage: 100, fireRate: 1200, magSize: 1, ammoCurrent: 1, ammoReserve: 5, reloadTime: 2500, recoilAmount: 0.5, isReloading: false, lastShotTime: 0, isAutomatic: false, pellets: 1 },
-    { name: "LASER PISTOL", damage: 35, fireRate: 300, magSize: 20, ammoCurrent: 20, ammoReserve: 60, reloadTime: 1500, recoilAmount: 0.0, isReloading: false, lastShotTime: 0, isAutomatic: false, pellets: 1 }
+    // Índice 5: Pistola láser - disparo sin retroalimentación y tiro rápido
+    { name: "LASER PISTOL", damage: 35, fireRate: 300, magSize: 20, ammoCurrent: 20, ammoReserve: 60, reloadTime: 1500, recoilAmount: 0.0, isReloading: false, lastShotTime: 0, isAutomatic: false, pellets: 1 },
+    // Índice 6: Lanzallamas - daño de área en cono, modo automático
+    { name: "FLAMETHROWER", damage: 8, fireRate: 80, magSize: 100, ammoCurrent: 100, ammoReserve: 300, reloadTime: 2000, recoilAmount: 0.01, isReloading: false, lastShotTime: 0, isAutomatic: true, pellets: 1 },
 ];
 
 // ---- SCENE SETUP ----
@@ -151,6 +159,23 @@ class SoundManager {
         g.gain.setValueAtTime(0.05, this.ctx.currentTime);
         g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
         o.connect(g); g.connect(this.masterGain); o.start(); o.stop(this.ctx.currentTime + 0.15);
+    }
+    playFlamethrower() {
+        // Efecto de sonido del lanzallamas: ruido de fuego continuo
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        const noise = this.ctx.createBufferSource();
+        const buf = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.08, this.ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.6;
+        noise.buffer = buf;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 300 + Math.random() * 200;
+        filter.Q.value = 0.5;
+        const g = this.ctx.createGain();
+        g.gain.setValueAtTime(0.07, this.ctx.currentTime);
+        g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.08);
+        noise.connect(filter); filter.connect(g); g.connect(this.masterGain); noise.start();
     }
     playPickup() {
         if (this.ctx.state === 'suspended') this.ctx.resume();
@@ -299,9 +324,10 @@ class WeaponPickup {
         const w = weapons[weaponIdx];
         const model = new THREE.Group();
 
-        let color = 0xffff00; // Minigun - Yellow
-        if (w.name.includes("ROCKET")) color = 0xff3300; // Rocket - Red
-        if (w.name.includes("LASER")) color = 0x00ffff; // Laser - Cyan
+        let color = 0xffff00; // Minigun - Amarillo
+        if (w.name.includes("ROCKET")) color = 0xff3300;   // Lanzacohetes - Rojo
+        if (w.name.includes("LASER")) color = 0x00ffff;    // Pistola láser - Cian
+        if (w.name === 'FLAMETHROWER') color = 0xff6600;   // Lanzallamas - Naranja
 
         const weaponMat = new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.9, roughness: 0.1 });
         const accentMat = new THREE.MeshStandardMaterial({ color: color, emissive: color, emissiveIntensity: 2.0 });
@@ -326,6 +352,16 @@ class WeaponPickup {
             const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.2, 12), accentMat);
             cap.rotation.x = Math.PI / 2; cap.position.z = -0.7;
             model.add(tube, cap);
+        } else if (w.name === 'FLAMETHROWER') {
+            // Modelo 3D del lanzallamas: cuerpo ancho con tanque trasero y boquilla naranja
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.35, 1.1), weaponMat);
+            const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, 0.5, 8), accentMat);
+            nozzle.rotation.x = Math.PI / 2;
+            nozzle.position.z = -0.75;
+            const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.7, 10), weaponMat);
+            tank.rotation.z = Math.PI / 2;
+            tank.position.set(0, 0.3, 0.2);
+            model.add(body, nozzle, tank);
         } else if (w.name.includes("LASER")) {
             const frame = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 0.7), weaponMat);
             const rail = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 1.0), accentMat);
@@ -514,9 +550,13 @@ function takeDamage(amount: number) {
 }
 
 function gameOver() {
+    // Verificar que el juego esté activo antes de ejecutar el fin de partida
+    if (!gameStarted) return;
     gameStarted = false;
     soundManager.stopMusic();
-    controls.unlock();
+    // En móvil, llamar controls.unlock() causa un error grave que congela la pantalla.
+    // Solo se ejecuta en modo PC donde el PointerLock está activo.
+    if (!isMobile) controls.unlock();
 
     const goScreen = document.getElementById('game-over');
     if (goScreen) {
@@ -526,16 +566,20 @@ function gameOver() {
         if (finalStats) {
             finalStats.innerText = `Waves Survived: ${waveManager.currentWave > 0 ? waveManager.currentWave - 1 : 0}`;
         }
-        // Mostrar quién nos mató
+        // Mostrar el nombre del monstruo asesino - en inglés para el jugador
         const killedByEl = document.getElementById('killed-by');
         if (killedByEl) {
-            killedByEl.innerText = `KILLED BY: ${lastAttackerName == 'UNKNOWN' ? 'A GRUESOME MONSTER' : lastAttackerName}`;
+            const killerName = lastAttackerName === 'UNKNOWN' ? 'A GRUESOME MONSTER' : lastAttackerName.toUpperCase();
+            killedByEl.innerText = `KILLED BY: ${killerName}`;
         }
     }
 
+    // Ocultar el HUD y la mira
     uiLayer.style.display = 'none';
     crosshair.style.display = 'none';
-    document.getElementById('mobile-controls')!.style.display = 'none'; // ocultar en móvil
+    // Ocultar controles móviles (si existen) al morir
+    const mobileCtrl = document.getElementById('mobile-controls');
+    if (mobileCtrl) mobileCtrl.style.display = 'none';
 }
 
 // ---- CLOUD SYSTEM ----
@@ -1445,14 +1489,36 @@ class WaveManager {
 
     startNextWave() {
         this.isBreak = false;
-        // currentWave is incremented in preSpawnWave now
+        // currentWave fue incrementado en preSpawnWave
 
-        // VIDEO BEHAVIOR: Make all pre-spawned enemies visible
+        // Hacer visibles todos los enemigos pre-generados
         this.activeEnemies.forEach(en => {
             en.mesh.visible = true;
         });
 
-        // Hide wave complete screen
+        // ---- APARICIÓN DE ARMAS POR OLEADA ----
+        // Según la oleada actual, coloca armas específicas en el suelo para el jugador.
+        // Las armas aparecen en posiciones fijas cerca del punto de inicio del jugador.
+        if (this.currentWave === 1) {
+            // Oleada 1: Pistola Láser (idx 5) y Jetpack - armas de largue
+            if (!playerInventory.includes(5))
+                weaponPickups.push(new WeaponPickup(5, new THREE.Vector3(-8, 0, -5)));
+            // El jetpack ya existe en pos (15, 0, -25) desde el inicio
+        } else if (this.currentWave === 2) {
+            // Oleada 2: Lanzacohetes (idx 4) - arma pesada de área
+            if (!playerInventory.includes(4))
+                weaponPickups.push(new WeaponPickup(4, new THREE.Vector3(10, 0, 8)));
+        } else if (this.currentWave === 3) {
+            // Oleada 3: Minigun (idx 3) - cadencia mãxima de fuego
+            if (!playerInventory.includes(3))
+                weaponPickups.push(new WeaponPickup(3, new THREE.Vector3(-10, 0, 10)));
+        } else if (this.currentWave === 4) {
+            // Oleada 4: Lanzallamas (idx 6) - daño de área continuo con fuego
+            if (!playerInventory.includes(6))
+                weaponPickups.push(new WeaponPickup(6, new THREE.Vector3(5, 0, -12)));
+        }
+
+        // Ocultar pantalla de oleada completada
         const wc = document.getElementById('wave-complete');
         if (wc) wc.style.display = 'none';
         if (enemiesEl) enemiesEl.innerText = this.enemiesAlive.toString();
@@ -1781,11 +1847,24 @@ function updateWeaponVisuals() {
         b.rotation.x = Math.PI / 2; b.position.set(0, -0.05, -0.4);
         weaponGroup.add(b);
     } else if (w.name === "LASER PISTOL") {
+        // Modelo de primera persona para la pistola láser: cuerpo oscuro con cã±ón cian brillante
         const b = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.25, 0.5), new THREE.MeshStandardMaterial({ color: 0x222222, emissive: 0x00ffff, emissiveIntensity: 0.2 }));
         b.position.set(0, -0.1, 0);
         const brl = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.6), new THREE.MeshStandardMaterial({ color: 0x00ffff }));
         brl.position.set(0, -0.05, -0.4);
         weaponGroup.add(b, brl);
+    } else if (w.name === "FLAMETHROWER") {
+        // Modelo de primera persona del lanzallamas: cuerpo ancho con boquilla naranja
+        const b = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.25, 0.7), weaponMaterial);
+        b.position.set(0, -0.1, 0);
+        const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.1, 0.4, 8),
+            new THREE.MeshStandardMaterial({ color: 0xff6600, emissive: 0xff3300, emissiveIntensity: 0.5 }));
+        nozzle.rotation.x = Math.PI / 2;
+        nozzle.position.set(0, -0.05, -0.6);
+        const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.5, 10), weaponMaterial);
+        tank.rotation.z = Math.PI / 2;
+        tank.position.set(0, 0.15, 0.1);
+        weaponGroup.add(b, nozzle, tank);
     }
 }
 
@@ -1866,10 +1945,11 @@ getEl('btn-mobile-shoot')?.addEventListener('touchend', (e) => { e.preventDefaul
 
 // 1.5 Botones de Selección Rápida de Armas (HUD Superior numérico)
 // Permiten al jugador cambiar rápidamente de arma si la tiene en su inventario.
-getEl('btn-mw-1')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(0)) switchWeapon(0); });
-getEl('btn-mw-2')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(5)) switchWeapon(5); });
-getEl('btn-mw-3')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(4)) switchWeapon(4); });
-getEl('btn-mw-4')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(3)) switchWeapon(3); });
+getEl('btn-mw-1')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(0)) switchWeapon(0); }); // Slot 1: Pistola
+getEl('btn-mw-2')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(5)) switchWeapon(5); }); // Slot 2: Pistola Láser
+getEl('btn-mw-3')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(4)) switchWeapon(4); }); // Slot 3: Lanzacohetes
+getEl('btn-mw-4')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(3)) switchWeapon(3); }); // Slot 4: Minigun
+getEl('btn-mw-5')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(6)) switchWeapon(6); }); // Slot 5: Lanzallamas
 
 getEl('btn-mobile-interact')?.addEventListener('touchstart', (e) => {
     e.preventDefault();
@@ -2033,12 +2113,30 @@ function shoot(w: Weapon) {
     flash.rotation.z = Math.random() * Math.PI * 2;
     setTimeout(() => { flashMat.opacity = 0; }, 50);
 
-    // Sound & Projectile
+    // Sonido y lógica de proyectil según el arma activa
     if (w.name === "ROCKET LAUNCHER") {
-        soundManager.playExplosion(); // Launch burst
+        soundManager.playExplosion(); // Sonido de lanzamiento
         const dir = new THREE.Vector3();
         camera.getWorldDirection(dir);
         playerRockets.push(new Rocket(camera.position.clone(), dir));
+    } else if (w.name === "FLAMETHROWER") {
+        // El lanzallamas dispara una ola de fuego en cóno de frente al jugador.
+        // Daña a todos los enemigos dentro del radio (6 unidades) con daño de área.
+        soundManager.playFlamethrower();
+        const fireDir = new THREE.Vector3();
+        camera.getWorldDirection(fireDir);
+        // Punto de impacto del fuego: 4 unidades frente al jugador
+        const firePos = camera.position.clone().addScaledVector(fireDir, 4);
+        // Spawnear partículas de fuego color naranja/rojo en el punto de impacto
+        bloodParticles.spawn(firePos, 12);
+        // Dañar enemigos en área dentro de 6 unidades del punto de fuego
+        waveManager.activeEnemies.forEach(en => {
+            const d = en.mesh.position.distanceTo(firePos);
+            if (!en.isDead && d < 6) {
+                en.takeDamage(w.damage * damageMultiplier * (1 - d / 6), fireDir.clone().multiplyScalar(0.2));
+            }
+        });
+        return; // El lanzallamas no usa el hitscan estándar
     } else if (w.name === "LASER PISTOL") {
         soundManager.playLaser();
     } else {
