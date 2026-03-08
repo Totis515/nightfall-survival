@@ -1493,22 +1493,31 @@ class WaveManager {
                 if (rand > 0.8) type = EnemyType.FAST;
                 else if (rand > 0.6) type = EnemyType.TANK;
             }
-
-            this.spawnEnemyWithType(type);
+            // Se pasa el índice y el total para distribuir los ángulos equitativamente
+            this.spawnEnemyWithType(type, i, count);
         }
 
         this.enemiesToSpawn = 0; // All spawned in advance
     }
 
-    spawnEnemyWithType(type: EnemyType) {
-        const angle = Math.random() * Math.PI * 2;
-        const radius = 50 + Math.random() * 30;
+    spawnEnemyWithType(type: EnemyType, index: number = 0, total: number = 1) {
+        // --- CORRECCIÓN DE SPAWN DE ENEMIGOS ---
+        // Distribuimos los enemigos en un círculo completo alrededor del jugador.
+        // Dividimos los 360° equitativamente entre el total de enemigos para
+        // que nunca aparezcan todos agrupados en el mismo lado o justo detrás.
+        // Radio mínimo de 60 unidades para que no aparezcan de golpe en cámara.
+        const baseAngle = (index / total) * Math.PI * 2;
+        const jitter = (Math.random() - 0.5) * (Math.PI / total); // Variación aleatoria pequeña
+        const angle = baseAngle + jitter;
+        const radius = 60 + Math.random() * 40; // Entre 60 y 100 unidades del jugador
         const pos = new THREE.Vector3(
             camera.position.x + Math.cos(angle) * radius,
             0,
             camera.position.z + Math.sin(angle) * radius
         );
         const enemy = new Enemy(type, pos);
+        // El enemigo empieza invisible y se vuelve visible al iniciar la oleada
+        enemy.mesh.visible = false;
         this.activeEnemies.push(enemy);
         this.enemiesAlive++;
     }
