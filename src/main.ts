@@ -1757,7 +1757,8 @@ document.getElementById('btn-platform-mobile')?.addEventListener('click', () => 
         }
     })();
     beginLoadingSequence(); // Móvil no usa PointerLock, inicia directo
-    getEl('btn-mobile-pause')!.style.display = 'block';
+    const mbp = getEl('btn-mobile-pause');
+    if (mbp) mbp.style.display = 'flex';
 });
 
 document.getElementById('btn-options')?.addEventListener('click', () => {
@@ -1950,16 +1951,25 @@ getEl('btn-mw-3')?.addEventListener('touchstart', (e) => { e.preventDefault(); i
 getEl('btn-mw-4')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(3)) switchWeapon(3); }); // Slot 4: Minigun
 getEl('btn-mw-5')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(6)) switchWeapon(6); }); // Slot 5: Lanzallamas
 
-getEl('btn-mobile-pause')?.addEventListener('touchstart', (e: TouchEvent) => {
-    e.preventDefault();
-    if (gameStarted && !isPaused && !shopOpen) {
-        isPaused = true;
-        isUIShowing = true;
-        pauseScreen.style.display = 'flex';
-        crosshair.style.display = 'none';
-        if (soundManager.bgAudio) soundManager.bgAudio.pause();
-    }
-});
+// Evento de pausa para móviles con feedback visual
+const mobilePauseBtn = getEl('btn-mobile-pause');
+if (mobilePauseBtn) {
+    const handlePause = (e: Event) => {
+        e.preventDefault();
+        if (gameStarted && !isPaused && !shopOpen) {
+            isPaused = true;
+            isUIShowing = true;
+            pauseScreen.style.display = 'flex';
+            crosshair.style.display = 'none';
+            if (soundManager.bgAudio) soundManager.bgAudio.pause();
+            // Pequeña animación de pulsación
+            mobilePauseBtn.style.transform = 'scale(0.9)';
+            setTimeout(() => { mobilePauseBtn.style.transform = 'scale(1)'; }, 100);
+        }
+    };
+    mobilePauseBtn.addEventListener('touchstart', handlePause);
+    mobilePauseBtn.addEventListener('click', handlePause);
+}
 
 getEl('btn-mobile-interact')?.addEventListener('touchstart', (e) => {
     e.preventDefault();
