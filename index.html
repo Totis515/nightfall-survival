@@ -61,7 +61,7 @@
             color: white;
             z-index: 20;
             display: none;
-            /* Hidden until game starts */
+            /* Se oculta hasta que el juego comienza */
         }
 
         .top-left {
@@ -144,13 +144,13 @@
             width: 300px;
             height: 6px;
             background: #00eeff;
-            /* Cyan jetpack energy */
+            /* Energía cian del jetpack */
             margin-top: 8px;
             border-radius: 2px;
             box-shadow: 0 0 4px #00eeff;
             transition: width 0.1s;
             display: none;
-            /* Hidden until jetpack is picked up */
+            /* Se oculta hasta que se recoge el jetpack */
         }
 
         .bottom-right {
@@ -276,10 +276,10 @@
             box-shadow: 0 0 15px white;
         }
 
-        /* PLATFORM SELECTION OVERLAY */
+        /* SELECCIÓN DE PLATAFORMA (SUPERPUESTA) */
         #platform-selection {
             display: none;
-            /* Hidden until Start is clicked */
+            /* Se oculta hasta que se hace clic en "Start" */
             flex-direction: column;
             align-items: center;
             gap: 20px;
@@ -698,10 +698,10 @@
             height: 100%;
             z-index: 10;
             pointer-events: none;
-            /* Let events pass through where no buttons exist */
+            /* Dejar que los eventos pasen donde no hay botones */
         }
 
-        /* Joystick background (visual only) */
+        /* Fondo del joystick (solo visual) */
         #mobile-joystick-base {
             position: absolute;
             bottom: 40px;
@@ -712,11 +712,11 @@
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             pointer-events: auto;
-            /* Catch touches here */
+            /* Capturar toques aquí */
             touch-action: none;
         }
 
-        /* Joystick thumb pad */
+        /* Almohadilla central del joystick */
         #mobile-joystick-pad {
             position: absolute;
             top: 50%;
@@ -729,7 +729,7 @@
             pointer-events: none;
         }
 
-        /* Invisible area on the right half of the screen for camera looking */
+        /* Área invisible en la mitad derecha para rotar la cámara */
         #mobile-look-area {
             position: absolute;
             top: 0;
@@ -763,7 +763,7 @@
             background: rgba(255, 255, 255, 0.5);
         }
 
-        /* Right side action buttons */
+        /* Botones de acción del lado derecho */
         #btn-mobile-shoot {
             bottom: 40px;
             right: 120px;
@@ -867,7 +867,8 @@
                 margin-right: 8px !important;
             }
 
-            #shop-grid {
+            #shop-grid,
+            #shop-grid-mobile {
                 display: flex !important;
                 flex-direction: row !important;
                 overflow-x: auto !important;
@@ -1013,7 +1014,7 @@
     <!-- Interact Prompt -->
     <div id="interact-prompt">[ E ] ENTER BLACK MARKET</div>
 
-    <!-- Wave Complete Screen (in-game, no pause) -->
+    <!-- Pantalla de Oleada Completada (en juego, sin pausa total) -->
     <div id="wave-complete">
         <div id="wc-inner">
             <h2 id="wc-wave">WAVE 1 COMPLETE!</h2>
@@ -1034,38 +1035,38 @@
         <div id="shop-grid">
             <div class="shop-card" id="buy-health">
                 <div class="card-icon">❤️</div>
-                <div class="card-name">SALUD</div>
-                <div class="card-desc">Restaura vida inmediatamente por $50.</div>
+                <div class="card-name">HEALTH</div>
+                <div class="card-desc">Instantly restore health for $50.</div>
                 <div class="card-price">50</div>
             </div>
             <div class="shop-card" id="buy-ammo">
                 <div class="card-icon">📦</div>
-                <div class="card-name">MUNICIÓN</div>
-                <div class="card-desc">Recarga todas tus armas al máximo.</div>
+                <div class="card-name">AMMO</div>
+                <div class="card-desc">Refill all weapon ammo to maximum.</div>
                 <div class="card-price">75</div>
             </div>
             <div class="shop-card" id="buy-maxhp">
                 <div class="card-icon">⬆️</div>
-                <div class="card-name">VITALIDAD</div>
-                <div class="card-desc">Aumenta tu capacidad máxima de vida (+20).</div>
+                <div class="card-name">VITALITY</div>
+                <div class="card-desc">Increase your maximum HP capacity (+20).</div>
                 <div class="card-price">200</div>
             </div>
             <div class="shop-card" id="buy-speed">
                 <div class="card-icon">⚡</div>
-                <div class="card-name">VELOCIDAD</div>
-                <div class="card-desc">Camina y corre más rápido permanentemente.</div>
+                <div class="card-name">SPEED</div>
+                <div class="card-desc">Permanently increase your movement speed.</div>
                 <div class="card-price">150</div>
             </div>
             <div class="shop-card" id="buy-damage">
                 <div class="card-icon">🔫</div>
-                <div class="card-name">DAÑO</div>
-                <div class="card-desc">Tus proyectiles causan un 25% más de daño.</div>
+                <div class="card-name">DAMAGE</div>
+                <div class="card-desc">Your projectiles deal 25% more damage.</div>
                 <div class="card-price">300</div>
             </div>
             <div class="shop-card" id="buy-rapidfire">
                 <div class="card-icon">🔥</div>
-                <div class="card-name">CADENCIA</div>
-                <div class="card-desc">Mejora la velocidad de disparo de tus armas.</div>
+                <div class="card-name">FIRE RATE</div>
+                <div class="card-desc">Improve the firing speed of all weapons.</div>
                 <div class="card-price">500</div>
             </div>
         </div>
@@ -1113,55 +1114,43 @@
         <div id="shop-grid-mobile">
             <div id="mb-buy-health" class="shop-card">
                 <div class="card-icon">❤️</div>
-                <div class="card-name">SALUD</div>
-                <div class="card-desc">Vida +50</div>
+                <div class="card-name">HEALTH</div>
+                <div class="card-desc">+50 HP</div>
                 <div class="card-price">50</div>
             </div>
             <div id="mb-buy-ammo" class="shop-card">
                 <div class="card-icon">📦</div>
-                <div class="card-name">MUNICIÓN</div>
+                <div class="card-name">AMMO</div>
                 <div class="card-desc">Full ammo</div>
                 <div class="card-price">75</div>
             </div>
             <div id="mb-buy-maxhp" class="shop-card">
                 <div class="card-icon">⬆️</div>
-                <div class="card-name">VITALIDAD</div>
-                <div class="card-desc">Max HP +20</div>
+                <div class="card-name">VITALITY</div>
+                <div class="card-desc">+20 Max HP</div>
                 <div class="card-price">200</div>
             </div>
             <div id="mb-buy-speed" class="shop-card">
                 <div class="card-icon">⚡</div>
-                <div class="card-name">VELOCIDAD</div>
+                <div class="card-name">SPEED</div>
                 <div class="card-desc">Speed +1</div>
                 <div class="card-price">150</div>
             </div>
             <div id="mb-buy-damage" class="shop-card">
                 <div class="card-icon">🔫</div>
-                <div class="card-name">DAÑO</div>
-                <div class="card-desc">DMG +25%</div>
+                <div class="card-name">DAMAGE</div>
+                <div class="card-desc">Damage +25%</div>
                 <div class="card-price">300</div>
             </div>
             <div id="mb-buy-rapidfire" class="shop-card">
                 <div class="card-icon">🔥</div>
-                <div class="card-name">CADENCIA</div>
-                <div class="card-desc">Fire Rate +1</div>
+                <div class="card-name">FIRE RATE</div>
+                <div class="card-desc">Rate +1</div>
                 <div class="card-price">500</div>
             </div>
         </div>
 
-        <!-- Tarjeta: Caja de Munición -->
-        <div id="mb-buy-ammo" class="shop-card" style="
-                background: rgba(30,30,50,0.95);
-                border: 1px solid rgba(255,255,255,0.15);
-                border-radius: 8px;
-                padding: 8px;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 2px;
-                cursor: pointer;
-            ">
-            <button id="shop-close-mobile" style="
+        <button id="shop-close-mobile" style="
             margin-top: auto;
             background: #ff2222;
             color: #fff;
@@ -1174,7 +1163,6 @@
             width: 100%;
             border-radius: 4px;
         ">✕ Close Market</button>
-        </div>
     </div>
 
     <!-- Efectos visuales superpuestos (como el borde rojo al recibir daño o parpadeos de compra) -->
@@ -1202,7 +1190,7 @@
         <div class="mobile-btn" id="btn-mobile-shoot">FIRE</div>
         <div class="mobile-btn" id="btn-mobile-interact" style="display: none;">USE</div>
 
-        <!-- Botones de selección de armas: 1=Pistol, 2=Laser, 3=Rocket, 4=Minigun, 5=Flamethrower -->
+        <!-- SECCIÓN DE SELECCIÓN DE ARMAS: 1=Pistol, 2=Laser, 3=Rocket, 4=Minigun, 5=Flamethrower -->
         <div id="mobile-weapons">
             <div class="mobile-weapon-btn" id="btn-mw-1">1</div>
             <div class="mobile-weapon-btn" id="btn-mw-2">2</div>
@@ -1211,7 +1199,7 @@
             <div class="mobile-weapon-btn" id="btn-mw-5">5</div>
         </div>
     </div>
-    <!-- Carga del código principal del juego escrito en TypeScript -->
+    <!-- CARGA EL MÓDULO PRINCIPAL DEL JUEGO -->
     <script type="module" src="/src/main.ts"></script>
 </body>
 

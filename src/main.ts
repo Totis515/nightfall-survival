@@ -48,17 +48,17 @@ const pauseScreen = document.getElementById('pause-screen') as HTMLElement;
 let isUIShowing = false; // Se activa cuando hay una UI del juego abierta (tienda, pausa)
 const BLACK_MARKET_POS = new THREE.Vector3(30, 0, -40); // Posición del Black Market en el mundo 3D
 
-// Phase 9 Kill Feed tracking
+// Seguimiento del 'Kill Feed' para la Phase 9
 let lastAttackerName = "UNKNOWN";
 
 interface Weapon {
     name: string;
     damage: number;
-    fireRate: number; // ms
+    fireRate: number; // Cadencia de disparo en milisegundos
     magSize: number;
     ammoCurrent: number;
     ammoReserve: number;
-    reloadTime: number; // ms
+    reloadTime: number; // Tiempo de recarga en milisegundos
     recoilAmount: number;
     isReloading: boolean;
     lastShotTime: number;
@@ -94,9 +94,9 @@ camera.position.set(0, 1.6, 0);
 
 const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
 renderer.setSize(window.innerWidth, window.innerHeight);
-// Limit pixel ratio to 1 for best performance on low-end machines
+// Limitar la relación de píxeles a 1 para mejor rendimiento en máquinas de gama baja/móviles
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.0));
-// Disable shadows entirely for a significant FPS boost
+// Desactivar sombras por completo para un aumento significativo de FPS (cuadros por segundo)
 renderer.shadowMap.enabled = false;
 document.body.appendChild(renderer.domElement);
 
@@ -241,7 +241,7 @@ class SoundManager {
 }
 const soundManager = new SoundManager();
 
-// Start menu music on first body interaction to respect autoplay rules
+// Iniciar la música del menú en la primera interacción para cumplir con las reglas de reproducción automática del navegador
 document.body.addEventListener('click', () => {
     if (!gameStarted && !soundManager.menuOsc) soundManager.startMenuMusic();
 }, { once: true });
@@ -257,19 +257,19 @@ class Laser {
     constructor(pos: THREE.Vector3, dir: THREE.Vector3, shooterName: string = "ROBOT") {
         this.mesh = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.8), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
         this.mesh.position.copy(pos);
-        // Look in direction of travel
+        // Orientar en la dirección del trayecto
         const target = pos.clone().add(dir);
         this.mesh.lookAt(target);
-        this.velocity = dir.multiplyScalar(20); // Laser speed
+        this.velocity = dir.multiplyScalar(20); // Velocidad del láser
         this.shooterName = shooterName;
         scene.add(this.mesh);
-        soundManager.playShot(); // Reuse shoot sound for laser
+        soundManager.playShot(); // Reutilizar sonido de disparo para el láser
     }
 
     update(delta: number) {
         this.mesh.position.addScaledVector(this.velocity, delta);
 
-        // Raycast against player geometry
+        // Lanzamiento de rayo (raycast) contra la geometría del mundo
         const dist = camera.position.distanceTo(this.mesh.position);
         if (dist < 1.0) {
             lastAttackerName = this.shooterName;
@@ -278,7 +278,7 @@ class Laser {
             return;
         }
 
-        // Environment collision (simple Y check or bounds)
+        // Colisión con el entorno (verificación simple de altura Y o límites)
         if (this.mesh.position.y < 0 || Math.abs(this.mesh.position.x) > 60 || Math.abs(this.mesh.position.z) > 60) {
             this.isDead = true;
         }
@@ -466,11 +466,11 @@ const weaponIndices = [3, 4, 5];
 
 function switchWeapon(index: number) {
     if (currentWeaponIndex === index) return;
-    // Removed isReloading check to allow switching even during reload
+    // Se eliminó la verificación isReloading para permitir el cambio incluso durante la recarga
     currentWeaponIndex = index;
     updateWeaponHUD();
     updateWeaponVisuals();
-    // Reset weapon position to avoid being stuck in 'reloading position'
+    // Reiniciar la posición del arma para evitar que se quede trabada en la 'posición de recarga'
     weaponGroup.position.y = -0.3;
 }
 
@@ -537,11 +537,11 @@ function takeDamage(amount: number) {
 
     updateStatsHUD();
 
-    // Play hurt sound if available (or grunt)
+    // Reproducir sonido de daño si está disponible
     if ((soundManager as any).playHurt) {
         (soundManager as any).playHurt();
     } else {
-        soundManager.playGroan(); // Fallback
+        soundManager.playGroan(); // Alternativa (quejido)
     }
 
     if (playerHealth <= 0) {
@@ -590,9 +590,9 @@ function createClouds() {
     const cloudMat = new THREE.MeshStandardMaterial({
         color: 0xffffff,
         transparent: true,
-        opacity: 0.15, // MORE TRANSPARENT
+        opacity: 0.15, // Más transparente
         flatShading: true,
-        fog: false // ENSURE VISIBILITY
+        fog: false // Asegurar visibilidad
     });
     for (let i = 0; i < 15; i++) {
         const cloud = new THREE.Group();
@@ -621,7 +621,7 @@ function createClouds() {
 const ambientLight = new THREE.HemisphereLight(0x1a0b3e, 0x0a0a1a, 0.1); // Luz ambiental tenue
 scene.add(ambientLight);
 
-// Spooky orange point light near Black Market to add color variety
+// Luz puntal naranja espeluznante cerca del Black Market para añadir variedad de color
 const bmLight = new THREE.PointLight(0xff6600, 3, 25);
 bmLight.position.set(30, 3, -40);
 scene.add(bmLight);
@@ -659,7 +659,7 @@ function createShopMarker() {
 createClouds();
 shopMarker = createShopMarker();
 
-// eerie purple/blue fill light on opposite side of map
+// Luz de relleno morada/azul inquietante en el lado opuesto del mapa
 const fillLight = new THREE.PointLight(0x3300ff, 2, 40);
 fillLight.position.set(-30, 5, 30);
 scene.add(fillLight);
@@ -668,18 +668,18 @@ scene.add(fillLight);
 const moonLight = new THREE.DirectionalLight(0xffffff, 0.4); // Much darker moonlight
 moonLight.position.set(-60, 100, -120);
 moonLight.castShadow = true;
-// Optimize shadows for larger reach - tighter frustum for performance
+// Optimizar sombras para mayor alcance - frustum más ajustado para rendimiento
 moonLight.shadow.camera.left = -80;
 moonLight.shadow.camera.right = 80;
 moonLight.shadow.camera.top = 80;
 moonLight.shadow.camera.bottom = -80;
-moonLight.shadow.mapSize.width = 512; // Smaller map for FPS
+moonLight.shadow.mapSize.width = 512; // Mapa más pequeño para ganar FPS
 moonLight.shadow.mapSize.height = 512;
 scene.add(moonLight);
 
-// GIANT WHITE MOON
+// LUNA BLANCA GIGANTE
 const moonGeo = new THREE.SphereGeometry(14, 32, 32);
-const moonMat = new THREE.MeshBasicMaterial({ color: 0xffffff, fog: false }); // NO FOG
+const moonMat = new THREE.MeshBasicMaterial({ color: 0xffffff, fog: false }); // SIN NIEBLA
 const moon = new THREE.Mesh(moonGeo, moonMat);
 moon.position.copy(moonLight.position);
 scene.add(moon);
@@ -699,23 +699,23 @@ scene.add(halo);
 
 // ---- SISTEMA DE COLISIONES ----
 // Sistema de colisiones para evitar que el jugador atraviese las paredes o los modelos
-// Two separate arrays: one for PLAYER movement, one for ENEMY bullet detection
-const playerCollidables: THREE.Object3D[] = []; // walls, buildings, boundary
-const collidables: THREE.Object3D[] = [];        // same + enemy torsos (kept for compatibility)
+// Dos arreglos separados: uno para movimiento del JUGADOR, otro para detección de balas ENEMIGAS
+const playerCollidables: THREE.Object3D[] = []; // paredes, edificios, límites
+const collidables: THREE.Object3D[] = [];        // lo mismo + torsos de enemigos (mantenido por compatibilidad)
 const collisionRaycaster = new THREE.Raycaster();
 const collisionDirections = [
     new THREE.Vector3(1, 0, 0), new THREE.Vector3(-1, 0, 0),
     new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1)
-    // Reduced from 8 to 4 directions for PERFORMANCE
+    // Reducido de 8 a 4 direcciones para mejorar el RENDIMIENTO
 ];
 
 // ---- TERRENO Y CÉSPED ----
-// Low poly main floor
+// Suelo principal de pocos polígonos (low poly)
 const floorGeo = new THREE.PlaneGeometry(300, 300, 32, 32);
 const pos = floorGeo.attributes.position;
 for (let i = 0; i < pos.count; i++) {
     if (i % 33 !== 0 && i % 33 !== 32 && Math.floor(i / 33) !== 0 && Math.floor(i / 33) !== 32) {
-        pos.setZ(i, Math.random() * 0.8 - 0.4); // Randomize heights for bumpy low poly terrain
+        pos.setZ(i, Math.random() * 0.8 - 0.4); // Aleatorizar alturas para terreno irregular low poly
     }
 }
 floorGeo.computeVertexNormals();
@@ -740,20 +740,20 @@ scene.add(boundary);
 collidables.push(boundary);
 playerCollidables.push(boundary); // Boundary applies to player
 
-// High-Performance Instanced Grass
+// Césped instanciado de alto rendimiento
 const grassWidth = 0.2;
 const grassHeight = 0.9;
 const grassGeo = new THREE.ConeGeometry(grassWidth, grassHeight, 3);
-grassGeo.translate(0, grassHeight / 2, 0); // origin to bottom
+grassGeo.translate(0, grassHeight / 2, 0); // origen a la base
 
 const grassMat = new THREE.MeshStandardMaterial({
-    color: 0x3a4d1a, // Darker olive green
+    color: 0x3a4d1a, // Verde oliva oscuro
     flatShading: true
 });
-// More grass triangles for a richer ground look
+// Más triángulos de césped para un aspecto de suelo más rico
 const grassCount = 1000;
 const grassInstanced = new THREE.InstancedMesh(grassGeo, grassMat, grassCount);
-// grassInstanced.receiveShadow = true; // Turn off shadows for grass to boost FPS
+// grassInstanced.receiveShadow = true; // Desactivar sombras en el césped para aumentar FPS
 
 const dummy = new THREE.Object3D();
 for (let i = 0; i < grassCount; i++) {
@@ -764,7 +764,7 @@ for (let i = 0; i < grassCount; i++) {
 
     dummy.position.set(x, 0, z);
     dummy.rotation.y = Math.random() * Math.PI;
-    dummy.rotation.x = (Math.random() - 0.5) * 0.2; // slight bend
+    dummy.rotation.x = (Math.random() - 0.5) * 0.2; // ligera inclinación
     dummy.rotation.z = (Math.random() - 0.5) * 0.2;
     dummy.scale.setScalar(0.5 + Math.random());
     dummy.updateMatrix();
@@ -1002,30 +1002,30 @@ function createHouse() {
     house.add(base);
     playerCollidables.push(base);
 
-    // Roof visual
+    // Visual del techo
     const roof = new THREE.Mesh(new THREE.ConeGeometry(4, 3, 4), roofMat);
     roof.position.y = 5.5;
     roof.rotation.y = Math.PI / 4;
     house.add(roof);
 
-    // Invisible flat collider on top of the walls so player can land on the flat roof area
+    // Colisionador plano invisible en la parte superior de las paredes para que el jugador pueda aterrizar en el techo
     const roofCollider = new THREE.Mesh(
         new THREE.BoxGeometry(5, 0.2, 5),
         new THREE.MeshBasicMaterial({ visible: false })
     );
-    roofCollider.position.y = 4.1; // just above the top of the walls
+    roofCollider.position.y = 4.1; // justo encima de las paredes
     house.add(roofCollider);
     playerCollidables.push(roofCollider);
 
     return house;
 }
 
-// Add Tower
+// Añadir la Torre
 const mainTower = createTower();
 mainTower.position.set(-60, 0, 60);
 scene.add(mainTower);
 
-// Add Houses
+// Añadir Casas
 for (let i = 0; i < 10; i++) {
     const house = createHouse();
     const angle = (i / 10) * Math.PI * 2 + Math.random();
@@ -1035,13 +1035,13 @@ for (let i = 0; i < 10; i++) {
     scene.add(house);
 }
 
-// Add the Black Market building at a FIXED position that aligns with the sky marker
-const BM_X = 30, BM_Z = -40; // matches shopMarker position defined later
+// Añadir el edificio del Black Market en una posición FIJA que coincida con el marcador del cielo
+const BM_X = 30, BM_Z = -40; // coincide con la posición de shopMarker definida más adelante
 const blackMarket = createBlackMarketBuilding();
 blackMarket.position.set(BM_X, 0, BM_Z);
 scene.add(blackMarket);
 
-// Floating "BLACK MARKET" 3D text label above the building
+// Etiqueta de texto 3D flotante "BLACK MARKET" sobre el edificio
 const bmCanvas = document.createElement('canvas');
 bmCanvas.width = 512; bmCanvas.height = 128;
 const bmCtx = bmCanvas.getContext('2d')!;
@@ -1060,7 +1060,7 @@ bmSprite.position.set(BM_X, 7.5, BM_Z);
 bmSprite.scale.set(6, 1.5, 1);
 scene.add(bmSprite);
 
-// Scatter cars
+// Distribuir coches
 for (let i = 0; i < 8; i++) {
     const car = createRuinedCar();
     const angle = Math.random() * Math.PI * 2;
@@ -1070,7 +1070,7 @@ for (let i = 0; i < 8; i++) {
     scene.add(car);
 }
 
-// Scatter fences
+// Distribuir vallas
 for (let i = 0; i < 15; i++) {
     const fence = createFence();
     const angle = Math.random() * Math.PI * 2;
@@ -1109,13 +1109,13 @@ interface EnemyStats {
     health: number;
     speed: number;
     damage: number;
-    shirtColor: number; // For clothes
-    skinColor: number; // For head/arms
+    shirtColor: number; // Para la ropa
+    skinColor: number; // Para la cabeza/brazos
     size: number;
     attackRange: number;
     attackCooldown: number;
     reward: number;
-    name: string; // Added name for kill feed
+    name: string; // Nombre añadido para el feed de muertes (kill feed)
 }
 
 const ENEMY_DATA: Record<EnemyType, EnemyStats> = {
@@ -1147,14 +1147,14 @@ class Enemy {
     isDead: boolean = false;
     isFlinching: boolean = false;
     flinchTimer: number = 0;
-    spawnY: number = -2.0; // Start below ground
-    spawnTime: number = 2.0; // 2 seconds to rise
+    spawnY: number = -2.0; // Comenzar bajo el suelo
+    spawnTime: number = 2.0; // 2 segundos para emerger
     spawnTimer: number = 0;
     shirtColor: number;
     skinColor: number;
     isAlive: boolean = true;
-    private avoidVector = new THREE.Vector3(); // For collision avoidance
-    // Store references for easy color restore
+    private avoidVector = new THREE.Vector3(); // Para evitar colisiones
+    // Guardar referencias para restaurar colores fácilmente
     bodyParts: { mesh: THREE.Mesh; color: number }[] = [];
 
     constructor(type: EnemyType, position: THREE.Vector3) {
@@ -1189,31 +1189,31 @@ class Enemy {
             const metMat = new THREE.MeshStandardMaterial({ color: stats.skinColor, metalness: 0.8, roughness: 0.2 });
             const glowMat = new THREE.MeshBasicMaterial({ color: this.type === EnemyType.BOSS_SENTINEL ? 0xff00ff : 0x00ffff });
 
-            // Mechanical Base / "Feet"
+            // Base Mecánica / "Pies"
             const ballGeo = new THREE.SphereGeometry(0.4 * s, 12, 12);
             const ball = addPart(new THREE.Mesh(ballGeo, metMat), stats.skinColor);
             ball.position.set(0, 0.4 * s, 0);
             this.mesh.add(ball);
 
-            // Mechanical Torso (Core)
+            // Torso Mecánico (Núcleo)
             const coreGeo = new THREE.CylinderGeometry(0.5 * s, 0.6 * s, 0.8 * s, 8);
             const core = addPart(new THREE.Mesh(coreGeo, metMat), stats.skinColor);
             core.position.set(0, 1.0 * s, 0);
             this.mesh.add(core);
 
-            // Spherical Head
+            // Cabeza Esférica
             const headGeo = new THREE.SphereGeometry(0.35 * s, 16, 16);
             const head = addPart(new THREE.Mesh(headGeo, metMat), stats.skinColor);
             head.position.set(0, 1.6 * s, 0);
             this.mesh.add(head);
 
-            // Glowing Eye / Visor
+            // Ojo Brillante / Visor
             const visorGeo = new THREE.BoxGeometry(0.4 * s, 0.1 * s, 0.1 * s);
             const visor = new THREE.Mesh(visorGeo, glowMat);
             visor.position.set(0, 0.05 * s, 0.3 * s);
             head.add(visor);
 
-            // Antennae
+            // Antenas
             const antGeo = new THREE.CylinderGeometry(0.02 * s, 0.02 * s, 0.4 * s);
             const antL = new THREE.Mesh(antGeo, metMat);
             antL.position.set(-0.15 * s, 0.3 * s, 0);
@@ -1223,7 +1223,7 @@ class Enemy {
             antR.rotation.z = 0.3;
             head.add(antL, antR);
 
-            // Mechanical Arms / Cannons
+            // Brazos Mecánicos / Cañones
             const armGeo = new THREE.BoxGeometry(0.2 * s, 0.2 * s, 0.7 * s);
             const lArm = addPart(new THREE.Mesh(armGeo, metMat), stats.skinColor);
             lArm.position.set(-0.6 * s, 1.1 * s, 0.2 * s);
@@ -1335,8 +1335,8 @@ class Enemy {
         this.mesh.position.add(safePush);
         this.mesh.position.y = 0;
 
-        // USER REQUEST: Blood only on death to reduce lag. 
-        // Small hit flash is handled by flinching color change.
+        // PETICIÓN DEL USUARIO: Sangre solo al morir para reducir el lag.
+        // El destello de golpe pequeño se maneja con el cambio de color al estremecerse.
 
         if (this.health <= 0) {
             this.die();
@@ -1371,24 +1371,24 @@ class Enemy {
     update(delta: number, playerPos: THREE.Vector3, time: number) {
         if (this.isDead) return;
 
-        // Spawn Rise Animation
+        // Animación de emergencia (Rise Animation)
         if (this.spawnTimer < this.spawnTime) {
-            // SPARK DIRT PARTICLES AT START OF RISE
+            // SOLTAR PARTÍCULAS DE TIERRA AL COMENZAR A EMERGER
             if (this.spawnTimer === 0) {
                 const dirtPos = this.mesh.position.clone();
                 dirtPos.y = 0.1;
-                bloodParticles.spawn(dirtPos, 15); // "Dirt" burst
+                bloodParticles.spawn(dirtPos, 15); // Ráfaga de "tierra"
             }
             this.spawnTimer += delta;
             this.mesh.position.y = THREE.MathUtils.lerp(this.spawnY, 0, this.spawnTimer / this.spawnTime);
-            return; // Don't move while rising
+            return; // No moverse mientras emerge
         }
 
         if (this.isFlinching) {
             this.flinchTimer -= delta;
             if (this.flinchTimer <= 0) {
                 this.isFlinching = false;
-                // Restore each part's original color from bodyParts array
+                // Restaurar el color original de cada parte desde el arreglo bodyParts
                 for (const part of this.bodyParts) {
                     (part.mesh.material as THREE.MeshStandardMaterial).color.setHex(part.color);
                 }
@@ -1400,18 +1400,18 @@ class Enemy {
         const enemyPosXZ = new THREE.Vector3(this.mesh.position.x, 0, this.mesh.position.z);
         const dist = enemyPosXZ.distanceTo(playerPosXZ);
 
-        // Chase range increased to 200 (map wide)
+        // El rango de persecución aumentó a 200 (todo el mapa)
         if (dist > this.attackRange && dist < 200) {
-            // Move towards player
+            // Moverse hacia el jugador
             const dir = new THREE.Vector3().subVectors(playerPos, this.mesh.position).normalize();
 
-            // --- SIMPLE COLLISION AVOIDANCE ---
-            // Cast rays to detect obstacles and steer away
+            // --- EVITAR COLISIONES SIMPLE ---
+            // Lanzar rayos para detectar obstáculos y girar para evitarlos
             const ray = new THREE.Raycaster(this.mesh.position, dir, 0, 1.5);
             const intersects = ray.intersectObjects(playerCollidables, true);
 
             if (intersects.length > 0) {
-                // Steering behavior: try to go perpendicular to the wall
+                // Comportamiento de dirección: intentar ir perpendicular a la pared
                 const normal = intersects[0].face?.normal || new THREE.Vector3(0, 0, 1);
                 dir.add(normal.multiplyScalar(0.8)).normalize();
             }
@@ -1425,15 +1425,15 @@ class Enemy {
             }
         }
 
-        // Floor snap + subtle wobble
+        // Ajuste al suelo + balanceo sutil
         this.bobOffset += delta * 4;
         this.mesh.position.y = Math.max(0, Math.sin(this.bobOffset) * 0.04);
         this.mesh.rotation.z = Math.sin(this.bobOffset * 0.5) * 0.03;
 
-        // Fall-through protection
+        // Protección contra caída al vacío
         if (this.mesh.position.y < -2) this.die();
 
-        // BOSS LOGIC: Pulsing eyes or subtle scale shift
+        // LÓGICA DE JEFES: Ojos pulsantes o cambio de escala sutil
         if (this.type === EnemyType.BOSS_GOLIATH || this.type === EnemyType.BOSS_SENTINEL) {
             const bossScale = ENEMY_DATA[this.type].size + Math.sin(time * 0.002) * 0.05;
             this.mesh.scale.setScalar(bossScale);
@@ -1444,19 +1444,19 @@ class Enemy {
         if (this.isDead) return;
 
         if (this.type === EnemyType.ROBOT || this.type === EnemyType.BOSS_SENTINEL) {
-            // RANGED LOGIC: Aim directly at the player camera height
+            // LÓGICA DE ATAQUE A DISTANCIA: Apuntar directamente a la altura de la cámara del jugador
             const spawnPos = this.mesh.position.clone();
-            spawnPos.y += 1.5 * ENEMY_DATA[this.type].size; // fire from the "eye" of the robot
-            // Target the camera's actual world position (includes height when flying)
+            spawnPos.y += 1.5 * ENEMY_DATA[this.type].size; // disparar desde el "ojo" del robot
+            // Apuntar a la posición real de la cámara en el mundo (incluye altura al volar)
             const targetPos = camera.position.clone();
             const dir = new THREE.Vector3().subVectors(targetPos, spawnPos).normalize();
-            const laser = new Laser(spawnPos, dir, ENEMY_DATA[this.type].name); // Pass shooter name
+            const laser = new Laser(spawnPos, dir, ENEMY_DATA[this.type].name); // Pasar el nombre del tirador
             enemyProjectiles.push(laser);
             soundManager.playBeep();
         } else {
-            // MELEE LOGIC
-            lastAttackerName = ENEMY_DATA[this.type].name; // Set attacker name
-            takeDamage(this.damage); // Use global takeDamage
+            // LÓGICA DE ATAQUE CUERPO A CUERPO
+            lastAttackerName = ENEMY_DATA[this.type].name; // Establecer nombre del atacante
+            takeDamage(this.damage); // Usar función global de daño
             soundManager.playGroan();
 
             const flash = document.createElement('div');
@@ -1480,12 +1480,12 @@ class WaveManager {
     spawnTimer: number = 0;
     spawnRate: number = 2000; // ms
     activeEnemies: Enemy[] = [];
-    isBreak: boolean = false; // True between waves
+    isBreak: boolean = false; // Verdadero entre oleadas (tiempo de descanso)
 
     startNextWave() {
         this.isBreak = false;
         soundManager.startGameMusic();
-        // currentWave fue incrementado en preSpawnWave
+        // currentWave ya se incrementó en preSpawnWave
 
         // Hacer visibles todos los enemigos pre-generados
         this.activeEnemies.forEach(en => {
@@ -1496,7 +1496,7 @@ class WaveManager {
         // Según la oleada actual, coloca armas específicas en el suelo para el jugador.
         // Las armas aparecen en posiciones fijas cerca del punto de inicio del jugador.
         if (this.currentWave === 1) {
-            // Oleada 1: Pistola Láser (idx 5) y Jetpack - armas de largue
+            // Oleada 1: Pistola Láser (idx 5) y Jetpack - armas de larga distancia
             if (!playerInventory.includes(5))
                 weaponPickups.push(new WeaponPickup(5, new THREE.Vector3(-8, 0, -5)));
             // El jetpack ya existe en pos (15, 0, -25) desde el inicio
@@ -1505,7 +1505,7 @@ class WaveManager {
             if (!playerInventory.includes(4))
                 weaponPickups.push(new WeaponPickup(4, new THREE.Vector3(10, 0, 8)));
         } else if (this.currentWave === 3) {
-            // Oleada 3: Minigun (idx 3) - cadencia mãxima de fuego
+            // Oleada 3: Minigun (idx 3) - cadencia máxima de fuego
             if (!playerInventory.includes(3))
                 weaponPickups.push(new WeaponPickup(3, new THREE.Vector3(-10, 0, 10)));
         } else if (this.currentWave === 4) {
@@ -1533,7 +1533,7 @@ class WaveManager {
         this.enemiesToSpawn = count;
         this.enemiesAlive = 0;
 
-        // BOSS WAVE LOGIC
+        // LÓGICA DE OLEADAS DE JEFES
         if (this.currentWave === 5) {
             const bossPos = new THREE.Vector3(50, 0, 50);
             this.activeEnemies.push(new Enemy(EnemyType.BOSS_GOLIATH, bossPos));
@@ -1559,7 +1559,7 @@ class WaveManager {
             this.spawnEnemyWithType(type, i, count);
         }
 
-        this.enemiesToSpawn = 0; // All spawned in advance
+        this.enemiesToSpawn = 0; // Todos generados por adelantado
     }
 
     spawnEnemyWithType(type: EnemyType, index: number = 0, total: number = 1) {
@@ -1590,20 +1590,20 @@ class WaveManager {
         this.isBreak = true;
         soundManager.startWinMusic();
 
-        // VIDEO BEHAVIOR: Show shop immediately without prompt
+        // COMPORTAMIENTO DEL VIDEO: Mostrar tienda inmediatamente sin aviso
         setTimeout(() => {
             const wc = document.getElementById('wave-complete');
             if (wc) wc.style.display = 'none';
             openShop();
-        }, 1200); // Small delay to enjoy the victory
+        }, 1200); // Pequeño retraso para disfrutar la victoria
 
         if (stageEl) stageEl.innerText = `RESTORING...`;
     }
 
     update(delta: number, playerPos: THREE.Vector3, time: number) {
-        // Spawning logic removed from here to fix lag - now done in preSpawnWave
+        // La lógica de generación se eliminó de aquí para corregir lag - ahora se hace en preSpawnWave
 
-        // Update active enemies
+        // Actualizar enemigos activos
         for (let i = this.activeEnemies.length - 1; i >= 0; i--) {
             const en = this.activeEnemies[i];
             en.update(delta, playerPos, time);
@@ -1618,8 +1618,7 @@ class WaveManager {
             hordeEl.innerText = `Enemies: ${this.enemiesAlive}`;
         }
 
-        // Wave completion
-        // Wave completion check
+        // Verificación de oleada completada
         if (this.enemiesToSpawn === 0 && this.enemiesAlive === 0 && !this.isBreak) {
             this.waveComplete();
         }
@@ -1627,7 +1626,7 @@ class WaveManager {
 
     spawnEnemy() {
         const angle = Math.random() * Math.PI * 2;
-        const radius = 45 + Math.random() * 30; // Further away (45 to 75 units)
+        const radius = 45 + Math.random() * 30; // Más lejos (45 a 75 unidades)
         const pos = new THREE.Vector3(
             camera.position.x + Math.cos(angle) * radius,
             0,
@@ -1670,12 +1669,12 @@ function beginLoadingSequence() {
         document.getElementById('mobile-controls')!.style.display = 'block';
     }
 
-    // Pre-compile shaders for fluidity
+    // Pre-compilar shaders para mayor fluidez
     renderer.compile(scene, camera);
 
     let progress = 0;
     const loadInterval = setInterval(() => {
-        progress += 1; // Even slower loading for more "work" feel
+        progress += 1; // Carga aún más lenta para dar una sensación de "procesamiento"
         loadBar.style.width = `${progress}%`;
 
         if (progress === 10) bloodParticles.warmUp();
@@ -1701,7 +1700,7 @@ function beginLoadingSequence() {
 }
 
 controls.addEventListener('lock', () => {
-    // Show loading screen IMMEDIATELY upon getting lock permission (si es PC)
+    // Mostrar pantalla de carga INMEDIATAMENTE al obtener permiso del puntero (si es PC)
     if (!gameStarted) {
         beginLoadingSequence();
     }
@@ -1728,7 +1727,7 @@ controls.addEventListener('unlock', () => {
     }
 });
 
-// UI Elements for Platform Selection
+// Elementos de la interfaz para la selección de plataforma
 const menuButtonsDiv = document.getElementById('menu-buttons') as HTMLElement;
 const platformSelectionDiv = document.getElementById('platform-selection') as HTMLElement;
 
@@ -1768,7 +1767,7 @@ document.getElementById('btn-exit')?.addEventListener('click', () => {
     alert("You cannot escape the night!");
 });
 
-// ---- PAUSE / RESUME LOGIC ----
+// ---- LÓGICA DE PAUSA / REANUDAR ----
 // Función que reanuda la partida desde la pantalla de pausa
 function resumeGame() {
     if (!isPaused) return;
@@ -1786,7 +1785,7 @@ function resumeGame() {
 // El botón "RESUME" en la pantalla de pausa llama a resumeGame
 document.getElementById('btn-resume')?.addEventListener('click', resumeGame);
 
-// ---- START GAME FUNCTION ----
+// ---- FUNCIÓN DE INICIO DE JUEGO ----
 // Esta función esconde la pantalla de carga y muestra la interfaz de juego real
 function startGame() {
     gameStarted = true;
@@ -1798,13 +1797,13 @@ function startGame() {
     waveManager.startNextWave();             // Iniciar la primera oleada de enemigos
 }
 
-// Low Poly Gun attached to camera
+// Arma de pocos polígonos (Low Poly) unida a la cámara
 const weaponGroup = new THREE.Group();
 const weaponMaterial = new THREE.MeshStandardMaterial({ color: 0x333333, flatShading: true });
 const barrelMaterial = new THREE.MeshStandardMaterial({ color: 0x666666, flatShading: true });
 
 function updateWeaponVisuals() {
-    // Clear existing
+    // Limpiar elementos existentes
     const children = [...weaponGroup.children];
     for (const child of children) {
         if (child !== flash) weaponGroup.remove(child);
@@ -1847,7 +1846,7 @@ function updateWeaponVisuals() {
         b.rotation.x = Math.PI / 2; b.position.set(0, -0.05, -0.4);
         weaponGroup.add(b);
     } else if (w.name === "LASER PISTOL") {
-        // Modelo de primera persona para la pistola láser: cuerpo oscuro con cã±ón cian brillante
+        // Modelo de primera persona para la pistola láser: cuerpo oscuro con cañón cian brillante
         const b = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.25, 0.5), new THREE.MeshStandardMaterial({ color: 0x222222, emissive: 0x00ffff, emissiveIntensity: 0.2 }));
         b.position.set(0, -0.1, 0);
         const brl = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.6), new THREE.MeshStandardMaterial({ color: 0x00ffff }));
@@ -1873,7 +1872,7 @@ weaponGroup.position.set(0.25, -0.3, -0.4);
 camera.add(weaponGroup);
 scene.add(camera);
 
-// Muzzle Flash
+// Destello del cañón (Muzzle Flash)
 const flashGeo = new THREE.PlaneGeometry(0.3, 0.3);
 const flashMat = new THREE.MeshBasicMaterial({ color: 0xffdd00, transparent: true, opacity: 0 });
 const flash = new THREE.Mesh(flashGeo, flashMat);
@@ -2088,12 +2087,12 @@ function updateJoystickVector(clientX: number, clientY: number) {
         joystickPad.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
     }
 
-    // Normalizar deadzone
+    // Normalizar zona muerta (deadzone)
     const deadzone = 10;
     moveForward = false; moveBackward = false; moveLeft = false; moveRight = false;
 
     if (distance > deadzone) {
-        // En 3D Forward = -z, backward = +z, left = -x, right = +x
+        // En 3D: Adelante = -z, Atrás = +z, Izquierda = -x, Derecha = +x
         // En la pantalla: Arriba = -y de pantalla, Abajo = +y, Izq = -x, Der = +x
         if (dy < -deadzone) moveForward = true;
         if (dy > deadzone) moveBackward = true;
@@ -2124,7 +2123,7 @@ function handleShooting(time: number) {
 }
 
 function shoot(w: Weapon) {
-    // Basic Recoil Animation
+    // Animación básica de retroceso (Recoil)
     weaponGroup.position.z += w.recoilAmount;
     weaponGroup.position.y += Math.min(w.recoilAmount, 0.1);
     weaponGroup.rotation.x += w.recoilAmount / 2;
@@ -2164,7 +2163,7 @@ function shoot(w: Weapon) {
     }
 
     if (w.name !== "ROCKET LAUNCHER") {
-        // Hitscan (Standard & Laser Pistol)
+        // Detección de impacto instantánea (Hitscan para Pistolas y Láser)
         raycaster.setFromCamera(screenCenter, camera);
         const enemyMeshes = waveManager.activeEnemies.map(en => (en as any)._torso).filter(m => m);
 
@@ -2306,7 +2305,7 @@ function showHitMarker() {
     }, 100);
 }
 
-// ---- PHYSICS & MOVEMENT VARIABLES ----
+// ---- VARIABLES DE FÍSICA Y MOVIMIENTO ----
 // Variables y cálculos para simular el desplazamiento, salto y gravedad del jugador
 const velocity = new THREE.Vector3();
 const direction = new THREE.Vector3();
@@ -2323,9 +2322,9 @@ let joystickCenter = { x: 0, y: 0 };
 let currentTouchId: number | null = null;
 let lookTouchId: number | null = null;
 let lastLookX = 0;
-let lastLookY = 0; // State for Spacebar hold
+let lastLookY = 0; // Estado para mantener presionada la barra espaciadora
 
-// Increased speeds for faster ground movement
+// Velocidades incrementadas para un movimiento terrestre más rápido
 const walkSpeed = 60.0;
 const sprintSpeed = 100.0;
 let speed = walkSpeed;
@@ -2340,9 +2339,9 @@ const onKeyDown = (event: KeyboardEvent) => {
         case 'ArrowDown': case 'KeyS': moveBackward = true; break;
         case 'ArrowRight': case 'KeyD': moveRight = true; break;
         case 'Space':
-            // Slower jumps, and activate Jetpack if available
+            // Saltos más lentos y activación del Jetpack si está disponible
             if (camera.position.y <= 1.61 && playerStamina > 15 && !hasJetpack) {
-                velocity.y += 20; // Slower, floatier jump
+                velocity.y += 20; // Salto más lento y flotante
                 playerStamina -= 15;
                 updateStatsHUD();
             } else if (hasJetpack) {
@@ -2351,7 +2350,7 @@ const onKeyDown = (event: KeyboardEvent) => {
             break;
         case 'ShiftLeft': case 'ShiftRight': isSprinting = true; break;
         case 'KeyR': reloadWeapon(); break;
-        // Weapon Hotkeys: 1=Pistol(0), 2=Laser(5), 3=Rocket(4), 4=Minigun(3)
+        // Teclas rápidas de armas: 1=Pistola(0), 2=Láser(5), 3=Cohete(4), 4=Minigun(3)
         case 'Digit1': if (playerInventory.includes(0)) switchWeapon(0); break;
         case 'Digit2': if (playerInventory.includes(5)) switchWeapon(5); break;
         case 'Digit3': if (playerInventory.includes(4)) switchWeapon(4); break;
@@ -2491,7 +2490,7 @@ function showPurchaseFeedback(success: boolean) {
 document.getElementById('shop-close')?.addEventListener('click', closeShop);
 document.getElementById('shop-close-mobile')?.addEventListener('click', closeShop);
 
-// Wave Complete screen buttons
+// Botones de la pantalla de Oleada Completada
 document.getElementById('wc-shop-btn')?.addEventListener('click', () => {
     const wc = document.getElementById('wave-complete');
     if (wc) wc.style.display = 'none';
@@ -2501,10 +2500,10 @@ document.getElementById('wc-next-btn')?.addEventListener('click', () => {
     const wc = document.getElementById('wave-complete');
     if (wc) wc.style.display = 'none';
     waveManager.startNextWave();
-    // No controls.lock() needed - pointer lock was never released
+    // No se necesita controls.lock() - el bloqueo del puntero nunca se liberó
 });
 
-// ---- ANIMATION LOOP ----
+// ---- CICLO DE ANIMACIÓN (RENDER LOOP) ----
 // Ciclo principal que corre en cada frame: dibuja la escena y actualiza todas las físicas
 let bobAngle = 0;
 let frameCount = 0;
@@ -2514,7 +2513,7 @@ function animate() {
     requestAnimationFrame(animate);
     const time = performance.now();
 
-    // Rotate clouds slowly
+    // Rotar las nubes lentamente
     cloudGroup.rotation.y += 0.0005;
 
     frameCount++;
@@ -2524,7 +2523,7 @@ function animate() {
         lastFpsTime = time;
     }
 
-    // PERFORMANCE & MOVEMENT FIX: Cap delta max to 0.1 (100ms) to prevent teleporting on lag spikes
+    // CORRECCIÓN DE RENDIMIENTO Y MOVIMIENTO: Limitar el delta máximo a 0.1 (100ms) para evitar teletransportes por tirones de lag
     const delta = Math.min((time - prevTime) / 1000, 0.1);
 
     // Si el juego está en pausa, no actualizamos físicas ni enemigos, solo renderizamos el frame
@@ -2538,7 +2537,7 @@ function animate() {
     if ((controls.isLocked === true || isMobile) && gameStarted) {
         handleShooting(time);
 
-        // Stamina logic
+        // Lógica de resistencia (Stamina)
         const isMoving = moveForward || moveBackward || moveLeft || moveRight;
         if (isSprinting && isMoving && playerStamina > 0 && camera.position.y <= 1.7) {
             speed = sprintSpeed * walkSpeedMultiplier;
@@ -2554,42 +2553,42 @@ function animate() {
             }
         }
 
-        // Apply friction
+        // Aplicar fricción
         velocity.x -= velocity.x * 10.0 * delta;
         velocity.z -= velocity.z * 10.0 * delta;
 
-        // Apply gravity & Jetpack Logic
+        // Aplicar Gravedad y Lógica de Jetpack
         if (isJetpacking && hasJetpack && playerJetpackFuel > 0) {
-            // ALTITUDE LIMIT: Only apply upward force if below the clouds (Y=45)
+            // LÍMITE DE ALTITUD: Solo aplicar fuerza ascendente si está por debajo de las nubes (Y=45)
             if (camera.position.y < 45.0) {
-                velocity.y += 35.0 * delta; // Upward Jetpack Force
+                velocity.y += 35.0 * delta; // Fuerza ascendente del Jetpack
             } else {
-                velocity.y += 9.8 * 8.0 * delta; // Cancel gravity precisely to hover, or let it fall slightly
-                // To just hover with slight bob:
+                velocity.y += 9.8 * 8.0 * delta; // Cancelar gravedad precisamente para flotar, o dejar caer ligeramente
+                // Para solo flotar con un pequeño balanceo:
                 velocity.y = Math.sin(time / 200) * 0.5;
             }
 
-            playerJetpackFuel -= 5 * delta; // Deplete fuel slower for 20s total flight
+            playerJetpackFuel -= 5 * delta; // Consumir combustible más lento para ~20s de vuelo total
             updateStatsHUD();
             jetpackParticles.spawn(camera.position, 3);
 
-            // Jetpack Destruction Logic
+            // Lógica de destrucción del Jetpack
             if (playerJetpackFuel <= 0) {
                 playerJetpackFuel = 0;
                 hasJetpack = false;
                 soundManager.playExplosion();
-                jetpackParticles.spawn(camera.position, 30); // Final burst of sparks
+                jetpackParticles.spawn(camera.position, 30); // Ráfaga final de chispas
                 document.getElementById('fuel-bar')!.style.display = 'none';
                 updateStatsHUD();
 
-                // Add a red flash
+                // Añadir un destello rojo
                 const flash = document.createElement('div');
                 flash.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(255,100,0,0.4);pointer-events:none;z-index:100;';
                 document.body.appendChild(flash);
                 setTimeout(() => flash.remove(), 150);
             }
         } else {
-            // Normal gravity - Slower/Floaty
+            // Gravedad normal - más lenta y flotante
             velocity.y -= 9.8 * 8.0 * delta;
         }
 
@@ -2601,7 +2600,7 @@ function animate() {
         if (moveForward || moveBackward) velocity.z -= direction.z * speed * delta;
         if (moveLeft || moveRight) velocity.x -= direction.x * speed * delta;
 
-        // Update Enemy Projectiles (Lasers)
+        // Actualizar proyectiles enemigos (Lásers)
         for (let i = enemyProjectiles.length - 1; i >= 0; i--) {
             const lp = enemyProjectiles[i];
             lp.update(delta);
@@ -2611,7 +2610,7 @@ function animate() {
             }
         }
 
-        // Sliding Collision Logic
+        // Lógica de colisión con deslizamiento (Sliding Collision)
         const oldPosZ = camera.position.z;
         controls.moveForward(-velocity.z * delta);
         for (let i = 0; i < 4; i++) {
@@ -2630,30 +2629,30 @@ function animate() {
             }
         }
 
-        // Vertical movement
+        // Movimiento vertical
         camera.position.y += (velocity.y * delta);
 
-        // Ground and roof collision: raycast downward to land on buildings / terrain
+        // Colisión con el suelo y techos: raycast hacia abajo para aterrizar en edificios / terreno
         const downRay = new THREE.Raycaster(
             camera.position.clone(),
             new THREE.Vector3(0, -1, 0),
             0,
-            0.8  // check within 0.8 units below the camera
+            0.8  // verificar en un rango de 0.8 unidades bajo la cámara
         );
         const downHits = downRay.intersectObjects(playerCollidables, false);
         if (downHits.length > 0 && velocity.y <= 0) {
-            // Land on the surface
+            // Aterrizar en la superficie
             camera.position.y = downHits[0].point.y + 1.6;
             velocity.y = 0;
         }
 
-        // Hard floor at ground level (y=1.6)
+        // Suelo firme al nivel de la tierra (y=1.6)
         if (camera.position.y < 1.6) {
             velocity.y = 0;
             camera.position.y = 1.6;
         }
 
-        // Map Boundaries (Fluidity Fix)
+        // Límites del mapa (Corrección de fluidez)
         const mapLimit = 60;
         if (camera.position.x > mapLimit) camera.position.x = mapLimit;
         if (camera.position.x < -mapLimit) camera.position.x = -mapLimit;
@@ -2662,7 +2661,7 @@ function animate() {
     }
 
     if (gameStarted) {
-        // Weapon Bobbing & Recoil Recover (Independent of lock for smoothness)
+        // Balanceo de arma y recuperación de retroceso (Independiente del bloqueo del mouse para mayor suavidad)
         const isMoving = moveForward || moveBackward || moveLeft || moveRight;
         if (controls.isLocked || isMobile) {
             if (isMoving && camera.position.y <= 1.7) {
@@ -2679,14 +2678,14 @@ function animate() {
         weaponGroup.position.z = THREE.MathUtils.lerp(weaponGroup.position.z, -0.4, 0.15);
         weaponGroup.rotation.x = THREE.MathUtils.lerp(weaponGroup.rotation.x, 0, 0.15);
 
-        // ---- RESIZE HANDLER ----
+        // ---- CONTROLADOR DE REDIMENSIÓN (RESIZE) ----
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // Update the logic loop call
+        // Actualizar el ciclo de la lógica del juego
         if (frameCount % 2 === 0) {
             waveManager.update(delta * 2, camera.position, time);
         }
@@ -2694,7 +2693,7 @@ function animate() {
         flameParticles.update(delta);
         jetpackParticles.update(delta);
 
-        // Update Projectiles & Pickups
+        // Actualizar Proyectiles y Objetos Recogibles
         for (let i = playerRockets.length - 1; i >= 0; i--) {
             playerRockets[i].update(delta);
             if (playerRockets[i].isDead) {
@@ -2740,7 +2739,7 @@ function animate() {
 
 animate();
 
-// ---- AUDIOPLAY SATISFACTION ----
+// ---- SATISFACCIÓN DE REPRODUCCIÓN DE AUDIO (AUDIO AUTOPLAY) ----
 // Los navegadores modernos bloquean el sonido hasta que el usuario interactúa.
 // Este listener activa la música del menú en el primer clic que haga el usuario.
 document.addEventListener('click', () => {
