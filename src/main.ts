@@ -2272,6 +2272,17 @@ class ParticleSystem {
         }
         if (needsUpdate) this.geometry.attributes.position.needsUpdate = true;
     }
+
+    // El método warmUp precarga las partículas para evitar tirones (lags) en el renderizado inicial
+    warmUp() {
+        this.spawn(new THREE.Vector3(0, -10, 0), 50);
+        this.update(0.1);
+        for (let i = 0; i < this.maxParticles; i++) {
+            this.lifetimes[i] = 0;
+            this.positions[i * 3 + 1] = -100;
+        }
+        this.geometry.attributes.position.needsUpdate = true;
+    }
 }
 
 const bloodParticles = new ParticleSystem();
