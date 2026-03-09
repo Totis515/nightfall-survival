@@ -876,13 +876,16 @@
             #shop-grid-mobile {
                 display: flex !important;
                 flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                /* FORZAR FILA ÚNICA */
                 overflow-x: auto !important;
                 overflow-y: hidden !important;
                 width: 100% !important;
                 max-height: unset !important;
-                gap: 0 !important;
-                padding: 5px 0 15px 0 !important;
+                gap: 10px !important;
+                padding: 10px 5px !important;
                 -webkit-overflow-scrolling: touch;
+                justify-content: flex-start !important;
             }
 
             /* Icono emoji */
@@ -1093,8 +1096,8 @@
         z-index: 55;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
-        padding: 5px;
+        justify-content: space-between; /* Espaciado entre elementos */
+        padding: 15px 10px;
         overflow: hidden;
         font-family: 'Impact', sans-serif;
         color: #fff;
@@ -1158,18 +1161,22 @@
         </div>
 
         <button id="shop-close-mobile" style="
-            margin-top: 15px;
+            margin-top: 5px;
             background: #ff2222;
             color: #fff;
-            border: none;
-            padding: 8px 20px;
-            font-size: 14px;
+            border: 2px solid #fff;
+            padding: 10px 20px;
+            font-size: 16px;
             text-transform: uppercase;
             letter-spacing: 2px;
             cursor: pointer;
-            width: 80%;
-            border-radius: 4px;
-            box-shadow: 0 4px 10px rgba(255,0,0,0.3);
+            width: 90%;
+            border-radius: 5px;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(255,0,0,0.5);
+        ">✕ CLOSE MARKET</button>
+        border-radius: 4px;
+        box-shadow: 0 4px 10px rgba(255,0,0,0.3);
         ">✕ Close Market</button>
     </div>
 
