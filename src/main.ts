@@ -1775,7 +1775,7 @@ function resumeGame() {
     isUIShowing = false;
     // Esconder la pantalla de pausa y restaurar el HUD
     pauseScreen.style.display = 'none';
-    crosshair.style.display = isMobile ? 'none' : 'block';
+    crosshair.style.display = 'block';
     // Reanudar la música de fondo después de volver del menú de pausa
     if (soundManager.bgAudio) soundManager.bgAudio.play().catch(() => { });
     // Volver a bloquear el puntero para reanudar el juego (solo en PC)
