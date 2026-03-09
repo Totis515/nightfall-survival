@@ -2283,6 +2283,10 @@ class GenericParticleSystem {
         this.spawn(new THREE.Vector3(0, -10, 0), 20);
         this.update(0.1);
         this.lifetimes.fill(0);
+        for (let i = 0; i < this.maxParticles; i++) {
+            this.positions[i * 3 + 1] = -100;
+        }
+        this.geometry.attributes.position.needsUpdate = true;
     }
 }
 
