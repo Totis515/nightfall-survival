@@ -2447,12 +2447,12 @@ function updateShopCards() {
     cards.forEach(card => {
         const id = card.id;
         let cost = 0;
-        if (id === 'buy-health') cost = 50;
-        else if (id === 'buy-ammo') cost = 75;
-        else if (id === 'buy-maxhp') cost = 200;
-        else if (id === 'buy-speed') cost = 150;
-        else if (id === 'buy-damage') cost = 300;
-        else if (id === 'buy-rapidfire') cost = 500;
+        if (id === 'buy-health' || id === 'mb-buy-health') cost = 50;
+        else if (id === 'buy-ammo' || id === 'mb-buy-ammo') cost = 75;
+        else if (id === 'buy-maxhp' || id === 'mb-buy-maxhp') cost = 200;
+        else if (id === 'buy-speed' || id === 'mb-buy-speed') cost = 150;
+        else if (id === 'buy-damage' || id === 'mb-buy-damage') cost = 300;
+        else if (id === 'buy-rapidfire' || id === 'mb-buy-rapidfire') cost = 500;
 
         if (playerCoins < cost) {
             card.classList.add('cant-afford');
@@ -2566,6 +2566,16 @@ function tryBuy(cost: number, action: () => void, elementId: string) {
                 card.style.boxShadow = '';
             }, 300);
         }
+        // Feedback para el botón móvil correspondiente si aplica
+        const mbId = elementId.startsWith('mb-') ? elementId : 'mb-' + elementId;
+        const desktopId = elementId.startsWith('mb-') ? elementId.replace('mb-', '') : elementId;
+        [document.getElementById(mbId), document.getElementById(desktopId)].forEach(c => {
+            if (c) {
+                c.style.borderColor = '#ff3333';
+                c.style.boxShadow = '0 0 20px rgba(255, 0, 0, 0.5)';
+                setTimeout(() => { if (c) { c.style.borderColor = ''; c.style.boxShadow = ''; } }, 300);
+            }
+        });
     }
 }
 
@@ -2599,6 +2609,39 @@ document.getElementById('buy-rapidfire')?.addEventListener('click', () =>
             w.fireRate = Math.max(50, w.fireRate * 0.85); // 15% faster
         });
     }, 'buy-rapidfire')
+);
+
+// LISTENERS PARA MÓVIL (Con el ID mb-buy-...)
+document.getElementById('mb-buy-health')?.addEventListener('click', () =>
+    tryBuy(50, () => { playerHealth = Math.min(playerHealth + 30, maxPlayerHealth); }, 'mb-buy-health')
+);
+document.getElementById('mb-buy-ammo')?.addEventListener('click', () =>
+    tryBuy(75, () => {
+        weapons.forEach(w => {
+            w.ammoCurrent = w.magSize;
+            w.ammoReserve = w.magSize * 4;
+        });
+        updateWeaponHUD();
+    }, 'mb-buy-ammo')
+);
+document.getElementById('mb-buy-maxhp')?.addEventListener('click', () =>
+    tryBuy(200, () => {
+        maxPlayerHealth += 20;
+        playerHealth = Math.min(playerHealth + 20, maxPlayerHealth);
+    }, 'mb-buy-maxhp')
+);
+document.getElementById('mb-buy-speed')?.addEventListener('click', () =>
+    tryBuy(150, () => { walkSpeedMultiplier = Math.min(walkSpeedMultiplier + 0.1, 1.5); }, 'mb-buy-speed')
+);
+document.getElementById('mb-buy-damage')?.addEventListener('click', () =>
+    tryBuy(300, () => { damageMultiplier = Math.min(damageMultiplier + 0.25, 3.0); }, 'mb-buy-damage')
+);
+document.getElementById('mb-buy-rapidfire')?.addEventListener('click', () =>
+    tryBuy(500, () => {
+        weapons.forEach(w => {
+            w.fireRate = Math.max(50, w.fireRate * 0.85); // 15% faster
+        });
+    }, 'mb-buy-rapidfire')
 );
 // Cerrar tienda desde escritorio o móvil
 document.getElementById('shop-close')?.addEventListener('click', closeShop);
