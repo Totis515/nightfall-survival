@@ -778,6 +778,12 @@
             background: rgba(255, 255, 255, 0.5);
         }
 
+        /* Estilo para el botón de arma 5 (Blanco como los otros) */
+        #btn-mw-5 {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
         /* ===================== BLACK MARKET RESPONSIVO (MÓVIL) ===================== */
         /* Estas reglas sobreescriben COMPLETAMENTE los estilos del escritorio para  */
         /* adaptar el Black Market a pantallas pequeñas de teléfonos móviles.        */
@@ -807,27 +813,27 @@
                 gap: 5px !important;
             }
 
-            /* Cuadrícula de 3 columnas iguales que llenan el ancho de la pantalla */
-            #shop-grid {
-                display: grid !important;
-                grid-template-columns: repeat(3, 1fr) !important;
-                gap: 6px !important;
-                padding: 0 !important;
-                margin-bottom: 8px !important;
-                width: 100% !important;
-                max-height: none !important;
-                overflow-y: visible !important;
-            }
-
-            /* Cada tarjeta: usa todo el ancho de su celda, sin desbordarse */
+            /* Cada tarjeta: diseño horizontal y compacto */
             .shop-card {
-                width: 100% !important;
+                flex: 0 0 140px !important;
+                /* Ancho fijo para scroll horizontal */
                 box-sizing: border-box !important;
-                padding: 6px 4px !important;
+                padding: 8px 4px !important;
                 border-width: 1px !important;
                 border-radius: 8px !important;
-                gap: 3px !important;
-                min-height: 90px !important;
+                gap: 4px !important;
+                min-height: 100px !important;
+                margin-right: 8px !important;
+            }
+
+            #shop-grid {
+                display: flex !important;
+                flex-direction: row !important;
+                overflow-x: auto !important;
+                width: 100% !important;
+                gap: 0 !important;
+                padding-bottom: 10px !important;
+                -webkit-overflow-scrolling: touch;
             }
 
             /* Icono emoji de cada mejora */
@@ -884,7 +890,7 @@
     <!-- Menú principal que aparece al iniciar, contiene el título y los botones de comienzo -->
     <div id="main-menu">
         <h1 class="title">NIGHTFALL SURVIVAL</h1>
-        <h2 class="subtitle">PHASE 9</h2>
+        <h2 class="subtitle">Phase 9: Mobile Improved</h2>
 
         <div id="menu-buttons">
             <button class="menu-btn" id="btn-start">Start Game</button>
@@ -1027,6 +1033,187 @@
         <button id="shop-close">✕ CLOSE SHOP</button>
     </div>
 
+    <!-- =====================================================
+         MERCADO NEGRO VERSIÓN MÓVIL
+         Panel separado diseñado específicamente para teléfono.
+         Se muestra en lugar del anterior cuando isMobile === true.
+         ===================================================== -->
+    <div id="shop-menu-mobile" style="
+        display: none;
+        position: absolute;
+        inset: 0;
+        background: rgba(5, 5, 12, 0.97);
+        z-index: 55;
+        flex-direction: column;
+        align-items: center;
+        padding: 10px 6px 8px;
+        overflow-y: auto;
+        font-family: 'Impact', sans-serif;
+        color: #fff;
+    ">
+        <!-- Título compacto de la tienda -->
+        <h2 style="
+            color: #ff2222;
+            font-size: 16px;
+            letter-spacing: 2px;
+            margin: 0 0 4px;
+            text-transform: uppercase;
+        ">☠ BLACK MARKET</h2>
+
+        <!-- Saldo del jugador en monedas -->
+        <div id="shop-balance-mobile" style="
+            color: #ffcc00;
+            font-size: 12px;
+            margin-bottom: 6px;
+            border: 1px solid rgba(255,204,0,0.3);
+            border-radius: 12px;
+            padding: 3px 10px;
+        ">💰 $<span id="shop-coins-mobile">0</span></div>
+
+        <!-- Cuadrícula 2 columnas para las mejoras en móvil -->
+        <div id="shop-grid-mobile" style="
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            width: 100%;
+        ">
+
+            <!-- Tarjeta: Botiquín de Salud -->
+            <div id="mb-buy-health" style="
+                background: rgba(30,30,50,0.95);
+                border: 1px solid rgba(255,255,255,0.15);
+                border-radius: 8px;
+                padding: 8px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 2px;
+                cursor: pointer;
+            ">
+                <span style="font-size: 20px;">❤️</span>
+                <span
+                    style="font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Health
+                    Pack</span>
+                <span style="font-size: 9px; color: #aaa; text-align: center;">+30 HP immediately</span>
+                <span style="font-size: 12px; color: #ffcc00; font-weight: bold;">$50</span>
+            </div>
+
+            <!-- Tarjeta: Caja de Munición -->
+            <div id="mb-buy-ammo" style="
+                background: rgba(30,30,50,0.95);
+                border: 1px solid rgba(255,255,255,0.15);
+                border-radius: 8px;
+                padding: 8px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 2px;
+                cursor: pointer;
+            ">
+                <span style="font-size: 20px;">💊</span>
+                <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Ammo
+                    Box</span>
+                <span style="font-size: 9px; color: #aaa; text-align: center;">Full reload all guns</span>
+                <span style="font-size: 12px; color: #ffcc00; font-weight: bold;">$75</span>
+            </div>
+
+            <!-- Tarjeta: Vitalidad (Aumento de HP máximo) -->
+            <div id="mb-buy-maxhp" style="
+                background: rgba(30,30,50,0.95);
+                border: 1px solid rgba(255,255,255,0.15);
+                border-radius: 8px;
+                padding: 8px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 2px;
+                cursor: pointer;
+            ">
+                <span style="font-size: 20px;">⬆️</span>
+                <span
+                    style="font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Vitality</span>
+                <span style="font-size: 9px; color: #aaa; text-align: center;">+20 Max HP permanent</span>
+                <span style="font-size: 12px; color: #ffcc00; font-weight: bold;">$200</span>
+            </div>
+
+            <!-- Tarjeta: Adrenalina (Velocidad de movimiento) -->
+            <div id="mb-buy-speed" style="
+                background: rgba(30,30,50,0.95);
+                border: 1px solid rgba(255,255,255,0.15);
+                border-radius: 8px;
+                padding: 8px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 2px;
+                cursor: pointer;
+            ">
+                <span style="font-size: 20px;">⚡</span>
+                <span
+                    style="font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Adrenaline</span>
+                <span style="font-size: 9px; color: #aaa; text-align: center;">+10% move speed</span>
+                <span style="font-size: 12px; color: #ffcc00; font-weight: bold;">$150</span>
+            </div>
+
+            <!-- Tarjeta: Punto Hueco (Daño mejorado) -->
+            <div id="mb-buy-damage" style="
+                background: rgba(30,30,50,0.95);
+                border: 1px solid rgba(255,255,255,0.15);
+                border-radius: 8px;
+                padding: 8px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 2px;
+                cursor: pointer;
+            ">
+                <span style="font-size: 20px;">🔫</span>
+                <span
+                    style="font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Hollow
+                    Point</span>
+                <span style="font-size: 9px; color: #aaa; text-align: center;">+25% damage all guns</span>
+                <span style="font-size: 12px; color: #ffcc00; font-weight: bold;">$300</span>
+            </div>
+
+            <!-- Tarjeta: Fuego Rápido (Próximamente) -->
+            <div id="mb-buy-rapidfire" style="
+                background: rgba(30,30,50,0.95);
+                border: 1px solid rgba(255,255,255,0.15);
+                border-radius: 8px;
+                padding: 8px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 2px;
+                cursor: pointer;
+                opacity: 0.5;
+            ">
+                <span style="font-size: 20px;">🔥</span>
+                <span
+                    style="font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Rapid
+                    Fire</span>
+                <span style="font-size: 9px; color: #aaa; text-align: center;">Coming soon...</span>
+                <span style="font-size: 12px; color: #ffcc00; font-weight: bold;">$500</span>
+            </div>
+
+        </div>
+
+        <!-- Botón para cerrar el Black Market en móvil -->
+        <button id="shop-close-mobile" style="
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.25);
+            padding: 8px 30px;
+            font-size: 13px;
+            font-family: 'Impact', sans-serif;
+            border-radius: 5px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 8px;
+        ">✕ CLOSE</button>
+    </div>
+
     <!-- Efectos visuales superpuestos (como el borde rojo al recibir daño o parpadeos de compra) -->
     <!-- Feedback UI -->
     <div id="purchase-flash"></div>
@@ -1058,8 +1245,7 @@
             <div class="mobile-weapon-btn" id="btn-mw-2">2</div>
             <div class="mobile-weapon-btn" id="btn-mw-3">3</div>
             <div class="mobile-weapon-btn" id="btn-mw-4">4</div>
-            <div class="mobile-weapon-btn" id="btn-mw-5"
-                style="background: rgba(255,100,0,0.25); border-color: rgba(255,100,0,0.6);">5</div>
+            <div class="mobile-weapon-btn" id="btn-mw-5">5</div>
         </div>
     </div>
     <!-- Carga del código principal del juego escrito en TypeScript -->

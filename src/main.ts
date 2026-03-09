@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
 
-// ---- UI ELEMENTS ----
+// ---- ELEMENTOS DE LA INTERFAZ (UI) ----
 // Referencias a los elementos visuales de la interfaz en el HTML (botones, barras de vida, menús)
 const mainMenu = document.getElementById('main-menu') as HTMLElement;
 const loadingScreen = document.getElementById('loading-screen') as HTMLElement;
@@ -36,7 +36,7 @@ let isPaused = false;
 // isMobile: true si el usuario seleccionó la modalidad de celular. Evita el uso de PointerLock.
 let isMobile = false;
 
-// ---- UPGRADES STATE (Phase 4) ----
+// ---- ESTADO DE MEJORAS (Fase 4) ----
 // Variables que guardan el progreso y las mejoras compradas por el jugador
 let maxPlayerHealth = 100;
 let damageMultiplier = 1.0;
@@ -83,7 +83,7 @@ const weapons: Weapon[] = [
     { name: "FLAMETHROWER", damage: 8, fireRate: 80, magSize: 100, ammoCurrent: 100, ammoReserve: 300, reloadTime: 2000, recoilAmount: 0.01, isReloading: false, lastShotTime: 0, isAutomatic: true, pellets: 1 },
 ];
 
-// ---- SCENE SETUP ----
+// ---- CONFIGURACIÓN DE LA ESCENA ----
 // Configuración principal del mundo 3D (escena, cámara y renderizador)
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x1a0b2e);
@@ -100,7 +100,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.0));
 renderer.shadowMap.enabled = false;
 document.body.appendChild(renderer.domElement);
 
-// ---- SOUND SYSTEM ----
+// ---- SISTEMA DE SONIDO ----
 // Este sistema administra todos los efectos de sonido y la música de fondo del juego
 class SoundManager {
     ctx: AudioContext;
@@ -202,12 +202,12 @@ class SoundManager {
         this.stopMusic();
         if (this.ctx.state === 'suspended') this.ctx.resume();
 
-        // Cargar canción local para el menú (la misma que el juego, para que empiece desde el inicio)
-        this.bgAudio = new Audio('/tu-cancion.mp3');
+        // Cargar canción local para el menú (lobby.mp3)
+        this.bgAudio = new Audio('/lobby.mp3');
         this.bgAudio.loop = true;
-        this.bgAudio.volume = 0.05; // Más suave en el menú
+        this.bgAudio.volume = 0.05; // Volumen suave para el menú
         this.bgAudio.play().catch(() => {
-            console.log('Audio blocked by browser, waiting for user interaction.');
+            console.log('Audio bloqueado por el navegador, esperando interacción.');
         });
     }
 
@@ -219,7 +219,7 @@ class SoundManager {
         }
 
         // Si por alguna razón no estaba, la creamos
-        this.bgAudio = new Audio('/tu-cancion.mp3');
+        this.bgAudio = new Audio('/lobby.mp3');
         this.bgAudio.loop = true;
         this.bgAudio.volume = 0.08;
         this.bgAudio.play().catch(() => { });
@@ -245,7 +245,7 @@ document.body.addEventListener('click', () => {
     if (!gameStarted && !soundManager.menuOsc) soundManager.startMenuMusic();
 }, { once: true });
 
-// ---- PROJECTILES ----
+// ---- PROYECTILES ----
 // Clases que controlan el disparo y el movimiento de los proyectiles visibles (láser y cohetes)
 class Laser {
     mesh: THREE.Mesh;
@@ -315,7 +315,7 @@ class Rocket {
 }
 const playerRockets: Rocket[] = [];
 
-// ---- WEAPON PICKUPS ----
+// ---- RECOGIDA DE ARMAS (PICKUPS) ----
 // Objetos 3D que representan las armas tiradas en el suelo que el jugador puede recoger
 class WeaponPickup {
     mesh: THREE.Group; weaponIdx: number; isPickedUp: boolean = false;
@@ -385,7 +385,7 @@ class WeaponPickup {
 }
 const weaponPickups: WeaponPickup[] = [];
 
-// ---- AMMO PICKUPS ----
+// ---- RECOGIDA DE MUNICIÓN ----
 class AmmoPickup {
     mesh: THREE.Group; isPickedUp: boolean = false;
     constructor(pos: THREE.Vector3) {
@@ -413,7 +413,7 @@ class AmmoPickup {
 }
 const ammoPickups: AmmoPickup[] = [];
 
-// ---- JETPACK PICKUP ----
+// ---- RECOGIDA DE JETPACK ----
 class JetpackPickup {
     mesh: THREE.Group; isPickedUp: boolean = false;
     constructor(pos: THREE.Vector3) {
@@ -566,7 +566,7 @@ function gameOver() {
         if (finalStats) {
             finalStats.innerText = `Waves Survived: ${waveManager.currentWave > 0 ? waveManager.currentWave - 1 : 0}`;
         }
-        // Mostrar el nombre del monstruo asesino - en inglés para el jugador
+        // Mostrar el nombre del monstruo asesino
         const killedByEl = document.getElementById('killed-by');
         if (killedByEl) {
             const killerName = lastAttackerName === 'UNKNOWN' ? 'A GRUESOME MONSTER' : lastAttackerName.toUpperCase();
@@ -582,7 +582,7 @@ function gameOver() {
     if (mobileCtrl) mobileCtrl.style.display = 'none';
 }
 
-// ---- CLOUD SYSTEM ----
+// ---- SISTEMA DE NUBES ----
 // Sistema para crear y animar las nubes flotantes en el cielo del juego
 const cloudGroup = new THREE.Group();
 function createClouds() {
@@ -616,10 +616,8 @@ function createClouds() {
 }
 
 
-// ---- LIGHTING ----
-
-// ---- LIGHTING ----
-const ambientLight = new THREE.HemisphereLight(0x1a0b3e, 0x0a0a1a, 0.1); // Much darker ambient
+// ---- ILUMINACIÓN ----
+const ambientLight = new THREE.HemisphereLight(0x1a0b3e, 0x0a0a1a, 0.1); // Luz ambiental tenue
 scene.add(ambientLight);
 
 // Spooky orange point light near Black Market to add color variety
@@ -656,7 +654,7 @@ function createShopMarker() {
     return group;
 }
 
-// ---- INITIALIZE WORLD ----
+// ---- ESTADOS GLOBALES DEL JUEGO ----
 createClouds();
 shopMarker = createShopMarker();
 
@@ -698,7 +696,7 @@ const halo = new THREE.Mesh(haloGeo, haloMat);
 halo.position.copy(moon.position);
 scene.add(halo);
 
-// ---- COLLISION SYSTEM ----
+// ---- SISTEMA DE COLISIONES ----
 // Sistema de colisiones para evitar que el jugador atraviese las paredes o los modelos
 // Two separate arrays: one for PLAYER movement, one for ENEMY bullet detection
 const playerCollidables: THREE.Object3D[] = []; // walls, buildings, boundary
@@ -710,7 +708,7 @@ const collisionDirections = [
     // Reduced from 8 to 4 directions for PERFORMANCE
 ];
 
-// ---- TERRAIN & GRASS ----
+// ---- TERRENO Y CÉSPED ----
 // Low poly main floor
 const floorGeo = new THREE.PlaneGeometry(300, 300, 32, 32);
 const pos = floorGeo.attributes.position;
@@ -731,7 +729,7 @@ floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
 scene.add(floor);
 
-// ---- BOUNDARIES ----
+// ---- LÍMITES DEL MAPA ----
 const boundaryRadius = 145;
 const boundaryGeo = new THREE.CylinderGeometry(boundaryRadius, boundaryRadius, 10, 32, 1, true);
 const boundaryMat = new THREE.MeshBasicMaterial({ visible: false });
@@ -773,7 +771,7 @@ for (let i = 0; i < grassCount; i++) {
 }
 scene.add(grassInstanced);
 
-// ---- TREES ----
+// ---- ÁRBOLES ----
 function createTree() {
     const tree = new THREE.Group();
     // Trunk
@@ -1081,18 +1079,12 @@ for (let i = 0; i < 15; i++) {
     scene.add(fence);
 }
 
-// Scatter EXACTLY 3 Weapon Pickups (Minigun, Rocket, Laser) - More accessible
-const uniqueWeaponIndices = [3, 4, 5];
-const spawnDistances = [25, 35, 45]; // Closer to start
-const spawnAngles = [Math.PI * 0.3, Math.PI * 1.1, Math.PI * 1.7];
-
-for (let i = 0; i < 3; i++) {
-    const wIdx = uniqueWeaponIndices[i];
-    const angle = spawnAngles[i];
-    const radius = spawnDistances[i];
-    const pos = new THREE.Vector3(Math.cos(angle) * radius, 0.5, Math.sin(angle) * radius);
-    weaponPickups.push(new WeaponPickup(wIdx, pos));
-}
+// Las armas especiales NO aparecen en el mapa al inicio.
+// En su lugar, se distribuyen por oleada en startNextWave():
+//   Oleada 1 → Pistola Láser
+//   Oleada 2 → Lanzacohetes
+//   Oleada 3 → Minigun
+//   Oleada 4 → Lanzallamas
 
 // Scatter Ammo Pickups
 for (let i = 0; i < 15; i++) {
@@ -1568,22 +1560,23 @@ class WaveManager {
 
     spawnEnemyWithType(type: EnemyType, index: number = 0, total: number = 1) {
         // --- CORRECCIÓN DE SPAWN DE ENEMIGOS ---
-        // Distribuimos los enemigos en un círculo completo alrededor del jugador.
-        // Dividimos los 360° equitativamente entre el total de enemigos para
-        // que nunca aparezcan todos agrupados en el mismo lado o justo detrás.
-        // Radio mínimo de 60 unidades para que no aparezcan de golpe en cámara.
+        // Usamos el ORIGEN DEL MUNDO (0,0,0) como centro de spawn, NO el camera.position.
+        // Si usáramos camera.position durante la pantalla de carga, los enemigos aparecerían
+        // todos agrupados en el punto de spawn inicial y luego "teleportarían" al arrancar.
+        // Con el origen fijo, cada enemigo aparece en su punto permanente y camina hacia el jugador.
         const baseAngle = (index / total) * Math.PI * 2;
-        const jitter = (Math.random() - 0.5) * (Math.PI / total); // Variación aleatoria pequeña
+        const jitter = (Math.random() - 0.5) * (Math.PI / Math.max(total, 1));
         const angle = baseAngle + jitter;
-        const radius = 60 + Math.random() * 40; // Entre 60 y 100 unidades del jugador
+        const radius = 70 + Math.random() * 40; // Entre 70 y 110 unidades del centro del mapa
         const pos = new THREE.Vector3(
-            camera.position.x + Math.cos(angle) * radius,
+            Math.cos(angle) * radius,
             0,
-            camera.position.z + Math.sin(angle) * radius
+            Math.sin(angle) * radius
         );
         const enemy = new Enemy(type, pos);
-        // El enemigo empieza invisible y se vuelve visible al iniciar la oleada
-        enemy.mesh.visible = false;
+        // Enemigos visibles desde el inicio: ya están en posición fija lejana al jugador.
+        // Esto evita el "pop-in" sin necesidad de ocultarlos.
+        enemy.mesh.visible = true;
         this.activeEnemies.push(enemy);
         this.enemiesAlive++;
     }
@@ -2470,23 +2463,41 @@ function updateShopCards() {
 }
 
 function openShop() {
-    isUIShowing = true; // Set flag
+    isUIShowing = true; // Activar bandera de UI
     shopOpen = true;
-    shopCoinsEl.innerText = playerCoins.toString();
+
+    // Actualizar monedas en ambos displays (Móvil y Escritorio)
+    const coinsStr = playerCoins.toString();
+    if (shopCoinsEl) shopCoinsEl.innerText = coinsStr;
+    const shopCoinsMobile = document.getElementById('shop-coins-mobile');
+    if (shopCoinsMobile) shopCoinsMobile.innerText = coinsStr;
+
     updateShopCards();
-    shopMenu.style.display = 'flex';
-    controls.unlock(); // This triggers 'unlock' event
+
+    // Mostrar el menú correspondiente según la plataforma
+    if (isMobile) {
+        const mobileShop = document.getElementById('shop-menu-mobile');
+        if (mobileShop) mobileShop.style.display = 'flex';
+    } else {
+        shopMenu.style.display = 'flex';
+    }
+
+    controls.unlock(); // Esto dispara el evento 'unlock'
 }
 
 function closeShop() {
     isUIShowing = false; // Bandera de estado UI libre
     shopOpen = false;
-    shopMenu.style.display = 'none'; // Ocultar interfaz visual del mercado negro
+
+    // Esconder ambos posibles menús de tienda
+    if (shopMenu) shopMenu.style.display = 'none';
+    const mobileShop = document.getElementById('shop-menu-mobile');
+    if (mobileShop) mobileShop.style.display = 'none';
 
     // Iniciar directamente la siguiente oleada con la barra de progreso
     if (gameStarted) {
-        mainMenu.style.display = 'none';
-        // En plataformas móviles, "controls.lock()" lanzará error, por lo que solo se ejecuta en Computer
+        if (mainMenu) mainMenu.style.display = 'none';
+        // En plataformas móviles, "controls.lock()" lanzará error, por lo que solo se ejecuta en Escritorio
         if (!isMobile) {
             controls.lock();
         }
@@ -2589,7 +2600,9 @@ document.getElementById('buy-rapidfire')?.addEventListener('click', () =>
         });
     }, 'buy-rapidfire')
 );
+// Cerrar tienda desde escritorio o móvil
 document.getElementById('shop-close')?.addEventListener('click', closeShop);
+document.getElementById('shop-close-mobile')?.addEventListener('click', closeShop);
 
 // Wave Complete screen buttons
 document.getElementById('wc-shop-btn')?.addEventListener('click', () => {
