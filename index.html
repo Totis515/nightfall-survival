@@ -180,6 +180,47 @@
             color: #888;
         }
 
+        /* TIENDA (SHOP) */
+        .shop-card {
+            background: rgba(30, 30, 45, 0.9);
+            border: 2px solid #555;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .shop-card:hover {
+            border-color: #ff3333;
+            background: #222;
+            transform: scale(1.02);
+        }
+
+        .shop-card.cant-afford {
+            opacity: 0.4;
+            pointer-events: none;
+            filter: grayscale(1);
+        }
+
+        #shop-grid,
+        #shop-grid-mobile {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 600px) {
+            #shop-grid-mobile {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
         /* MAIN MENU */
         #main-menu {
             position: absolute;
@@ -930,9 +971,13 @@
             <div class="stat-box" style="color: #ffcc00; border-left-color: cyan;">FPS: <span id="fps-counter">0</span>
             </div>
         </div>
-        <div class="top-right">
+        <div class="top-right" style="display: flex; flex-direction: column; align-items: flex-end;">
             <div class="stat-box" style="color: #ffcc00; border-left-color: #ffcc00;">COINS: $<span
                     id="coins-count">0</span></div>
+            <!-- Botón de pausa para móviles -->
+            <div id="btn-mobile-pause"
+                style="display: none; pointer-events: auto; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 5px; border: 1px solid #fff; margin-top: 10px; font-size: 24px; cursor: pointer;">
+                ⏸ PAUSE</div>
         </div>
         <div class="bottom-left">
             <div class="health-bar-container">
@@ -987,47 +1032,12 @@
         <div id="shop-balance">Balance: $<span id="shop-coins">0</span></div>
 
         <div id="shop-grid">
-            <div class="shop-card" id="buy-health">
-                <div class="card-icon">❤️</div>
-                <div class="card-name">Health Pack</div>
-                <div class="card-desc">Restore +30 HP immediately.</div>
-                <div class="card-price">$50</div>
-            </div>
-
-            <div class="shop-card" id="buy-ammo">
-                <div class="card-icon">💊</div>
-                <div class="card-name">Ammo Box</div>
-                <div class="card-desc">Full reload for all weapons.</div>
-                <div class="card-price">$75</div>
-            </div>
-
-            <div class="shop-card" id="buy-maxhp">
-                <div class="card-icon">⬆️</div>
-                <div class="card-name">Vitality</div>
-                <div class="card-desc">+20 Max HP permanently.</div>
-                <div class="card-price">$200</div>
-            </div>
-
-            <div class="shop-card" id="buy-speed">
-                <div class="card-icon">⚡</div>
-                <div class="card-name">Adrenaline</div>
-                <div class="card-desc">+10% Movement speed.</div>
-                <div class="card-price">$150</div>
-            </div>
-
-            <div class="shop-card" id="buy-damage">
-                <div class="card-icon">🔫</div>
-                <div class="card-name">Hollow Point</div>
-                <div class="card-desc">+25% Damage to all guns.</div>
-                <div class="card-price">$300</div>
-            </div>
-
-            <div class="shop-card" id="buy-rapidfire" style="opacity: 0.6;">
-                <div class="card-icon">🔥</div>
-                <div class="card-name">Rapid Fire</div>
-                <div class="card-desc">Coming soon...</div>
-                <div class="card-price">$500</div>
-            </div>
+            <div class="shop-card" id="buy-health"><span>❤️</span><b>SALUD</b><span>$50</span></div>
+            <div class="shop-card" id="buy-ammo"><span>📦</span><b>MUNICIÓN</b><span>$75</span></div>
+            <div class="shop-card" id="buy-maxhp"><span>⬆️</span><b>VITALIDAD</b><span>$200</span></div>
+            <div class="shop-card" id="buy-speed"><span>⚡</span><b>VELOCIDAD</b><span>$150</span></div>
+            <div class="shop-card" id="buy-damage"><span>🔫</span><b>DAÑO</b><span>$300</span></div>
+            <div class="shop-card" id="buy-rapidfire"><span>🔥</span><b>CADENCIA</b><span>$500</span></div>
         </div>
 
         <button id="shop-close">✕ CLOSE SHOP</button>
@@ -1070,148 +1080,41 @@
             padding: 3px 10px;
         ">💰 $<span id="shop-coins-mobile">0</span></div>
 
-        <!-- Cuadrícula 2 columnas para las mejoras en móvil -->
-        <div id="shop-grid-mobile" style="
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 6px;
-            width: 100%;
-        ">
-
-            <!-- Tarjeta: Botiquín de Salud -->
-            <div id="mb-buy-health" class="shop-card" style="
-                background: rgba(30,30,50,0.95);
-                border: 1px solid rgba(255,255,255,0.15);
-                border-radius: 8px;
-                padding: 8px;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 2px;
-                cursor: pointer;
-            ">
-                <span style="font-size: 20px;">❤️</span>
-                <span
-                    style="font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Health
-                    Pack</span>
-                <span style="font-size: 9px; color: #aaa; text-align: center;">+30 HP immediately</span>
-                <span style="font-size: 12px; color: #ffcc00; font-weight: bold;">$50</span>
-            </div>
-
-            <!-- Tarjeta: Caja de Munición -->
-            <div id="mb-buy-ammo" class="shop-card" style="
-                background: rgba(30,30,50,0.95);
-                border: 1px solid rgba(255,255,255,0.15);
-                border-radius: 8px;
-                padding: 8px;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 2px;
-                cursor: pointer;
-            ">
-                <span style="font-size: 20px;">💊</span>
-                <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Ammo
-                    Box</span>
-                <span style="font-size: 9px; color: #aaa; text-align: center;">Full reload all guns</span>
-                <span style="font-size: 12px; color: #ffcc00; font-weight: bold;">$75</span>
-            </div>
-
-            <!-- Tarjeta: Vitalidad (Aumento de HP máximo) -->
-            <div id="mb-buy-maxhp" class="shop-card" style="
-                background: rgba(30,30,50,0.95);
-                border: 1px solid rgba(255,255,255,0.15);
-                border-radius: 8px;
-                padding: 8px;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 2px;
-                cursor: pointer;
-            ">
-                <span style="font-size: 20px;">⬆️</span>
-                <span
-                    style="font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Vitality</span>
-                <span style="font-size: 9px; color: #aaa; text-align: center;">+20 Max HP permanent</span>
-                <span style="font-size: 12px; color: #ffcc00; font-weight: bold;">$200</span>
-            </div>
-
-            <!-- Tarjeta: Adrenalina (Velocidad de movimiento) -->
-            <div id="mb-buy-speed" class="shop-card" style="
-                background: rgba(30,30,50,0.95);
-                border: 1px solid rgba(255,255,255,0.15);
-                border-radius: 8px;
-                padding: 8px;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 2px;
-                cursor: pointer;
-            ">
-                <span style="font-size: 20px;">⚡</span>
-                <span
-                    style="font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Adrenaline</span>
-                <span style="font-size: 9px; color: #aaa; text-align: center;">+10% move speed</span>
-                <span style="font-size: 12px; color: #ffcc00; font-weight: bold;">$150</span>
-            </div>
-
-            <!-- Tarjeta: Punto Hueco (Daño mejorado) -->
-            <div id="mb-buy-damage" class="shop-card" style="
-                background: rgba(30,30,50,0.95);
-                border: 1px solid rgba(255,255,255,0.15);
-                border-radius: 8px;
-                padding: 8px;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 2px;
-                cursor: pointer;
-            ">
-                <span style="font-size: 20px;">🔫</span>
-                <span
-                    style="font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Hollow
-                    Point</span>
-                <span style="font-size: 9px; color: #aaa; text-align: center;">+25% damage all guns</span>
-                <span style="font-size: 12px; color: #ffcc00; font-weight: bold;">$300</span>
-            </div>
-
-            <!-- Tarjeta: Fuego Rápido (Próximamente) -->
-            <div id="mb-buy-rapidfire" class="shop-card" style="
-                background: rgba(30,30,50,0.95);
-                border: 1px solid rgba(255,255,255,0.15);
-                border-radius: 8px;
-                padding: 8px;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 2px;
-                cursor: pointer;
-                opacity: 0.5;
-            ">
-                <span style="font-size: 20px;">🔥</span>
-                <span
-                    style="font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Rapid
-                    Fire</span>
-                <span style="font-size: 9px; color: #aaa; text-align: center;">Coming soon...</span>
-                <span style="font-size: 12px; color: #ffcc00; font-weight: bold;">$500</span>
-            </div>
-
+        <div id="shop-grid-mobile">
+            <div id="mb-buy-health" class="shop-card"><span>❤️</span><b>SALUD</b><span>$50</span></div>
+            <div id="mb-buy-ammo" class="shop-card"><span>📦</span><b>MUNICIÓN</b><span>$75</span></div>
+            <div id="mb-buy-maxhp" class="shop-card"><span>⬆️</span><b>VITALIDAD</b><span>$200</span></div>
+            <div id="mb-buy-speed" class="shop-card"><span>⚡</span><b>VELOCIDAD</b><span>$150</span></div>
+            <div id="mb-buy-damage" class="shop-card"><span>🔫</span><b>DAÑO</b><span>$300</span></div>
+            <div id="mb-buy-rapidfire" class="shop-card"><span>🔥</span><b>CADENCIA</b><span>$500</span></div>
         </div>
 
-        <!-- Botón para cerrar el Black Market en móvil -->
-        <button id="shop-close-mobile" style="
-            background: rgba(255,255,255,0.1);
+        <!-- Tarjeta: Caja de Munición -->
+        <div id="mb-buy-ammo" class="shop-card" style="
+                background: rgba(30,30,50,0.95);
+                border: 1px solid rgba(255,255,255,0.15);
+                border-radius: 8px;
+                padding: 8px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 2px;
+                cursor: pointer;
+            ">
+            <button id="shop-close-mobile" style="
+            margin-top: auto;
+            background: #ff2222;
             color: #fff;
-            border: 1px solid rgba(255,255,255,0.25);
-            padding: 8px 30px;
-            font-size: 13px;
-            font-family: 'Impact', sans-serif;
-            border-radius: 5px;
-            cursor: pointer;
+            border: none;
+            padding: 10px 24px;
+            font-size: 14px;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 8px;
-        ">✕ CLOSE</button>
+            letter-spacing: 2px;
+            cursor: pointer;
+            width: 100%;
+            border-radius: 4px;
+        ">✕ Close Market</button>
+        </div>
     </div>
 
     <!-- Efectos visuales superpuestos (como el borde rojo al recibir daño o parpadeos de compra) -->

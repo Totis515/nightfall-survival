@@ -1757,6 +1757,7 @@ document.getElementById('btn-platform-mobile')?.addEventListener('click', () => 
         }
     })();
     beginLoadingSequence(); // Móvil no usa PointerLock, inicia directo
+    getEl('btn-mobile-pause')!.style.display = 'block';
 });
 
 document.getElementById('btn-options')?.addEventListener('click', () => {
@@ -1774,11 +1775,11 @@ function resumeGame() {
     isUIShowing = false;
     // Esconder la pantalla de pausa y restaurar el HUD
     pauseScreen.style.display = 'none';
-    crosshair.style.display = 'block';
+    crosshair.style.display = isMobile ? 'none' : 'block';
     // Reanudar la música de fondo después de volver del menú de pausa
     if (soundManager.bgAudio) soundManager.bgAudio.play().catch(() => { });
-    // Volver a bloquear el puntero para reanudar el juego
-    controls.lock();
+    // Volver a bloquear el puntero para reanudar el juego (solo en PC)
+    if (!isMobile) controls.lock();
 }
 
 // El botón "RESUME" en la pantalla de pausa llama a resumeGame
@@ -1948,6 +1949,17 @@ getEl('btn-mw-2')?.addEventListener('touchstart', (e) => { e.preventDefault(); i
 getEl('btn-mw-3')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(4)) switchWeapon(4); }); // Slot 3: Lanzacohetes
 getEl('btn-mw-4')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(3)) switchWeapon(3); }); // Slot 4: Minigun
 getEl('btn-mw-5')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(6)) switchWeapon(6); }); // Slot 5: Lanzallamas
+
+getEl('btn-mobile-pause')?.addEventListener('touchstart', (e: TouchEvent) => {
+    e.preventDefault();
+    if (gameStarted && !isPaused && !shopOpen) {
+        isPaused = true;
+        isUIShowing = true;
+        pauseScreen.style.display = 'flex';
+        crosshair.style.display = 'none';
+        if (soundManager.bgAudio) soundManager.bgAudio.pause();
+    }
+});
 
 getEl('btn-mobile-interact')?.addEventListener('touchstart', (e) => {
     e.preventDefault();
@@ -2181,134 +2193,33 @@ function shoot(w: Weapon) {
     }
 }
 
-// ---- PARTICLE SYSTEM ----
-// Sistema optimizado de partículas utilizado para dibujar la sangre de los enemigos
-class ParticleSystem {
+// ---- SISTEMA DE PARTÍCULAS GENÉRICO ----
+// Clase única para manejar sangre, fuego y chispas de forma eficiente
+class GenericParticleSystem {
     particles: THREE.Points;
     geometry: THREE.BufferGeometry;
     positions: Float32Array;
     velocities: THREE.Vector3[] = [];
     lifetimes: number[] = [];
-    maxParticles: number = 1000; // Increased gore limit
+    maxParticles: number;
     cursor: number = 0;
+    config: { color: number, size: number, gravity: number, lifeBase: number, spread: number };
 
-    constructor() {
+    constructor(max: number, config: any) {
+        this.maxParticles = max;
+        this.config = config;
         this.geometry = new THREE.BufferGeometry();
-        this.positions = new Float32Array(this.maxParticles * 3);
-        this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
-
-        // Material de las particulas de sangre:
-        // - Color rojo brillante
-        // - Tamaño reducido (0.18) para que parezcan "gotas" o cuadrados pequeños de píxel
-        // - depthTest: false hace que siempre se dibujen encima
-        const mat = new THREE.PointsMaterial({
-            color: 0xff1100,    // Rojo brillante
-            size: 0.18,         // Cuadrados pequeños (sangre granulada)
-            transparent: true,
-            opacity: 0.9,
-            depthTest: false,
-            depthWrite: false,
-            sizeAttenuation: true
-        });
-
-        this.particles = new THREE.Points(this.geometry, mat);
-        this.particles.renderOrder = 999; // Asegura que la sangre se dibuje siempre por encima de otros objetos
-        this.particles.frustumCulled = false; // Evita que las partículas desaparezcan si el centro de la cámara no las mira directamente
-        scene.add(this.particles);
-
-        // Pre-inicializar arrays de velocidades y tiempos de vida
-        for (let i = 0; i < this.maxParticles; i++) {
-            this.velocities.push(new THREE.Vector3());
-            this.lifetimes.push(0);
-            // Esconder todas las partículas debajo del mapa al inicio
-            this.positions[i * 3 + 1] = -100;
-        }
-    }
-
-    spawn(position: THREE.Vector3, count: number = 5) {
-        for (let i = 0; i < count; i++) {
-            const idx = this.cursor;
-            this.positions[idx * 3] = position.x;
-            this.positions[idx * 3 + 1] = position.y;
-            this.positions[idx * 3 + 2] = position.z;
-
-            this.velocities[idx].set(
-                (Math.random() - 0.5) * 4,
-                Math.random() * 5,       // Fly up higher
-                (Math.random() - 0.5) * 4
-            );
-            this.lifetimes[idx] = 0.8 + Math.random() * 0.8; // Longer lifetime
-
-            this.cursor = (this.cursor + 1) % this.maxParticles;
-        }
-        this.geometry.attributes.position.needsUpdate = true;
-    }
-
-    update(delta: number) {
-        let needsUpdate = false;
-        for (let i = 0; i < this.maxParticles; i++) {
-            if (this.lifetimes[i] > 0) {
-                this.positions[i * 3] += this.velocities[i].x * delta;
-                this.positions[i * 3 + 1] += this.velocities[i].y * delta;
-                this.positions[i * 3 + 2] += this.velocities[i].z * delta;
-
-                this.velocities[i].y -= 9.8 * delta;  // Gravity
-                // Bounce off floor
-                if (this.positions[i * 3 + 1] < 0.05 && this.velocities[i].y < 0) {
-                    this.positions[i * 3 + 1] = 0.05;
-                    this.velocities[i].y *= -0.1;  // Slight bounce, then stay on ground
-                    this.velocities[i].x *= 0.3;
-                    this.velocities[i].z *= 0.3;
-                }
-                this.lifetimes[i] -= delta;
-
-                if (this.lifetimes[i] <= 0) {
-                    this.positions[i * 3] = 0;
-                    this.positions[i * 3 + 1] = -100; // Hide
-                    this.positions[i * 3 + 2] = 0;
-                }
-                needsUpdate = true;
-            }
-        }
-        if (needsUpdate) this.geometry.attributes.position.needsUpdate = true;
-    }
-
-    // El método warmUp precarga las partículas para evitar tirones (lags) en el renderizado inicial
-    warmUp() {
-        this.spawn(new THREE.Vector3(0, -10, 0), 50);
-        this.update(0.1);
-        for (let i = 0; i < this.maxParticles; i++) {
-            this.lifetimes[i] = 0;
-            this.positions[i * 3 + 1] = -100;
-        }
-        this.geometry.attributes.position.needsUpdate = true;
-    }
-}
-
-const bloodParticles = new ParticleSystem();
-
-// ---- FLAME PARTICLE SYSTEM ----
-// Sistema de partículas diseñado para el ataque del lanzallamas
-class FlameAttackParticleSystem {
-    particles: THREE.Points;
-    geometry: THREE.BufferGeometry;
-    positions: Float32Array;
-    velocities: THREE.Vector3[] = [];
-    lifetimes: number[] = [];
-    maxParticles: number = 500;
-    cursor: number = 0;
-
-    constructor() {
-        this.geometry = new THREE.BufferGeometry();
-        this.positions = new Float32Array(this.maxParticles * 3);
+        this.positions = new Float32Array(max * 3);
         this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
 
         const mat = new THREE.PointsMaterial({
-            color: 0xffaa00, // Naranja base
-            size: 0.4,
+            color: config.color,
+            size: config.size,
             transparent: true,
             opacity: 0.8,
-            blending: THREE.AdditiveBlending,
+            blending: config.blending || THREE.NormalBlending,
+            depthTest: false,
+            depthWrite: false,
             sizeAttenuation: true
         });
 
@@ -2316,121 +2227,59 @@ class FlameAttackParticleSystem {
         this.particles.frustumCulled = false;
         scene.add(this.particles);
 
-        for (let i = 0; i < this.maxParticles; i++) {
+        for (let i = 0; i < max; i++) {
             this.velocities.push(new THREE.Vector3());
             this.lifetimes.push(0);
             this.positions[i * 3 + 1] = -100;
         }
     }
 
-    spawn(position: THREE.Vector3, count: number = 5) {
+    spawn(pos: THREE.Vector3, count: number = 5, customVel?: THREE.Vector3) {
         for (let i = 0; i < count; i++) {
             const idx = this.cursor;
-            this.positions[idx * 3] = position.x + (Math.random() - 0.5) * 2;
-            this.positions[idx * 3 + 1] = position.y + (Math.random() - 0.5) * 2;
-            this.positions[idx * 3 + 2] = position.z + (Math.random() - 0.5) * 2;
+            this.positions[idx * 3] = pos.x + (Math.random() - 0.5) * this.config.spread;
+            this.positions[idx * 3 + 1] = pos.y + (Math.random() - 0.5) * this.config.spread;
+            this.positions[idx * 3 + 2] = pos.z + (Math.random() - 0.5) * this.config.spread;
 
-            this.velocities[idx].set(
-                (Math.random() - 0.5) * 2,
-                Math.random() * 2 + 1,
-                (Math.random() - 0.5) * 2
-            );
-            this.lifetimes[idx] = 0.4 + Math.random() * 0.4;
+            if (customVel) {
+                this.velocities[idx].copy(customVel).add(new THREE.Vector3((Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2));
+            } else {
+                this.velocities[idx].set((Math.random() - 0.5) * 4, Math.random() * 5, (Math.random() - 0.5) * 4);
+            }
+
+            this.lifetimes[idx] = this.config.lifeBase + Math.random() * 0.5;
             this.cursor = (this.cursor + 1) % this.maxParticles;
         }
         this.geometry.attributes.position.needsUpdate = true;
     }
 
     update(delta: number) {
-        let needsUpdate = false;
+        let active = false;
         for (let i = 0; i < this.maxParticles; i++) {
             if (this.lifetimes[i] > 0) {
                 this.positions[i * 3] += this.velocities[i].x * delta;
                 this.positions[i * 3 + 1] += this.velocities[i].y * delta;
                 this.positions[i * 3 + 2] += this.velocities[i].z * delta;
-
+                this.velocities[i].y -= this.config.gravity * delta;
                 this.lifetimes[i] -= delta;
-                if (this.lifetimes[i] <= 0) {
-                    this.positions[i * 3 + 1] = -100;
-                }
-                needsUpdate = true;
+                if (this.lifetimes[i] <= 0) this.positions[i * 3 + 1] = -100;
+                active = true;
             }
         }
-        if (needsUpdate) this.geometry.attributes.position.needsUpdate = true;
+        if (active) this.geometry.attributes.position.needsUpdate = true;
+    }
+
+    warmUp() {
+        this.spawn(new THREE.Vector3(0, -10, 0), 20);
+        this.update(0.1);
+        this.lifetimes.fill(0);
     }
 }
 
-const flameParticles = new FlameAttackParticleSystem();
-
-class FireParticleSystem {
-    particles: THREE.Points;
-    geometry: THREE.BufferGeometry;
-    positions: Float32Array;
-    velocities: THREE.Vector3[] = [];
-    lifetimes: number[] = [];
-    maxParticles: number = 300;
-    cursor: number = 0;
-
-    constructor() {
-        this.geometry = new THREE.BufferGeometry();
-        this.positions = new Float32Array(this.maxParticles * 3);
-        this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
-
-        const mat = new THREE.PointsMaterial({
-            color: 0xff6600,
-            size: 0.5,
-            transparent: true,
-            opacity: 0.8,
-            blending: THREE.AdditiveBlending,
-            sizeAttenuation: true
-        });
-
-        this.particles = new THREE.Points(this.geometry, mat);
-        scene.add(this.particles);
-
-        for (let i = 0; i < this.maxParticles; i++) {
-            this.velocities.push(new THREE.Vector3());
-            this.lifetimes.push(0);
-        }
-    }
-
-    spawn(position: THREE.Vector3, count: number = 3) {
-        for (let i = 0; i < count; i++) {
-            const idx = this.cursor;
-            this.positions[idx * 3] = position.x + (Math.random() - 0.5) * 0.5;
-            this.positions[idx * 3 + 1] = position.y - 0.8;
-            this.positions[idx * 3 + 2] = position.z + (Math.random() - 0.5) * 0.5;
-
-            this.velocities[idx].set(
-                (Math.random() - 0.5) * 2,
-                -2 - Math.random() * 3,
-                (Math.random() - 0.5) * 2
-            );
-            this.lifetimes[idx] = 0.2 + Math.random() * 0.3;
-            this.cursor = (this.cursor + 1) % this.maxParticles;
-        }
-        this.geometry.attributes.position.needsUpdate = true;
-    }
-
-    update(delta: number) {
-        let needsUpdate = false;
-        for (let i = 0; i < this.maxParticles; i++) {
-            if (this.lifetimes[i] > 0) {
-                this.positions[i * 3] += this.velocities[i].x * delta;
-                this.positions[i * 3 + 1] += this.velocities[i].y * delta;
-                this.positions[i * 3 + 2] += this.velocities[i].z * delta;
-
-                this.lifetimes[i] -= delta;
-                if (this.lifetimes[i] <= 0) {
-                    this.positions[i * 3 + 1] = -100;
-                }
-                needsUpdate = true;
-            }
-        }
-        if (needsUpdate) this.geometry.attributes.position.needsUpdate = true;
-    }
-}
-const jetpackParticles = new FireParticleSystem();
+// Inicialización de los tres tipos de partículas con la misma clase
+const bloodParticles = new GenericParticleSystem(800, { color: 0xff1100, size: 0.18, gravity: 20, lifeBase: 0.8, spread: 0.1 });
+const flameParticles = new GenericParticleSystem(500, { color: 0xffaa00, size: 0.4, gravity: -2, lifeBase: 0.4, spread: 2.0, blending: THREE.AdditiveBlending });
+const jetpackParticles = new GenericParticleSystem(300, { color: 0xff6600, size: 0.5, gravity: 15, lifeBase: 0.2, spread: 0.5, blending: THREE.AdditiveBlending });
 
 // ---- HIT MARKER ----
 function showHitMarker() {
@@ -2511,218 +2360,120 @@ const onKeyUp = (event: KeyboardEvent) => {
 document.addEventListener('keydown', onKeyDown);
 document.addEventListener('keyup', onKeyUp);
 
-// ---- BLACK MARKET SHOP (Phase 4) ----
-// Lógica de la tienda secreta: comprobar si tienes dinero y aplicar la mejora comprada
-const interactPrompt = document.getElementById('interact-prompt')!;
-const shopMenu = document.getElementById('shop-menu')!;
-const shopCoinsEl = document.getElementById('shop-coins')!;
-const purchaseFlashEl = document.getElementById('purchase-flash')!;
+// ---- TIENDA BLACK MARKET (Refactoreada) ----
+const shopCoinsEl = document.getElementById('shop-coins') as HTMLElement;
+const purchaseFlashEl = document.getElementById('purchase-flash') as HTMLElement;
 
-// nearBlackMarket removed - shop is wave-triggered only
+const shopItems = [
+    { id: 'health', cost: 50, action: () => { playerHealth = Math.min(playerHealth + 30, maxPlayerHealth); } },
+    {
+        id: 'ammo', cost: 75, action: () => {
+            weapons.forEach(w => { w.ammoCurrent = w.magSize; w.ammoReserve = w.magSize * 4; });
+            updateWeaponHUD();
+        }
+    },
+    {
+        id: 'maxhp', cost: 200, action: () => {
+            maxPlayerHealth += 20; playerHealth = Math.min(playerHealth + 20, maxPlayerHealth);
+        }
+    },
+    { id: 'speed', cost: 150, action: () => { walkSpeedMultiplier = Math.min(walkSpeedMultiplier + 0.1, 1.5); } },
+    { id: 'damage', cost: 300, action: () => { damageMultiplier = Math.min(damageMultiplier + 0.25, 3.0); } },
+    {
+        id: 'rapidfire', cost: 500, action: () => {
+            weapons.forEach(w => { w.fireRate = Math.max(50, w.fireRate * 0.85); });
+        }
+    }
+];
 
 function updateShopCards() {
-    // Update visual state of all cards based on current balance
-    const cards = document.querySelectorAll('.shop-card');
-    cards.forEach(card => {
-        const id = card.id;
-        let cost = 0;
-        if (id === 'buy-health' || id === 'mb-buy-health') cost = 50;
-        else if (id === 'buy-ammo' || id === 'mb-buy-ammo') cost = 75;
-        else if (id === 'buy-maxhp' || id === 'mb-buy-maxhp') cost = 200;
-        else if (id === 'buy-speed' || id === 'mb-buy-speed') cost = 150;
-        else if (id === 'buy-damage' || id === 'mb-buy-damage') cost = 300;
-        else if (id === 'buy-rapidfire' || id === 'mb-buy-rapidfire') cost = 500;
-
-        if (playerCoins < cost) {
-            card.classList.add('cant-afford');
-        } else {
-            card.classList.remove('cant-afford');
-        }
+    shopItems.forEach(item => {
+        const cost = item.cost;
+        [document.getElementById(`buy-${item.id}`), document.getElementById(`mb-buy-${item.id}`)].forEach(el => {
+            if (el) playerCoins < cost ? el.classList.add('cant-afford') : el.classList.remove('cant-afford');
+        });
     });
 }
 
-function openShop() {
-    isUIShowing = true; // Activar bandera de UI
-    shopOpen = true;
+function tryBuy(itemKey: string) {
+    const item = shopItems.find(i => i.id === itemKey);
+    if (!item) return;
+    if (playerCoins >= item.cost) {
+        playerCoins -= item.cost;
+        item.action();
+        updateStatsHUD();
+        if (shopCoinsEl) shopCoinsEl.innerText = playerCoins.toString();
+        const scm = document.getElementById('shop-coins-mobile');
+        if (scm) scm.innerText = playerCoins.toString();
+        showPurchaseFeedback(true);
+        updateShopCards();
+    } else {
+        const ids = [`buy-${itemKey}`, `mb-buy-${itemKey}`];
+        ids.forEach(id => {
+            const card = document.getElementById(id);
+            if (card) {
+                card.style.borderColor = '#ff3333';
+                card.style.boxShadow = '0 0 20px rgba(255, 0, 0, 0.5)';
+                setTimeout(() => { card.style.borderColor = ''; card.style.boxShadow = ''; }, 300);
+            }
+        });
+    }
+}
 
-    // Actualizar monedas en ambos displays (Móvil y Escritorio)
+// Asignar listeners automáticamente
+shopItems.forEach(item => {
+    document.getElementById(`buy-${item.id}`)?.addEventListener('click', () => tryBuy(item.id));
+    document.getElementById('mb-buy-' + item.id)?.addEventListener('click', () => tryBuy(item.id));
+});
+
+function openShop() {
+    isUIShowing = true; shopOpen = true;
     const coinsStr = playerCoins.toString();
     if (shopCoinsEl) shopCoinsEl.innerText = coinsStr;
     const shopCoinsMobile = document.getElementById('shop-coins-mobile');
     if (shopCoinsMobile) shopCoinsMobile.innerText = coinsStr;
-
     updateShopCards();
-
-    // Mostrar el menú correspondiente según la plataforma
-    if (isMobile) {
-        const mobileShop = document.getElementById('shop-menu-mobile');
-        if (mobileShop) mobileShop.style.display = 'flex';
-    } else {
-        shopMenu.style.display = 'flex';
-    }
-
-    controls.unlock(); // Esto dispara el evento 'unlock'
+    const menuId = isMobile ? 'shop-menu-mobile' : 'shop-menu';
+    const menu = document.getElementById(menuId);
+    if (menu) menu.style.display = 'flex';
+    controls.unlock();
 }
 
 function closeShop() {
-    isUIShowing = false; // Bandera de estado UI libre
-    shopOpen = false;
-
-    // Esconder ambos posibles menús de tienda
-    if (shopMenu) shopMenu.style.display = 'none';
-    const mobileShop = document.getElementById('shop-menu-mobile');
-    if (mobileShop) mobileShop.style.display = 'none';
-
-    // Iniciar directamente la siguiente oleada con la barra de progreso
+    isUIShowing = false; shopOpen = false;
+    [document.getElementById('shop-menu'), document.getElementById('shop-menu-mobile')].forEach(m => { if (m) m.style.display = 'none'; });
     if (gameStarted) {
         if (mainMenu) mainMenu.style.display = 'none';
-        // En plataformas móviles, "controls.lock()" lanzará error, por lo que solo se ejecuta en Escritorio
-        if (!isMobile) {
-            controls.lock();
-        }
+        if (!isMobile) controls.lock();
         startNextWaveWithLoading();
     }
 }
 
 function startNextWaveWithLoading() {
     loadingScreen.style.display = 'flex';
-    if (loadBar) loadBar.style.width = '0%';
-
-    // PRE-SPAWN ALL ENEMIES NOW WHILE LOADING BAR IS UP
     waveManager.preSpawnWave();
-
-    const loadingText = loadingScreen.querySelector('.loading-text') as HTMLElement;
-    if (loadingText) loadingText.innerText = 'PREPARING NEXT WAVE...';
-
     let progress = 0;
     const interval = setInterval(() => {
         progress += 2;
         if (loadBar) loadBar.style.width = `${progress}%`;
-
-        if (loadingText) {
-            if (progress < 25) loadingText.innerText = `RESTORING NAVMESH... ${progress}%`;
-            else if (progress < 50) loadingText.innerText = `CALIBRATING HORDES... ${progress}%`;
-            else if (progress < 75) loadingText.innerText = `PRE-RENDERING WAVE ${waveManager.currentWave}... ${progress}%`;
-            else loadingText.innerText = `READYING WAVE ${waveManager.currentWave}... ${progress}%`;
-        }
-
+        const txt = loadingScreen.querySelector('.loading-text') as HTMLElement;
+        if (txt) txt.innerText = `READYING WAVE ${waveManager.currentWave}... ${progress}%`;
         if (progress >= 100) {
             clearInterval(interval);
             loadingScreen.style.display = 'none';
-            prevTime = performance.now();
             waveManager.startNextWave();
         }
-    }, 40);
-}
-
-function toggleShop() {
-    if (shopOpen) closeShop();
-    else openShop();
+    }, 30);
 }
 
 function showPurchaseFeedback(success: boolean) {
-    if (success) {
+    if (success && purchaseFlashEl) {
         purchaseFlashEl.style.display = 'block';
         setTimeout(() => purchaseFlashEl.style.display = 'none', 150);
     }
 }
 
-function tryBuy(cost: number, action: () => void, elementId: string) {
-    if (playerCoins >= cost) {
-        playerCoins -= cost;
-        action();
-        updateStatsHUD();
-        shopCoinsEl.innerText = playerCoins.toString();
-        showPurchaseFeedback(true);
-        updateShopCards();
-    } else {
-        const card = document.getElementById(elementId);
-        if (card) {
-            card.style.borderColor = '#ff3333';
-            card.style.boxShadow = '0 0 20px rgba(255, 0, 0, 0.5)';
-            setTimeout(() => {
-                card.style.borderColor = '';
-                card.style.boxShadow = '';
-            }, 300);
-        }
-        // Feedback para el botón móvil correspondiente si aplica
-        const mbId = elementId.startsWith('mb-') ? elementId : 'mb-' + elementId;
-        const desktopId = elementId.startsWith('mb-') ? elementId.replace('mb-', '') : elementId;
-        [document.getElementById(mbId), document.getElementById(desktopId)].forEach(c => {
-            if (c) {
-                c.style.borderColor = '#ff3333';
-                c.style.boxShadow = '0 0 20px rgba(255, 0, 0, 0.5)';
-                setTimeout(() => { if (c) { c.style.borderColor = ''; c.style.boxShadow = ''; } }, 300);
-            }
-        });
-    }
-}
-
-document.getElementById('buy-health')?.addEventListener('click', () =>
-    tryBuy(50, () => { playerHealth = Math.min(playerHealth + 30, maxPlayerHealth); }, 'buy-health')
-);
-document.getElementById('buy-ammo')?.addEventListener('click', () =>
-    tryBuy(75, () => {
-        weapons.forEach(w => {
-            w.ammoCurrent = w.magSize;
-            w.ammoReserve = w.magSize * 4;
-        });
-        updateWeaponHUD();
-    }, 'buy-ammo')
-);
-document.getElementById('buy-maxhp')?.addEventListener('click', () =>
-    tryBuy(200, () => {
-        maxPlayerHealth += 20;
-        playerHealth = Math.min(playerHealth + 20, maxPlayerHealth);
-    }, 'buy-maxhp')
-);
-document.getElementById('buy-speed')?.addEventListener('click', () =>
-    tryBuy(150, () => { walkSpeedMultiplier = Math.min(walkSpeedMultiplier + 0.1, 1.5); }, 'buy-speed')
-);
-document.getElementById('buy-damage')?.addEventListener('click', () =>
-    tryBuy(300, () => { damageMultiplier = Math.min(damageMultiplier + 0.25, 3.0); }, 'buy-damage')
-);
-document.getElementById('buy-rapidfire')?.addEventListener('click', () =>
-    tryBuy(500, () => {
-        weapons.forEach(w => {
-            w.fireRate = Math.max(50, w.fireRate * 0.85); // 15% faster
-        });
-    }, 'buy-rapidfire')
-);
-
-// LISTENERS PARA MÓVIL (Con el ID mb-buy-...)
-document.getElementById('mb-buy-health')?.addEventListener('click', () =>
-    tryBuy(50, () => { playerHealth = Math.min(playerHealth + 30, maxPlayerHealth); }, 'mb-buy-health')
-);
-document.getElementById('mb-buy-ammo')?.addEventListener('click', () =>
-    tryBuy(75, () => {
-        weapons.forEach(w => {
-            w.ammoCurrent = w.magSize;
-            w.ammoReserve = w.magSize * 4;
-        });
-        updateWeaponHUD();
-    }, 'mb-buy-ammo')
-);
-document.getElementById('mb-buy-maxhp')?.addEventListener('click', () =>
-    tryBuy(200, () => {
-        maxPlayerHealth += 20;
-        playerHealth = Math.min(playerHealth + 20, maxPlayerHealth);
-    }, 'mb-buy-maxhp')
-);
-document.getElementById('mb-buy-speed')?.addEventListener('click', () =>
-    tryBuy(150, () => { walkSpeedMultiplier = Math.min(walkSpeedMultiplier + 0.1, 1.5); }, 'mb-buy-speed')
-);
-document.getElementById('mb-buy-damage')?.addEventListener('click', () =>
-    tryBuy(300, () => { damageMultiplier = Math.min(damageMultiplier + 0.25, 3.0); }, 'mb-buy-damage')
-);
-document.getElementById('mb-buy-rapidfire')?.addEventListener('click', () =>
-    tryBuy(500, () => {
-        weapons.forEach(w => {
-            w.fireRate = Math.max(50, w.fireRate * 0.85); // 15% faster
-        });
-    }, 'mb-buy-rapidfire')
-);
-// Cerrar tienda desde escritorio o móvil
+// Cerrar tienda
 document.getElementById('shop-close')?.addEventListener('click', closeShop);
 document.getElementById('shop-close-mobile')?.addEventListener('click', closeShop);
 
