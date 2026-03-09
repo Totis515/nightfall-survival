@@ -856,15 +856,15 @@
 
             /* Cada tarjeta: diseño horizontal y compacto */
             .shop-card {
-                flex: 0 0 140px !important;
+                flex: 0 0 100px !important;
                 /* Ancho fijo para scroll horizontal */
                 box-sizing: border-box !important;
-                padding: 8px 4px !important;
+                padding: 6px 3px !important;
                 border-width: 1px !important;
-                border-radius: 8px !important;
-                gap: 4px !important;
-                min-height: 100px !important;
-                margin-right: 8px !important;
+                border-radius: 6px !important;
+                gap: 2px !important;
+                min-height: 90px !important;
+                margin-right: 6px !important;
             }
 
             #shop-grid,
@@ -1083,12 +1083,13 @@
         display: none;
         position: absolute;
         inset: 0;
-        background: rgba(5, 5, 12, 0.97);
+        background: rgba(5, 5, 12, 0.98);
         z-index: 55;
         flex-direction: column;
         align-items: center;
-        padding: 10px 6px 8px;
-        overflow-y: auto;
+        justify-content: center;
+        padding: 5px;
+        overflow: hidden;
         font-family: 'Impact', sans-serif;
         color: #fff;
     ">
@@ -1151,17 +1152,18 @@
         </div>
 
         <button id="shop-close-mobile" style="
-            margin-top: auto;
+            margin-top: 15px;
             background: #ff2222;
             color: #fff;
             border: none;
-            padding: 10px 24px;
+            padding: 8px 20px;
             font-size: 14px;
             text-transform: uppercase;
             letter-spacing: 2px;
             cursor: pointer;
-            width: 100%;
+            width: 80%;
             border-radius: 4px;
+            box-shadow: 0 4px 10px rgba(255,0,0,0.3);
         ">✕ Close Market</button>
     </div>
 
