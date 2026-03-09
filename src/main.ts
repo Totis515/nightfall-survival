@@ -196,46 +196,45 @@ class SoundManager {
 
     // Elemento HTML <audio> para reproducir la canción de Suno en bucle
     bgAudio: HTMLAudioElement | null = null;
+    currentTrack: string = '';
 
     startMenuMusic() {
-        // Detener cualquier rastro de música anterior
-        this.stopMusic();
-        if (this.ctx.state === 'suspended') this.ctx.resume();
-
-        // Cargar canción local para el menú (lobby.mp3)
-        this.bgAudio = new Audio('/lobby.mp3');
-        this.bgAudio.loop = true;
-        this.bgAudio.volume = 0.05; // Volumen suave para el menú
-        this.bgAudio.play().catch(() => {
-            console.log('Audio bloqueado por el navegador, esperando interacción.');
-        });
+        this.playTrack('/lobby.mp3', 0.05);
     }
 
     startGameMusic() {
-        // Si ya hay música sonando (del menú), solo ajustamos el volumen y seguimos
-        if (this.bgAudio) {
-            this.bgAudio.volume = 0.08; // Volumen un poco más alto en acción
-            return;
-        }
+        this.playTrack('/game.mp3', 0.08);
+    }
 
-        // Si por alguna razón no estaba, la creamos
-        this.bgAudio = new Audio('/lobby.mp3');
-        this.bgAudio.loop = true;
-        this.bgAudio.volume = 0.08;
-        this.bgAudio.play().catch(() => { });
+    startWinMusic() {
+        this.playTrack('/win.mp3', 0.1);
+    }
+
+    startLossMusic() {
+        this.playTrack('/loss.mp3', 0.1);
+    }
+
+    private playTrack(path: string, volume: number) {
+        if (this.currentTrack === path) return;
+        this.stopMusic();
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+
+        this.bgAudio = new Audio(path);
+        this.bgAudio.loop = (path === '/lobby.mp3' || path === '/game.mp3');
+        this.bgAudio.volume = volume;
+        this.bgAudio.play().catch(() => {
+            console.log('Audio blocked or file missing:', path);
+        });
+        this.currentTrack = path;
     }
 
     stopMusic() {
-        // Detener el oscilador del menú si está activo
-        if (this.menuOsc) { this.menuOsc.stop(); this.menuOsc.disconnect(); this.menuOsc = null; }
-        if (this.gameOsc) { this.gameOsc.stop(); this.gameOsc.disconnect(); this.gameOsc = null; }
-        if (this.musicGain) { this.musicGain.disconnect(); this.musicGain = null; }
-        // Detener y limpiar el audio de Suno si existe
         if (this.bgAudio) {
             this.bgAudio.pause();
             this.bgAudio.src = '';
             this.bgAudio = null;
         }
+        this.currentTrack = '';
     }
 }
 const soundManager = new SoundManager();
@@ -553,7 +552,7 @@ function gameOver() {
     // Verificar que el juego esté activo antes de ejecutar el fin de partida
     if (!gameStarted) return;
     gameStarted = false;
-    soundManager.stopMusic();
+    soundManager.startLossMusic();
     // En móvil, llamar controls.unlock() causa un error grave que congela la pantalla.
     // Solo se ejecuta en modo PC donde el PointerLock está activo.
     if (!isMobile) controls.unlock();
@@ -1481,6 +1480,7 @@ class WaveManager {
 
     startNextWave() {
         this.isBreak = false;
+        soundManager.startGameMusic();
         // currentWave fue incrementado en preSpawnWave
 
         // Hacer visibles todos los enemigos pre-generados
@@ -1584,6 +1584,7 @@ class WaveManager {
     waveComplete() {
         if (this.isBreak) return;
         this.isBreak = true;
+        soundManager.startWinMusic();
 
         // VIDEO BEHAVIOR: Show shop immediately without prompt
         setTimeout(() => {
@@ -2120,8 +2121,8 @@ function shoot(w: Weapon) {
         camera.getWorldDirection(fireDir);
         // Punto de impacto del fuego: 4 unidades frente al jugador
         const firePos = camera.position.clone().addScaledVector(fireDir, 4);
-        // Spawnear partículas de fuego color naranja/rojo en el punto de impacto
-        bloodParticles.spawn(firePos, 12);
+        // Spawnear partículas de fuego color naranja/amarillo en el punto de impacto
+        flameParticles.spawn(firePos, 15);
         // Dañar enemigos en área dentro de 6 unidades del punto de fuego
         waveManager.activeEnemies.forEach(en => {
             const d = en.mesh.position.distanceTo(firePos);
@@ -2267,21 +2268,84 @@ class ParticleSystem {
         }
         if (needsUpdate) this.geometry.attributes.position.needsUpdate = true;
     }
-
-    warmUp() {
-        // Run a dummy spawn to initialize shaders and buffers
-        this.spawn(new THREE.Vector3(0, -10, 0), 50);
-        this.update(0.1);
-        // Reset cursor and hidden state
-        for (let i = 0; i < this.maxParticles; i++) {
-            this.lifetimes[i] = 0;
-            this.positions[i * 3 + 1] = -100;
-        }
-        this.geometry.attributes.position.needsUpdate = true;
-    }
 }
 
 const bloodParticles = new ParticleSystem();
+
+// ---- FLAME PARTICLE SYSTEM ----
+// Sistema de partículas diseñado para el ataque del lanzallamas
+class FlameAttackParticleSystem {
+    particles: THREE.Points;
+    geometry: THREE.BufferGeometry;
+    positions: Float32Array;
+    velocities: THREE.Vector3[] = [];
+    lifetimes: number[] = [];
+    maxParticles: number = 500;
+    cursor: number = 0;
+
+    constructor() {
+        this.geometry = new THREE.BufferGeometry();
+        this.positions = new Float32Array(this.maxParticles * 3);
+        this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
+
+        const mat = new THREE.PointsMaterial({
+            color: 0xffaa00, // Naranja base
+            size: 0.4,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending,
+            sizeAttenuation: true
+        });
+
+        this.particles = new THREE.Points(this.geometry, mat);
+        this.particles.frustumCulled = false;
+        scene.add(this.particles);
+
+        for (let i = 0; i < this.maxParticles; i++) {
+            this.velocities.push(new THREE.Vector3());
+            this.lifetimes.push(0);
+            this.positions[i * 3 + 1] = -100;
+        }
+    }
+
+    spawn(position: THREE.Vector3, count: number = 5) {
+        for (let i = 0; i < count; i++) {
+            const idx = this.cursor;
+            this.positions[idx * 3] = position.x + (Math.random() - 0.5) * 2;
+            this.positions[idx * 3 + 1] = position.y + (Math.random() - 0.5) * 2;
+            this.positions[idx * 3 + 2] = position.z + (Math.random() - 0.5) * 2;
+
+            this.velocities[idx].set(
+                (Math.random() - 0.5) * 2,
+                Math.random() * 2 + 1,
+                (Math.random() - 0.5) * 2
+            );
+            this.lifetimes[idx] = 0.4 + Math.random() * 0.4;
+            this.cursor = (this.cursor + 1) % this.maxParticles;
+        }
+        this.geometry.attributes.position.needsUpdate = true;
+    }
+
+    update(delta: number) {
+        let needsUpdate = false;
+        for (let i = 0; i < this.maxParticles; i++) {
+            if (this.lifetimes[i] > 0) {
+                this.positions[i * 3] += this.velocities[i].x * delta;
+                this.positions[i * 3 + 1] += this.velocities[i].y * delta;
+                this.positions[i * 3 + 2] += this.velocities[i].z * delta;
+
+                this.lifetimes[i] -= delta;
+                if (this.lifetimes[i] <= 0) {
+                    this.positions[i * 3 + 1] = -100;
+                }
+                needsUpdate = true;
+            }
+        }
+        if (needsUpdate) this.geometry.attributes.position.needsUpdate = true;
+    }
+}
+
+const flameParticles = new FlameAttackParticleSystem();
 
 class FireParticleSystem {
     particles: THREE.Points;
@@ -2847,6 +2911,7 @@ function animate() {
             waveManager.update(delta * 2, camera.position, time);
         }
         bloodParticles.update(delta);
+        flameParticles.update(delta);
         jetpackParticles.update(delta);
 
         // Update Projectiles & Pickups
