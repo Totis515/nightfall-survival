@@ -102,6 +102,8 @@ document.body.appendChild(renderer.domElement);
 
 // ---- SISTEMA DE SONIDO ----
 // Este sistema administra todos los efectos de sonido y la música de fondo del juego
+// ---- CLASE SOUNDMANAGER (Sistema de Sonido Dinámico) ----
+// Administra las pistas de audio para el menú y el juego, además de los efectos especiales.
 class SoundManager {
     ctx: AudioContext;
     masterGain: GainNode;
@@ -1469,6 +1471,8 @@ class Enemy {
 
 // ---- WAVE SYSTEM ----
 // Este sistema controla la aparición por oleadas de los enemigos y maneja los jefes
+// ---- CLASE WAVEMANAGER (Gestor de Oleadas) ----
+// Controla el flujo del juego: generación de enemigos, dificultad progresiva y estados de descanso.
 class WaveManager {
     currentWave: number = 0;
     enemiesToSpawn: number = 0;
@@ -2208,8 +2212,8 @@ class ParticleSystem {
         });
 
         this.particles = new THREE.Points(this.geometry, mat);
-        this.particles.renderOrder = 999; // Renderizar por encima de todo
-        this.particles.frustumCulled = false; // EVITAR que el sistema de partículas desaparezca
+        this.particles.renderOrder = 999; // Asegura que la sangre se dibuje siempre por encima de otros objetos
+        this.particles.frustumCulled = false; // Evita que las partículas desaparezcan si el centro de la cámara no las mira directamente
         scene.add(this.particles);
 
         // Pre-inicializar arrays de velocidades y tiempos de vida
