@@ -854,27 +854,33 @@
                 gap: 5px !important;
             }
 
-            /* Cada tarjeta: diseño horizontal y compacto */
+            /* Cada tarjeta: diseño VERTICAL y compacto */
             .shop-card {
-                flex: 0 0 100px !important;
-                /* Ancho fijo para scroll horizontal */
+                flex: 0 0 auto !important;
+                width: 95% !important;
                 box-sizing: border-box !important;
-                padding: 6px 3px !important;
+                padding: 10px 15px !important;
                 border-width: 1px !important;
-                border-radius: 6px !important;
-                gap: 2px !important;
-                min-height: 90px !important;
-                margin-right: 6px !important;
+                border-radius: 10px !important;
+                gap: 12px !important;
+                min-height: 60px !important;
+                margin: 0 auto 10px auto !important;
+                display: flex !important;
+                flex-direction: row !important;
+                align-items: center !important;
+                text-align: left !important;
             }
 
             #shop-grid,
             #shop-grid-mobile {
                 display: flex !important;
-                flex-direction: row !important;
-                overflow-x: auto !important;
+                flex-direction: column !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
                 width: 100% !important;
+                max-height: 60vh !important;
                 gap: 0 !important;
-                padding-bottom: 10px !important;
+                padding: 10px 0 !important;
                 -webkit-overflow-scrolling: touch;
             }
 
@@ -1083,13 +1089,13 @@
         display: none;
         position: absolute;
         inset: 0;
-        background: rgba(5, 5, 12, 0.98);
+        background: rgba(5, 5, 12, 0.99);
         z-index: 55;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
-        padding: 5px;
-        overflow: hidden;
+        justify-content: flex-start;
+        padding: 20px 10px;
+        overflow-y: auto;
         font-family: 'Impact', sans-serif;
         color: #fff;
     ">
