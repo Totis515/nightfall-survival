@@ -1325,12 +1325,12 @@ class Enemy {
         // lo que causa el bug donde los enemigos desaparecen al girar la cámara.
         this.mesh.frustumCulled = false; // El grupo principal
         this.mesh.traverse(child => {
-            child.frustumCulled = false; // Cada parte individual (torso, cabeza, brazos, etc)
-            // Trucar las bounding spheres de geometrias para evitar frustum culling por completo
-            if ((child as THREE.Mesh).geometry) {
-                const geo = (child as THREE.Mesh).geometry;
-                // Nunca re-computar el bounding sphere despues de esto:
-                geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), Infinity);
+            child.frustumCulled = false;
+            if ((child as THREE.Mesh).isMesh) {
+                const mesh = child as THREE.Mesh;
+                // Force a giant bounding sphere so Three.js never culls this mesh
+                if (!mesh.geometry.boundingSphere) mesh.geometry.computeBoundingSphere();
+                mesh.geometry.boundingSphere!.radius = 9999;
             }
         });
 
@@ -1551,16 +1551,24 @@ class WeaponDrop {
         weaponModel.position.y = 1;
         this.mesh.add(weaponModel);
 
-        // Circulo resaltado en el suelo
-        const circleGeo = new THREE.TorusGeometry(0.8, 0.1, 8, 24);
+        // Círculo grande y visible en el suelo — radio mayor para ser claramente visible
+        const circleRadius = (weaponIdx === 3 || weaponIdx === 4) ? 1.4 : 1.0;
+        const circleGeo = new THREE.TorusGeometry(circleRadius, 0.08, 8, 32);
         const circleMat = new THREE.MeshBasicMaterial({ color: displayColor });
         const circle = new THREE.Mesh(circleGeo, circleMat);
         circle.rotation.x = Math.PI / 2;
-        circle.position.y = 0.1;
+        circle.position.y = 0.05;
         this.mesh.add(circle);
 
-        // Partículas/Luz central
-        const light = new THREE.PointLight(displayColor, 2, 5);
+        // Segundo círculo interior animado para hacerlos aún más visibles
+        const innerGeo = new THREE.TorusGeometry(circleRadius * 0.6, 0.05, 8, 32);
+        const innerCircle = new THREE.Mesh(innerGeo, circleMat);
+        innerCircle.rotation.x = Math.PI / 2;
+        innerCircle.position.y = 0.06;
+        this.mesh.add(innerCircle);
+
+        // Luz puntual del color del arma
+        const light = new THREE.PointLight(displayColor, 3, 7);
         light.position.y = 1;
         this.mesh.add(light);
 
@@ -2300,23 +2308,39 @@ function shoot(w: Weapon) {
         camera.getWorldDirection(dir);
         playerRockets.push(new Rocket(camera.position.clone(), dir));
     } else if (w.name === "FIRE GUN") {
-        // El lanzallamas dispara una ola de fuego en cóno de frente al jugador.
-        // Daña a todos los enemigos dentro del radio (6 unidades) con daño de área.
+        // El lanzallamas dispara fuego horizontal amplio hacia adelante.
         soundManager.playFlamethrower();
         const fireDir = new THREE.Vector3();
         camera.getWorldDirection(fireDir);
-        // Punto de impacto del fuego: 4 unidades frente al jugador
-        const firePos = camera.position.clone().addScaledVector(fireDir, 4);
-        // Spawnear partículas de fuego color naranja/amarillo en el punto de impacto
-        flameParticles.spawn(firePos, 15);
-        // Dañar enemigos en área dentro de 6 unidades del punto de fuego
+        // Forzar dirección horizontal (ignorar inclinación vertical para que
+        // las partículas se extiendan al frente del jugador, no hacia el suelo)
+        fireDir.y = 0;
+        fireDir.normalize();
+
+        // Lanzar partículas en un arco horizontal ancho (cono flamígero)
+        for (let i = 0; i < 6; i++) {
+            const spread = (Math.random() - 0.5) * 6; // desplazamiento lateral
+            const dist = 4 + Math.random() * 11; // entre 4 y 15 unidades de alcance
+            const spawnPos = camera.position.clone()
+                .addScaledVector(fireDir, dist)
+                .addScaledVector(new THREE.Vector3(-fireDir.z, 0, fireDir.x), spread);
+            spawnPos.y = camera.position.y - 0.5 + Math.random() * 0.4;
+            flameParticles.spawn(spawnPos, 4);
+        }
+
+        // Daño en área real con rango de 15 unidades
         waveManager.activeEnemies.forEach(en => {
-            const d = en.mesh.position.distanceTo(firePos);
-            if (!en.isDead && d < 6) {
-                en.takeDamage(w.damage * damageMultiplier * (1 - d / 6), fireDir.clone().multiplyScalar(0.2));
+            if (en.isDead) return;
+            const toEnemy = new THREE.Vector3().subVectors(en.mesh.position, camera.position);
+            toEnemy.y = 0;
+            const forward = fireDir.clone();
+            const dot = toEnemy.clone().normalize().dot(forward); // 1 = directo, <0 = detrás
+            const dist = toEnemy.length();
+            if (dot > 0.4 && dist < 15) { // solo enemigos frontales hasta 15 unidades
+                en.takeDamage(w.damage * damageMultiplier * (1 - dist / 15), fireDir.clone().multiplyScalar(0.3));
             }
         });
-        return; // El lanzallamas no usa el hitscan estándar
+        return; // El lanzallamas no usa hitscan
     } else if (w.name === "LASER GUN") {
         soundManager.playLaser();
     } else {
