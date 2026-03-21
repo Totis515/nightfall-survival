@@ -48,21 +48,34 @@ function createRemotePlayerModel(): THREE.Group {
 
 function createNameLabel(username: string): THREE.Sprite {
     const canvas = document.createElement('canvas');
-    canvas.width = 256; canvas.height = 64;
+    canvas.width = 256; canvas.height = 128; // taller to avoid clipping
     const ctx = canvas.getContext('2d')!;
-    ctx.clearRect(0, 0, 256, 64);
-    ctx.fillStyle = 'rgba(0,0,0,0.65)';
-    (ctx as any).roundRect?.(4, 8, 248, 48, 8);
+    ctx.clearRect(0, 0, 256, 128);
+
+    // Background bubble (simulated round rect)
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.beginPath();
+    ctx.moveTo(20, 20);
+    ctx.lineTo(236, 20);
+    ctx.quadraticCurveTo(250, 20, 250, 34);
+    ctx.lineTo(250, 94);
+    ctx.quadraticCurveTo(250, 108, 236, 108);
+    ctx.lineTo(20, 108);
+    ctx.quadraticCurveTo(6, 108, 6, 94);
+    ctx.lineTo(6, 34);
+    ctx.quadraticCurveTo(6, 20, 20, 20);
     ctx.fill();
-    ctx.font = 'bold 28px Impact, Arial Black';
+
+    ctx.font = 'bold 32px Impact, Arial Black, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillStyle = '#00ffcc';
-    ctx.fillText(username.toUpperCase().slice(0, 14), 128, 46);
+    ctx.fillText(username.toUpperCase().slice(0, 14), 128, 70);
+
     const tex = new THREE.CanvasTexture(canvas);
-    const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false });
+    const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true });
     const sprite = new THREE.Sprite(mat);
-    sprite.scale.set(1.6, 0.4, 1);
-    sprite.position.y = 2.4;
+    sprite.scale.set(2, 1, 1); // adjusted scale
+    sprite.position.y = 2.6; // slightly higher
     return sprite;
 }
 
@@ -127,14 +140,19 @@ function updateLobbyUI(players: Record<string, { id: string; username: string }>
 function initMultiplayerUI() {
     // After platform selection → show username screen
     ['btn-platform-pc', 'btn-platform-mobile'].forEach(btnId => {
-        document.getElementById(btnId)?.addEventListener('click', () => {
-            setTimeout(() => {
+        const btn = document.getElementById(btnId);
+        // Replace previous listeners to avoid double-triggering game start
+        const newBtn = btn?.cloneNode(true) as HTMLElement;
+        if (btn && newBtn) {
+            btn.parentNode?.replaceChild(newBtn, btn);
+            newBtn.addEventListener('click', () => {
+                isMobile = btnId === 'btn-platform-mobile';
                 const plat = document.getElementById('platform-selection');
                 if (plat) plat.style.display = 'none';
                 showScreen('username-screen');
                 (document.getElementById('username-input') as HTMLInputElement)?.focus();
-            }, 60);
-        }, { capture: true });
+            });
+        }
     });
 
     // Username screen
@@ -213,7 +231,13 @@ function initMultiplayerUI() {
     // Lobby - Start
     document.getElementById('btn-lobby-start')?.addEventListener('click', () => {
         hideAllMpScreens();
-        beginLoadingSequence();
+        if (!isMobile) {
+            // Request PointerLock on PC - this will trigger beginLoadingSequence via the 'lock' listener
+            controls.lock();
+        } else {
+            // Start directly on mobile
+            beginLoadingSequence();
+        }
     });
 
     // Lobby - Leave
