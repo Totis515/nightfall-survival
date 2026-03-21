@@ -67,20 +67,16 @@ interface Weapon {
 }
 
 const weapons: Weapon[] = [
-    // Índice 0: Pistola estándar - arma inicial del jugador
-    { name: "PISTOL", damage: 25, fireRate: 200, magSize: 12, ammoCurrent: 12, ammoReserve: 48, reloadTime: 1200, recoilAmount: 0.1, isReloading: false, lastShotTime: 0, isAutomatic: false, pellets: 1 },
-    // Índice 1: Escopeta - disparo de perdigones en abanico
-    { name: "SHOTGUN", damage: 15, fireRate: 800, magSize: 6, ammoCurrent: 6, ammoReserve: 24, reloadTime: 2000, recoilAmount: 0.3, isReloading: false, lastShotTime: 0, isAutomatic: false, pellets: 8 },
-    // Índice 2: Rifle de asalto - disparo automático rápido
-    { name: "ASSAULT RIFLE", damage: 20, fireRate: 100, magSize: 30, ammoCurrent: 30, ammoReserve: 120, reloadTime: 1800, recoilAmount: 0.05, isReloading: false, lastShotTime: 0, isAutomatic: true, pellets: 1 },
-    // Índice 3: Minigun - cadencia de disparo extremely alta, mucho daño sostenido
-    { name: "MINIGUN", damage: 12, fireRate: 50, magSize: 200, ammoCurrent: 200, ammoReserve: 400, reloadTime: 3000, recoilAmount: 0.02, isReloading: false, lastShotTime: 0, isAutomatic: true, pellets: 1 },
-    // Índice 4: Lanzacohetes - proyectil explosivo con daño de área
-    { name: "ROCKET LAUNCHER", damage: 100, fireRate: 1200, magSize: 1, ammoCurrent: 1, ammoReserve: 5, reloadTime: 2500, recoilAmount: 0.5, isReloading: false, lastShotTime: 0, isAutomatic: false, pellets: 1 },
-    // Índice 5: Pistola láser - disparo sin retroalimentación y tiro rápido
-    { name: "LASER PISTOL", damage: 35, fireRate: 300, magSize: 20, ammoCurrent: 20, ammoReserve: 60, reloadTime: 1500, recoilAmount: 0.0, isReloading: false, lastShotTime: 0, isAutomatic: false, pellets: 1 },
-    // Índice 6: Lanzallamas - daño de área en cono, modo automático
-    { name: "FLAMETHROWER", damage: 8, fireRate: 80, magSize: 100, ammoCurrent: 100, ammoReserve: 300, reloadTime: 2000, recoilAmount: 0.01, isReloading: false, lastShotTime: 0, isAutomatic: true, pellets: 1 },
+    // Índice 0: GUN - arma inicial del jugador (Rifle)
+    { name: "GUN", damage: 30, fireRate: 150, magSize: 40, ammoCurrent: 40, ammoReserve: 160, reloadTime: 1800, recoilAmount: 0.05, isReloading: false, lastShotTime: 0, isAutomatic: true, pellets: 1 },
+    // Índice 1: LASER GUN - Wave 1 (Atraviesa enemigos, menor daño que Gun, futurista)
+    { name: "LASER GUN", damage: 20, fireRate: 300, magSize: 20, ammoCurrent: 20, ammoReserve: 60, reloadTime: 1500, recoilAmount: 0.0, isReloading: false, lastShotTime: 0, isAutomatic: false, pellets: 1 },
+    // Índice 2: ROCKET LAUNCHER - Wave 2 (Cohete lejano, más daño que Gun)
+    { name: "ROCKET LAUNCHER", damage: 120, fireRate: 1200, magSize: 1, ammoCurrent: 1, ammoReserve: 8, reloadTime: 2500, recoilAmount: 0.5, isReloading: false, lastShotTime: 0, isAutomatic: false, pellets: 1 },
+    // Índice 3: MINI GUN - Wave 3 (Disparo múltiple/rápido, menor daño que Gun)
+    { name: "MINI GUN", damage: 15, fireRate: 50, magSize: 200, ammoCurrent: 200, ammoReserve: 400, reloadTime: 3000, recoilAmount: 0.02, isReloading: false, lastShotTime: 0, isAutomatic: true, pellets: 1 },
+    // Índice 4: FIRE GUN - Wave 4 (Lanzallamas, disparo fuego, lejano)
+    { name: "FIRE GUN", damage: 10, fireRate: 80, magSize: 100, ammoCurrent: 100, ammoReserve: 300, reloadTime: 2000, recoilAmount: 0.01, isReloading: false, lastShotTime: 0, isAutomatic: true, pellets: 1 },
 ];
 
 // ---- CONFIGURACIÓN DE LA ESCENA ----
@@ -1504,12 +1500,53 @@ class WeaponDrop {
         this.mesh = new THREE.Group();
         this.mesh.position.copy(pos);
 
-        // Caja flotante central
-        const boxGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
-        const boxMat = new THREE.MeshStandardMaterial({ color: displayColor, emissive: displayColor, emissiveIntensity: 0.5 });
-        const box = new THREE.Mesh(boxGeo, boxMat);
-        box.position.y = 1;
-        this.mesh.add(box);
+        // Diseños Low-Poly específicos por arma
+        const weaponModel = new THREE.Group();
+        const mat = new THREE.MeshStandardMaterial({ color: displayColor, flatShading: true, emissive: displayColor, emissiveIntensity: 0.2 });
+        const darkMat = new THREE.MeshStandardMaterial({ color: 0x222222, flatShading: true });
+
+        if (isJetpack) {
+            // Jetpack: Dos tanques verdes
+            for (let i = -1; i <= 1; i += 2) {
+                const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.8, 6), mat);
+                tank.position.set(i * 0.25, 0, 0);
+                weaponModel.add(tank);
+            }
+        } else if (weaponIdx === 1) {
+            // Laser Gun: Pistola futurista elegante
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 0.6), darkMat);
+            const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.8), mat);
+            barrel.position.set(0, 0.1, -0.2);
+            weaponModel.add(body, barrel);
+        } else if (weaponIdx === 2) {
+            // Rocket Launcher: Tubo largo (verde oscuro modelado con darkMat y punta color match)
+            const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.2, 8), darkMat);
+            tube.rotation.x = Math.PI / 2;
+            const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.3, 8), mat);
+            tip.rotation.x = Math.PI / 2;
+            tip.position.z = -0.5;
+            weaponModel.add(tube, tip);
+        } else if (weaponIdx === 3) {
+            // Mini Gun: Varios cañones (gris)
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.6), darkMat);
+            const barrels = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.8, 6), mat);
+            barrels.rotation.x = Math.PI / 2;
+            barrels.position.z = -0.5;
+            weaponModel.add(body, barrels);
+        } else if (weaponIdx === 4) {
+            // Fire Gun: Tanque y boquilla
+            const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.7, 8), mat);
+            const nozzle = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.6), darkMat);
+            nozzle.position.set(0, 0.2, -0.4);
+            weaponModel.add(tank, nozzle);
+        } else {
+            // Default Box
+            const box = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), mat);
+            weaponModel.add(box);
+        }
+
+        weaponModel.position.y = 1;
+        this.mesh.add(weaponModel);
 
         // Circulo resaltado en el suelo
         const circleGeo = new THREE.TorusGeometry(0.8, 0.1, 8, 24);
@@ -1619,18 +1656,18 @@ class WaveManager {
         // Un drop al frente del spawn inicial para que sea obvio
         const pos = new THREE.Vector3(0, 0, 10);
         if (wave === 1) {
-            // Wave 1: Laser Pistol (5) & Jetpack
-            activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(-5, 0, 10), 5, false, 0x00ffff));
+            // Wave 1: Laser Gun (Index 1) celeste & Jetpack
+            activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(-5, 0, 10), 1, false, 0x00ffff));
             activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(5, 0, 10), 0, true, 0x00ff00));
         } else if (wave === 2) {
-            // Wave 2: Rocket Launcher (4)
-            activeWeaponDrops.push(new WeaponDrop(pos, 4, false, 0xffaa00));
+            // Wave 2: Rocket Launcher (Index 2) rojo
+            activeWeaponDrops.push(new WeaponDrop(pos, 2, false, 0xff0000));
         } else if (wave === 3) {
-            // Wave 3: Minigun (3)
-            activeWeaponDrops.push(new WeaponDrop(pos, 3, false, 0xff0000));
+            // Wave 3: Mini Gun (Index 3) amarillo
+            activeWeaponDrops.push(new WeaponDrop(pos, 3, false, 0xffff00));
         } else if (wave === 4) {
-            // Wave 4: Flamethrower (6)
-            activeWeaponDrops.push(new WeaponDrop(pos, 6, false, 0xff5500));
+            // Wave 4: Fire Gun (Index 4) naranja
+            activeWeaponDrops.push(new WeaponDrop(pos, 4, false, 0xffaa00));
         }
     }
 
@@ -1938,19 +1975,7 @@ function updateWeaponVisuals() {
     }
 
     const w = weapons[currentWeaponIndex];
-    if (w.name === "PISTOL") {
-        const b = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.18, 0.4), weaponMaterial);
-        b.position.set(0, -0.1, 0);
-        const brl = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.35, 6), barrelMaterial);
-        brl.rotation.x = Math.PI / 2; brl.position.set(0, -0.05, -0.3);
-        weaponGroup.add(b, brl);
-    } else if (w.name === "SHOTGUN") {
-        const b = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.8), weaponMaterial);
-        b.position.set(0, -0.1, 0);
-        const brl = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.7, 8), barrelMaterial);
-        brl.rotation.x = Math.PI / 2; brl.position.set(0, -0.05, -0.6);
-        weaponGroup.add(b, brl);
-    } else if (w.name === "ASSAULT RIFLE") {
+    if (w.name === "GUN") {
         const b = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.22, 0.7), weaponMaterial);
         b.position.set(0, -0.1, 0);
         const brl = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.8, 6), barrelMaterial);
@@ -1958,7 +1983,7 @@ function updateWeaponVisuals() {
         const mag = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.3, 0.15), weaponMaterial);
         mag.position.set(0, -0.3, -0.1);
         weaponGroup.add(b, brl, mag);
-    } else if (w.name === "MINIGUN") {
+    } else if (w.name === "MINI GUN") {
         const b = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.8), weaponMaterial);
         b.position.set(0, -0.1, 0);
         for (let i = 0; i < 6; i++) {
@@ -1973,14 +1998,14 @@ function updateWeaponVisuals() {
         const b = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 1.2, 12), weaponMaterial);
         b.rotation.x = Math.PI / 2; b.position.set(0, -0.05, -0.4);
         weaponGroup.add(b);
-    } else if (w.name === "LASER PISTOL") {
+    } else if (w.name === "LASER GUN") {
         // Modelo de primera persona para la pistola láser: cuerpo oscuro con cañón cian brillante
         const b = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.25, 0.5), new THREE.MeshStandardMaterial({ color: 0x222222, emissive: 0x00ffff, emissiveIntensity: 0.2 }));
         b.position.set(0, -0.1, 0);
         const brl = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.6), new THREE.MeshStandardMaterial({ color: 0x00ffff }));
         brl.position.set(0, -0.05, -0.4);
         weaponGroup.add(b, brl);
-    } else if (w.name === "FLAMETHROWER") {
+    } else if (w.name === "FIRE GUN") {
         // Modelo de primera persona del lanzallamas: cuerpo ancho con boquilla naranja
         const b = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.25, 0.7), weaponMaterial);
         b.position.set(0, -0.1, 0);
@@ -2072,11 +2097,11 @@ getEl('btn-mobile-shoot')?.addEventListener('touchend', (e) => { e.preventDefaul
 
 // 1.5 Botones de Selección Rápida de Armas (HUD Superior numérico)
 // Permiten al jugador cambiar rápidamente de arma si la tiene en su inventario.
-getEl('btn-mw-1')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(0)) switchWeapon(0); }); // Slot 1: Pistola
-getEl('btn-mw-2')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(5)) switchWeapon(5); }); // Slot 2: Pistola Láser
-getEl('btn-mw-3')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(4)) switchWeapon(4); }); // Slot 3: Lanzacohetes
-getEl('btn-mw-4')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(3)) switchWeapon(3); }); // Slot 4: Minigun
-getEl('btn-mw-5')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(6)) switchWeapon(6); }); // Slot 5: Lanzallamas
+getEl('btn-mw-1')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(0)) switchWeapon(0); }); // Slot 1: Gun
+getEl('btn-mw-2')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(1)) switchWeapon(1); }); // Slot 2: Laser Gun
+getEl('btn-mw-3')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(2)) switchWeapon(2); }); // Slot 3: Rocket Launcher
+getEl('btn-mw-4')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(3)) switchWeapon(3); }); // Slot 4: Mini Gun
+getEl('btn-mw-5')?.addEventListener('touchstart', (e) => { e.preventDefault(); if (playerInventory.includes(4)) switchWeapon(4); }); // Slot 5: Fire Gun
 
 // Evento de pausa para móviles con feedback visual
 const mobilePauseBtn = getEl('btn-mobile-pause');
@@ -2266,7 +2291,7 @@ function shoot(w: Weapon) {
         const dir = new THREE.Vector3();
         camera.getWorldDirection(dir);
         playerRockets.push(new Rocket(camera.position.clone(), dir));
-    } else if (w.name === "FLAMETHROWER") {
+    } else if (w.name === "FIRE GUN") {
         // El lanzallamas dispara una ola de fuego en cóno de frente al jugador.
         // Daña a todos los enemigos dentro del radio (6 unidades) con daño de área.
         soundManager.playFlamethrower();
@@ -2284,7 +2309,7 @@ function shoot(w: Weapon) {
             }
         });
         return; // El lanzallamas no usa el hitscan estándar
-    } else if (w.name === "LASER PISTOL") {
+    } else if (w.name === "LASER GUN") {
         soundManager.playLaser();
     } else {
         soundManager.playShot();
@@ -2306,7 +2331,7 @@ function shoot(w: Weapon) {
             const hitRay = new THREE.Raycaster(raycaster.ray.origin, dir, 0, 100);
             const intersects = hitRay.intersectObjects(enemyMeshes);
             if (intersects.length > 0) {
-                if (w.name === "LASER PISTOL") {
+                if (w.name === "LASER GUN") {
                     const hitEnemies = new Set<any>();
                     for (const hit of intersects) {
                         const hitMesh = hit.object as THREE.Mesh;
@@ -2478,11 +2503,12 @@ const onKeyDown = (event: KeyboardEvent) => {
             break;
         case 'ShiftLeft': case 'ShiftRight': isSprinting = true; break;
         case 'KeyR': reloadWeapon(); break;
-        // Teclas rápidas de armas: 1=Pistola(0), 2=Láser(5), 3=Cohete(4), 4=Minigun(3)
+        // Teclas rápidas de armas
         case 'Digit1': if (playerInventory.includes(0)) switchWeapon(0); break;
-        case 'Digit2': if (playerInventory.includes(5)) switchWeapon(5); break;
-        case 'Digit3': if (playerInventory.includes(4)) switchWeapon(4); break;
+        case 'Digit2': if (playerInventory.includes(1)) switchWeapon(1); break;
+        case 'Digit3': if (playerInventory.includes(2)) switchWeapon(2); break;
         case 'Digit4': if (playerInventory.includes(3)) switchWeapon(3); break;
+        case 'Digit5': if (playerInventory.includes(4)) switchWeapon(4); break;
     }
 };
 
@@ -2618,18 +2644,7 @@ function showPurchaseFeedback(success: boolean) {
 document.getElementById('shop-close')?.addEventListener('click', closeShop);
 document.getElementById('shop-close-mobile')?.addEventListener('click', closeShop);
 
-// Botones de la pantalla de Oleada Completada
-document.getElementById('wc-shop-btn')?.addEventListener('click', () => {
-    const wc = document.getElementById('wave-complete');
-    if (wc) wc.style.display = 'none';
-    openShop();
-});
-document.getElementById('wc-next-btn')?.addEventListener('click', () => {
-    const wc = document.getElementById('wave-complete');
-    if (wc) wc.style.display = 'none';
-    waveManager.startNextWave();
-    // No se necesita controls.lock() - el bloqueo del puntero nunca se liberó
-});
+
 
 // ---- CICLO DE ANIMACIÓN (RENDER LOOP) ----
 // Ciclo principal que corre en cada frame: dibuja la escena y actualiza todas las físicas
