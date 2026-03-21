@@ -1,5 +1,242 @@
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
+import { io, Socket } from 'socket.io-client';
+
+// ══════════════════════════════════════════════════════════════════
+// PHASE 12: MULTIPLAYER CLIENT
+// After deploying the server to Railway, replace SERVER_URL below
+// with your actual Railway deployment URL (e.g. https://xxx.railway.app)
+// ══════════════════════════════════════════════════════════════════
+const SERVER_URL = (window.location.hostname === 'localhost')
+    ? 'http://localhost:3001'
+    : 'https://REPLACE_WITH_RAILWAY_URL.up.railway.app';
+
+let socket: Socket | null = null;
+let myUsername = '';
+let myRoomCode = '';
+let isMultiplayer = false;
+
+// Map of other players in our room: socketId → { group, label }
+const remotePlayers: Map<string, { group: THREE.Group; label: THREE.Sprite }> = new Map();
+
+function createRemotePlayerModel(): THREE.Group {
+    const group = new THREE.Group();
+    const skinMat = new THREE.MeshStandardMaterial({ color: 0x4fc3f7, flatShading: true });
+    const clothMat = new THREE.MeshStandardMaterial({ color: 0x1565c0, flatShading: true });
+    const darkMat = new THREE.MeshStandardMaterial({ color: 0x0d47a1, flatShading: true });
+    const shoeGeo = new THREE.BoxGeometry(0.22, 0.15, 0.35);
+    const lShoe = new THREE.Mesh(shoeGeo, darkMat); lShoe.position.set(-0.2, 0.075, 0.06);
+    const rShoe = new THREE.Mesh(shoeGeo, darkMat); rShoe.position.set(0.2, 0.075, 0.06);
+    const legGeo = new THREE.BoxGeometry(0.24, 0.6, 0.3);
+    const lLeg = new THREE.Mesh(legGeo, clothMat); lLeg.position.set(-0.2, 0.45, 0);
+    const rLeg = new THREE.Mesh(legGeo, clothMat); rLeg.position.set(0.2, 0.45, 0);
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.7, 0.38), clothMat);
+    torso.position.set(0, 1.1, 0);
+    const armGeo = new THREE.BoxGeometry(0.2, 0.5, 0.2);
+    const lArm = new THREE.Mesh(armGeo, skinMat); lArm.position.set(-0.46, 1.1, 0.2); lArm.rotation.x = -Math.PI / 3;
+    const rArm = new THREE.Mesh(armGeo, skinMat); rArm.position.set(0.46, 1.1, 0.2); rArm.rotation.x = -Math.PI / 3;
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.48, 0.48), skinMat); head.position.y = 1.65;
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc });
+    const eyeGeo = new THREE.PlaneGeometry(0.12, 0.09);
+    const lEye = new THREE.Mesh(eyeGeo, eyeMat); lEye.position.set(-0.12, 0.05, 0.245);
+    const rEye = new THREE.Mesh(eyeGeo, eyeMat); rEye.position.set(0.12, 0.05, 0.245);
+    head.add(lEye, rEye);
+    group.add(lShoe, rShoe, lLeg, rLeg, torso, lArm, rArm, head);
+    group.traverse(c => { c.frustumCulled = false; });
+    return group;
+}
+
+function createNameLabel(username: string): THREE.Sprite {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256; canvas.height = 64;
+    const ctx = canvas.getContext('2d')!;
+    ctx.clearRect(0, 0, 256, 64);
+    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+    (ctx as any).roundRect?.(4, 8, 248, 48, 8);
+    ctx.fill();
+    ctx.font = 'bold 28px Impact, Arial Black';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#00ffcc';
+    ctx.fillText(username.toUpperCase().slice(0, 14), 128, 46);
+    const tex = new THREE.CanvasTexture(canvas);
+    const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false });
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(1.6, 0.4, 1);
+    sprite.position.y = 2.4;
+    return sprite;
+}
+
+function spawnRemotePlayer(id: string, username: string, x: number, y: number, z: number) {
+    if (remotePlayers.has(id)) return;
+    const group = createRemotePlayerModel();
+    group.position.set(x, y - 1.6, z);
+    const label = createNameLabel(username);
+    group.add(label);
+    scene.add(group);
+    remotePlayers.set(id, { group, label });
+}
+
+function removeRemotePlayer(id: string) {
+    const p = remotePlayers.get(id);
+    if (p) { scene.remove(p.group); remotePlayers.delete(id); }
+}
+
+function connectMultiplayer() {
+    if (socket?.connected) return;
+    socket = io(SERVER_URL, { transports: ['websocket'], reconnectionAttempts: 3 });
+    socket.on('connect', () => console.log('[MP] Connected:', socket!.id));
+    socket.on('player-moved', (data: { id: string; x: number; y: number; z: number; rotY: number }) => {
+        const p = remotePlayers.get(data.id);
+        if (p) { p.group.position.set(data.x, data.y - 1.6, data.z); p.group.rotation.y = data.rotY; }
+    });
+    socket.on('player-left', (data: { id: string }) => {
+        removeRemotePlayer(data.id);
+    });
+    socket.on('disconnect', () => {
+        remotePlayers.forEach((_, id) => removeRemotePlayer(id));
+    });
+}
+
+function showScreen(id: string) {
+    document.querySelectorAll('.mp-screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id)?.classList.add('active');
+}
+function hideAllMpScreens() {
+    document.querySelectorAll('.mp-screen').forEach(s => s.classList.remove('active'));
+}
+
+function updateLobbyUI(players: Record<string, { id: string; username: string }>, myId: string) {
+    const container = document.getElementById('lobby-players');
+    if (!container) return;
+    container.innerHTML = '';
+    const list = Object.values(players);
+    for (let i = 0; i < 4; i++) {
+        const div = document.createElement('div');
+        div.className = 'lobby-player';
+        if (list[i]) {
+            const isMe = list[i].id === myId;
+            div.innerHTML = `<span class="slot-icon">${isMe ? '🟢' : '🔵'}</span>
+                <span class="${isMe ? 'slot-you' : 'slot-other'}">${list[i].username}${isMe ? ' (YOU)' : ''}</span>`;
+        } else {
+            div.innerHTML = `<span class="slot-icon">⚫</span><span class="slot-empty">Empty slot</span>`;
+        }
+        container.appendChild(div);
+    }
+}
+
+function initMultiplayerUI() {
+    // After platform selection → show username screen
+    ['btn-platform-pc', 'btn-platform-mobile'].forEach(btnId => {
+        document.getElementById(btnId)?.addEventListener('click', () => {
+            setTimeout(() => {
+                const plat = document.getElementById('platform-selection');
+                if (plat) plat.style.display = 'none';
+                showScreen('username-screen');
+                (document.getElementById('username-input') as HTMLInputElement)?.focus();
+            }, 60);
+        }, { capture: true });
+    });
+
+    // Username screen
+    const continueBtn = document.getElementById('btn-username-continue');
+    const usernameInput = document.getElementById('username-input') as HTMLInputElement;
+    const usernameErr = document.getElementById('username-error')!;
+    continueBtn?.addEventListener('click', () => {
+        const name = (usernameInput?.value || '').trim();
+        if (name.length < 2) { usernameErr.innerText = 'Min 2 characters required!'; return; }
+        usernameErr.innerText = '';
+        myUsername = name.toUpperCase();
+        connectMultiplayer();
+        showScreen('room-screen');
+    });
+    usernameInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') continueBtn?.click(); });
+    document.getElementById('btn-username-back')?.addEventListener('click', () => {
+        hideAllMpScreens();
+        const plat = document.getElementById('platform-selection');
+        if (plat) plat.style.display = 'block';
+    });
+
+    // Room screen - Create
+    document.getElementById('btn-create-room')?.addEventListener('click', () => {
+        if (!socket) return;
+        const roomErr = document.getElementById('room-error')!;
+        socket.emit('create-room', { username: myUsername }, (res: any) => {
+            if (res.error) { roomErr.innerText = res.error; return; }
+            myRoomCode = res.roomCode;
+            isMultiplayer = true;
+            document.getElementById('lobby-code')!.innerText = myRoomCode;
+            updateLobbyUI(res.players, socket!.id!);
+            // Listen for new joiners while in lobby
+            socket!.on('player-joined', (p: any) => {
+                if (gameStarted) { spawnRemotePlayer(p.id, p.username, p.x, p.y, p.z); showPickupNotice(`${p.username} JOINED!`); }
+                else {
+                    const empties = document.querySelectorAll('.lobby-player .slot-empty');
+                    if (empties.length) empties[0].parentElement!.innerHTML =
+                        `<span class="slot-icon">🔵</span><span class="slot-other">${p.username}</span>`;
+                }
+            });
+            showScreen('lobby-screen');
+        });
+    });
+
+    // Room screen - Join
+    const roomCodeInput = document.getElementById('room-code-input') as HTMLInputElement;
+    const joinBtn = document.getElementById('btn-join-room');
+    joinBtn?.addEventListener('click', () => {
+        if (!socket) return;
+        const roomErr = document.getElementById('room-error')!;
+        const code = (roomCodeInput?.value || '').trim().toUpperCase();
+        if (code.length !== 6) { roomErr.innerText = 'Code must be 6 characters!'; return; }
+        socket.emit('join-room', { roomCode: code, username: myUsername }, (res: any) => {
+            if (res.error) { roomErr.innerText = res.error; return; }
+            myRoomCode = res.roomCode;
+            isMultiplayer = true;
+            document.getElementById('lobby-code')!.innerText = myRoomCode;
+            updateLobbyUI(res.players, socket!.id!);
+            Object.values(res.players).forEach((p: any) => {
+                if (p.id !== socket!.id) spawnRemotePlayer(p.id, p.username, p.x, p.y, p.z);
+            });
+            socket!.on('player-joined', (p: any) => {
+                if (gameStarted) { spawnRemotePlayer(p.id, p.username, p.x, p.y, p.z); showPickupNotice(`${p.username} JOINED!`); }
+                else {
+                    const empties = document.querySelectorAll('.lobby-player .slot-empty');
+                    if (empties.length) empties[0].parentElement!.innerHTML =
+                        `<span class="slot-icon">🔵</span><span class="slot-other">${p.username}</span>`;
+                }
+            });
+            showScreen('lobby-screen');
+        });
+    });
+    roomCodeInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') joinBtn?.click(); });
+    document.getElementById('btn-room-back')?.addEventListener('click', () => { showScreen('username-screen'); });
+
+    // Lobby - Start
+    document.getElementById('btn-lobby-start')?.addEventListener('click', () => {
+        hideAllMpScreens();
+        beginLoadingSequence();
+    });
+
+    // Lobby - Leave
+    document.getElementById('btn-lobby-leave')?.addEventListener('click', () => {
+        socket?.disconnect();
+        isMultiplayer = false;
+        myRoomCode = '';
+        showScreen('room-screen');
+    });
+}
+
+// Position sync – called in animate() loop
+let _mpFrame = 0;
+function multiplayerUpdate() {
+    if (!isMultiplayer || !socket?.connected || !gameStarted) return;
+    if (++_mpFrame % 3 !== 0) return;
+    socket.emit('player-update', {
+        x: camera.position.x,
+        y: camera.position.y,
+        z: camera.position.z,
+        rotY: camera.rotation.y
+    });
+}
 
 // ---- ELEMENTOS DE LA INTERFAZ (UI) ----
 // Referencias a los elementos visuales de la interfaz en el HTML (botones, barras de vida, menús)
@@ -2878,6 +3115,7 @@ function animate() {
         bloodParticles.update(delta);
         flameParticles.update(delta);
         jetpackParticles.update(delta);
+        multiplayerUpdate(); // Phase 12: sync position to server
 
         // Actualizar Proyectiles y Objetos Recogibles
         for (let i = playerRockets.length - 1; i >= 0; i--) {
@@ -2924,6 +3162,9 @@ function animate() {
 }
 
 animate();
+
+// Phase 12: Initialize multiplayer UI buttons
+initMultiplayerUI();
 
 // ---- SATISFACCIÓN DE REPRODUCCIÓN DE AUDIO (AUDIO AUTOPLAY) ----
 // Los navegadores modernos bloquean el sonido hasta que el usuario interactúa.

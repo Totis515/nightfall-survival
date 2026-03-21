@@ -5,7 +5,7 @@
     <!-- Aquí inicia la configuración del documento y los estilos visuales -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Nightfall Survival - Phase 10: Final Boss</title>
+    <title>Nightfall Survival - Phase 12: Servers &amp; Friends</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     <style>
         /* Todo este bloque define la apariencia visual del juego y de la interfaz de usuario (CSS) */
@@ -966,6 +966,190 @@
                 bottom: auto !important;
             }
         }
+
+        /* ──────────────── PHASE 12: MULTIPLAYER SCREENS ──────────────── */
+        .mp-screen {
+            display: none;
+            position: absolute;
+            inset: 0;
+            background: rgba(5, 3, 15, 0.97);
+            backdrop-filter: blur(12px);
+            z-index: 80;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            font-family: 'Impact', sans-serif;
+        }
+
+        .mp-screen.active {
+            display: flex;
+        }
+
+        .mp-title {
+            font-size: 38px;
+            letter-spacing: 5px;
+            color: #00ffcc;
+            text-shadow: 0 0 18px #00ffcc;
+            margin-bottom: 6px;
+        }
+
+        .mp-sub {
+            font-size: 14px;
+            color: #888;
+            letter-spacing: 2px;
+            margin-top: -10px;
+            margin-bottom: 10px;
+            font-family: monospace;
+        }
+
+        .mp-input {
+            background: rgba(0, 255, 200, 0.07);
+            border: 2px solid #00ffcc44;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 22px;
+            font-family: 'Impact', sans-serif;
+            letter-spacing: 3px;
+            padding: 10px 22px;
+            text-align: center;
+            width: 260px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .mp-input:focus {
+            border-color: #00ffcc;
+            box-shadow: 0 0 20px #00ffcc44;
+        }
+
+        .mp-input::placeholder {
+            color: #555;
+            font-size: 16px;
+            letter-spacing: 1px;
+        }
+
+        .mp-btn {
+            background: transparent;
+            border: 2px solid #00ffcc;
+            color: #00ffcc;
+            padding: 12px 36px;
+            font-size: 18px;
+            font-family: 'Impact', sans-serif;
+            letter-spacing: 3px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: background 0.2s, box-shadow 0.2s, color 0.2s;
+            width: 260px;
+            text-transform: uppercase;
+        }
+
+        .mp-btn:hover {
+            background: #00ffcc22;
+            box-shadow: 0 0 20px #00ffcc44;
+        }
+
+        .mp-btn.danger {
+            border-color: #ff3333;
+            color: #ff3333;
+        }
+
+        .mp-btn.danger:hover {
+            background: #ff333322;
+            box-shadow: 0 0 20px #ff333344;
+        }
+
+        .mp-btn.primary {
+            background: #00ffcc;
+            color: #000;
+            box-shadow: 0 0 20px #00ffcc66;
+        }
+
+        .mp-btn.primary:hover {
+            background: #00ffaacc;
+        }
+
+        .mp-divider {
+            width: 260px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #444;
+            font-size: 13px;
+            font-family: monospace;
+        }
+
+        .mp-divider::before,
+        .mp-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #333;
+        }
+
+        .mp-error {
+            color: #ff4444;
+            font-size: 14px;
+            font-family: monospace;
+            min-height: 18px;
+        }
+
+        .mp-code {
+            font-size: 42px;
+            letter-spacing: 10px;
+            color: #ffcc00;
+            text-shadow: 0 0 20px #ffcc0066;
+            background: rgba(255, 204, 0, 0.1);
+            border: 2px solid #ffcc0033;
+            border-radius: 10px;
+            padding: 10px 24px;
+            font-family: 'Impact', sans-serif;
+        }
+
+        .mp-code-label {
+            font-size: 12px;
+            color: #666;
+            letter-spacing: 3px;
+            font-family: monospace;
+        }
+
+        .lobby-players {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 280px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .lobby-player {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(0, 255, 200, 0.06);
+            border: 1px solid #00ffcc22;
+            border-radius: 6px;
+            padding: 8px 14px;
+            font-size: 18px;
+            letter-spacing: 2px;
+        }
+
+        .lobby-player .slot-icon {
+            font-size: 22px;
+        }
+
+        .lobby-player .slot-you {
+            color: #00ffcc;
+        }
+
+        .lobby-player .slot-other {
+            color: #aaa;
+        }
+
+        .lobby-player .slot-empty {
+            color: #333;
+            font-size: 14px;
+        }
     </style>
 </head>
 
@@ -975,7 +1159,7 @@
     <!-- CONTENEDOR DEL MENÚ PRINCIPAL: Pantalla que recibe al jugador -->
     <div id="main-menu">
         <h1 class="title">NIGHTFALL SURVIVAL</h1>
-        <h2 class="subtitle">Phase 10: Ultimate Survival</h2>
+        <h2 class="subtitle">Phase 12: Servers &amp; Friends</h2>
 
         <div id="menu-buttons">
             <button class="menu-btn" id="btn-start">Start Game</button>
@@ -992,6 +1176,48 @@
             <button class="menu-btn" id="btn-platform-back"
                 style="width: 150px; font-size: 16px; padding: 10px; margin-top: 10px;">Back</button>
         </div>
+    </div>
+
+    <!-- ──────────────── PHASE 12: MULTIPLAYER ──────────────── -->
+
+    <!-- USERNAME SCREEN: shown after picking platform -->
+    <div id="username-screen" class="mp-screen">
+        <div class="mp-title">👤 USERNAME</div>
+        <div class="mp-sub">PHASE 12 — NIGHTFALL SURVIVAL</div>
+        <input id="username-input" class="mp-input" type="text" maxlength="16" placeholder="Enter your name..."
+            autocomplete="off" />
+        <div id="username-error" class="mp-error"></div>
+        <button id="btn-username-continue" class="mp-btn primary">CONTINUE ▶</button>
+        <button id="btn-username-back" class="mp-btn danger">← BACK</button>
+    </div>
+
+    <!-- ROOM SCREEN: create or join a room -->
+    <div id="room-screen" class="mp-screen">
+        <div class="mp-title">🌐 SERVERS</div>
+        <div class="mp-sub">MAX 4 PLAYERS PER ROOM</div>
+        <button id="btn-create-room" class="mp-btn primary">➕ CREATE ROOM</button>
+        <div class="mp-divider">OR JOIN WITH CODE</div>
+        <input id="room-code-input" class="mp-input" type="text" maxlength="6" placeholder="ENTER CODE"
+            autocomplete="off" style="text-transform:uppercase" />
+        <button id="btn-join-room" class="mp-btn">JOIN ROOM ▶</button>
+        <div id="room-error" class="mp-error"></div>
+        <button id="btn-room-back" class="mp-btn danger">← BACK</button>
+    </div>
+
+    <!-- LOBBY SCREEN: waiting for players, shows room code and player list -->
+    <div id="lobby-screen" class="mp-screen">
+        <div class="mp-title">🏠 LOBBY</div>
+        <div class="mp-code-label">ROOM CODE</div>
+        <div class="mp-code" id="lobby-code">------</div>
+        <div class="mp-sub" style="color:#888">Share this code with your friends</div>
+        <div class="lobby-players" id="lobby-players">
+            <div class="lobby-player"><span class="slot-icon">🟢</span><span class="slot-empty">Waiting...</span></div>
+            <div class="lobby-player"><span class="slot-icon">⚫</span><span class="slot-empty">Empty slot</span></div>
+            <div class="lobby-player"><span class="slot-icon">⚫</span><span class="slot-empty">Empty slot</span></div>
+            <div class="lobby-player"><span class="slot-icon">⚫</span><span class="slot-empty">Empty slot</span></div>
+        </div>
+        <button id="btn-lobby-start" class="mp-btn primary">▶ START GAME</button>
+        <button id="btn-lobby-leave" class="mp-btn danger">✕ LEAVE ROOM</button>
     </div>
 
     <!-- Pantalla de carga que se muestra temporalmente mientras el motor 3D prepara el nivel -->
