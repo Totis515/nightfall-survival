@@ -104,6 +104,34 @@ function connectMultiplayer() {
     });
     socket.on('player-left', (data: { id: string }) => {
         removeRemotePlayer(data.id);
+        // Remove from lobby list if still in lobby
+        document.getElementById(`slot-${data.id}`)?.remove();
+    });
+    socket.on('player-ready-changed', (data: { id: string; ready: boolean }) => {
+        const el = document.getElementById(`slot-${data.id}`);
+        if (el) {
+            const readyEl = el.querySelector('.slot-ready') as HTMLElement;
+            if (readyEl) readyEl.innerText = data.ready ? '✅' : '⬜';
+        }
+    });
+    socket.on('game-start', () => {
+        hideAllMpScreens();
+        if (!isMobile) controls.lock();
+        else beginLoadingSequence();
+    });
+    // Relay: apply damage from another player to our local enemies
+    socket.on('enemy-hit', (data: { enemyId: string; damage: number; kx: number; ky: number; kz: number }) => {
+        const enemy = waveManager.activeEnemies.find((e: any) => e.nid === data.enemyId);
+        if (enemy && !enemy.isDead) {
+            const push = new THREE.Vector3(data.kx, data.ky, data.kz);
+            // Apply damage locally WITHOUT re-emitting to avoid infinite loop
+            enemy.health -= data.damage;
+            if (enemy.health <= 0 && !enemy.isDead) enemy.die();
+        }
+    });
+    socket.on('enemy-killed', (data: { enemyId: string }) => {
+        const enemy = waveManager.activeEnemies.find((e: any) => e.nid === data.enemyId);
+        if (enemy && !enemy.isDead) enemy.die();
     });
     socket.on('disconnect', () => {
         remotePlayers.forEach((_, id) => removeRemotePlayer(id));
@@ -118,7 +146,7 @@ function hideAllMpScreens() {
     document.querySelectorAll('.mp-screen').forEach(s => s.classList.remove('active'));
 }
 
-function updateLobbyUI(players: Record<string, { id: string; username: string }>, myId: string) {
+function updateLobbyUI(players: Record<string, { id: string; username: string; platform?: string; ready?: boolean }>, myId: string) {
     const container = document.getElementById('lobby-players');
     if (!container) return;
     container.innerHTML = '';
@@ -128,8 +156,12 @@ function updateLobbyUI(players: Record<string, { id: string; username: string }>
         div.className = 'lobby-player';
         if (list[i]) {
             const isMe = list[i].id === myId;
-            div.innerHTML = `<span class="slot-icon">${isMe ? '🟢' : '🔵'}</span>
-                <span class="${isMe ? 'slot-you' : 'slot-other'}">${list[i].username}${isMe ? ' (YOU)' : ''}</span>`;
+            const platIcon = list[i].platform === 'mobile' ? '📱' : '💻';
+            const readyIcon = list[i].ready ? '✅' : '⬜';
+            div.id = `slot-${list[i].id}`;
+            div.innerHTML = `<span class="slot-icon">${platIcon}</span>
+                <span class="${isMe ? 'slot-you' : 'slot-other'}">${list[i].username}${isMe ? ' (YOU)' : ''}</span>
+                <span class="slot-ready" style="margin-left:auto">${readyIcon}</span>`;
         } else {
             div.innerHTML = `<span class="slot-icon">⚫</span><span class="slot-empty">Empty slot</span>`;
         }
@@ -138,10 +170,9 @@ function updateLobbyUI(players: Record<string, { id: string; username: string }>
 }
 
 function initMultiplayerUI() {
-    // After platform selection → show username screen
+    // Platform selection → show username screen (replace buttons to remove old listeners)
     ['btn-platform-pc', 'btn-platform-mobile'].forEach(btnId => {
         const btn = document.getElementById(btnId);
-        // Replace previous listeners to avoid double-triggering game start
         const newBtn = btn?.cloneNode(true) as HTMLElement;
         if (btn && newBtn) {
             btn.parentNode?.replaceChild(newBtn, btn);
@@ -178,7 +209,8 @@ function initMultiplayerUI() {
     document.getElementById('btn-create-room')?.addEventListener('click', () => {
         if (!socket) return;
         const roomErr = document.getElementById('room-error')!;
-        socket.emit('create-room', { username: myUsername }, (res: any) => {
+        const platStr = isMobile ? 'mobile' : 'pc';
+        socket.emit('create-room', { username: myUsername, platform: platStr }, (res: any) => {
             if (res.error) { roomErr.innerText = res.error; return; }
             myRoomCode = res.roomCode;
             isMultiplayer = true;
@@ -186,11 +218,20 @@ function initMultiplayerUI() {
             updateLobbyUI(res.players, socket!.id!);
             // Listen for new joiners while in lobby
             socket!.on('player-joined', (p: any) => {
-                if (gameStarted) { spawnRemotePlayer(p.id, p.username, p.x, p.y, p.z); showPickupNotice(`${p.username} JOINED!`); }
-                else {
-                    const empties = document.querySelectorAll('.lobby-player .slot-empty');
-                    if (empties.length) empties[0].parentElement!.innerHTML =
-                        `<span class="slot-icon">🔵</span><span class="slot-other">${p.username}</span>`;
+                if (gameStarted) {
+                    spawnRemotePlayer(p.id, p.username, p.x, p.y, p.z);
+                    showPickupNotice(`${p.username} JOINED!`);
+                } else {
+                    // Add player row to lobby list
+                    const container = document.getElementById('lobby-players');
+                    const emptySlot = container?.querySelector('.lobby-player .slot-empty')?.parentElement;
+                    if (emptySlot) {
+                        const platIcon = p.platform === 'mobile' ? '📱' : '💻';
+                        emptySlot.id = `slot-${p.id}`;
+                        emptySlot.innerHTML = `<span class="slot-icon">${platIcon}</span>
+                            <span class="slot-other">${p.username}</span>
+                            <span class="slot-ready" style="margin-left:auto">⬜</span>`;
+                    }
                 }
             });
             showScreen('lobby-screen');
@@ -205,21 +246,31 @@ function initMultiplayerUI() {
         const roomErr = document.getElementById('room-error')!;
         const code = (roomCodeInput?.value || '').trim().toUpperCase();
         if (code.length !== 6) { roomErr.innerText = 'Code must be 6 characters!'; return; }
-        socket.emit('join-room', { roomCode: code, username: myUsername }, (res: any) => {
+        const platStr = isMobile ? 'mobile' : 'pc';
+        socket.emit('join-room', { roomCode: code, username: myUsername, platform: platStr }, (res: any) => {
             if (res.error) { roomErr.innerText = res.error; return; }
             myRoomCode = res.roomCode;
             isMultiplayer = true;
             document.getElementById('lobby-code')!.innerText = myRoomCode;
             updateLobbyUI(res.players, socket!.id!);
+            // Spawn players already in room
             Object.values(res.players).forEach((p: any) => {
                 if (p.id !== socket!.id) spawnRemotePlayer(p.id, p.username, p.x, p.y, p.z);
             });
             socket!.on('player-joined', (p: any) => {
-                if (gameStarted) { spawnRemotePlayer(p.id, p.username, p.x, p.y, p.z); showPickupNotice(`${p.username} JOINED!`); }
-                else {
-                    const empties = document.querySelectorAll('.lobby-player .slot-empty');
-                    if (empties.length) empties[0].parentElement!.innerHTML =
-                        `<span class="slot-icon">🔵</span><span class="slot-other">${p.username}</span>`;
+                if (gameStarted) {
+                    spawnRemotePlayer(p.id, p.username, p.x, p.y, p.z);
+                    showPickupNotice(`${p.username} JOINED!`);
+                } else {
+                    const container = document.getElementById('lobby-players');
+                    const emptySlot = container?.querySelector('.lobby-player .slot-empty')?.parentElement;
+                    if (emptySlot) {
+                        const platIcon = p.platform === 'mobile' ? '📱' : '💻';
+                        emptySlot.id = `slot-${p.id}`;
+                        emptySlot.innerHTML = `<span class="slot-icon">${platIcon}</span>
+                            <span class="slot-other">${p.username}</span>
+                            <span class="slot-ready" style="margin-left:auto">⬜</span>`;
+                    }
                 }
             });
             showScreen('lobby-screen');
@@ -228,17 +279,38 @@ function initMultiplayerUI() {
     roomCodeInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') joinBtn?.click(); });
     document.getElementById('btn-room-back')?.addEventListener('click', () => { showScreen('username-screen'); });
 
-    // Lobby - Start
-    document.getElementById('btn-lobby-start')?.addEventListener('click', () => {
-        hideAllMpScreens();
-        if (!isMobile) {
-            // Request PointerLock on PC - this will trigger beginLoadingSequence via the 'lock' listener
-            controls.lock();
-        } else {
-            // Start directly on mobile
-            beginLoadingSequence();
-        }
-    });
+    // Lobby - READY toggle (replaces old "START GAME")
+    const readyBtn = document.getElementById('btn-lobby-start');
+    if (readyBtn) {
+        readyBtn.innerText = '⚡ READY';
+        readyBtn.style.background = 'transparent';
+        readyBtn.style.color = '#00ffcc';
+        readyBtn.style.border = '2px solid #00ffcc';
+        let amReady = false;
+        readyBtn.addEventListener('click', () => {
+            if (!socket) return;
+            socket.emit('toggle-ready', (res: any) => {
+                amReady = res.ready;
+                // Update our own slot in the lobby list
+                if (socket?.id) {
+                    const mySlot = document.getElementById(`slot-${socket.id}`);
+                    if (mySlot) {
+                        const readyEl = mySlot.querySelector('.slot-ready') as HTMLElement;
+                        if (readyEl) readyEl.innerText = amReady ? '✅' : '⬜';
+                    }
+                }
+                // Update button style to reflect ready state
+                if (amReady) {
+                    readyBtn.innerText = '❌ CANCEL READY';
+                    readyBtn.classList.add('danger');
+                    readyBtn.classList.remove('primary');
+                } else {
+                    readyBtn.innerText = '⚡ READY';
+                    readyBtn.classList.remove('danger');
+                }
+            });
+        });
+    }
 
     // Lobby - Leave
     document.getElementById('btn-lobby-leave')?.addEventListener('click', () => {
@@ -1413,11 +1485,12 @@ class Enemy {
     isDead: boolean = false;
     isFlinching: boolean = false;
     flinchTimer: number = 0;
-    spawnY: number = -2.0; // Comenzar bajo el suelo
-    spawnTime: number = 2.0; // 2 segundos para emerger
+    spawnY: number = -2.0;
+    spawnTime: number = 2.0;
     spawnTimer: number = 0;
     shirtColor: number;
     skinColor: number;
+    nid: string; // Unique network ID for multiplayer sync
     isAlive: boolean = true;
     private avoidVector = new THREE.Vector3(); // Para evitar colisiones
     // Guardar referencias para restaurar colores fácilmente
@@ -1425,6 +1498,7 @@ class Enemy {
 
     constructor(type: EnemyType, position: THREE.Vector3) {
         this.type = type;
+        this.nid = `e_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
         const stats = ENEMY_DATA[type];
         this.health = stats.health;
         this.maxHealth = stats.health;
@@ -1602,6 +1676,15 @@ class Enemy {
         if (this.isDead) return;
         this.health -= amount;
 
+        // Sync damage to other players in multiplayer
+        if (isMultiplayer && socket?.connected) {
+            socket.emit('enemy-hit', {
+                enemyId: this.nid,
+                damage: amount,
+                kx: pushDir.x, ky: pushDir.y, kz: pushDir.z
+            });
+        }
+
         this.isFlinching = true;
         this.flinchTimer = 0.12;
 
@@ -1615,9 +1698,6 @@ class Enemy {
         safePush.y = 0;
         this.mesh.position.add(safePush);
         this.mesh.position.y = 0;
-
-        // PETICIÓN DEL USUARIO: Sangre solo al morir para reducir el lag.
-        // El destello de golpe pequeño se maneja con el cambio de color al estremecerse.
 
         if (this.health <= 0) {
             this.die();
