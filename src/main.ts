@@ -1328,6 +1328,9 @@ class Enemy {
             child.frustumCulled = false; // Cada parte individual (torso, cabeza, brazos, etc)
             if ((child as THREE.Mesh).geometry) {
                 (child as THREE.Mesh).geometry.computeBoundingSphere(); // Refrescar bounding sphere
+                if ((child as THREE.Mesh).geometry.boundingSphere) {
+                    (child as THREE.Mesh).geometry.boundingSphere!.radius = 5000; // Forzar radio enorme para evitar culling
+                }
             }
         });
 
@@ -1588,12 +1591,12 @@ class WeaponDrop {
             const ui = document.getElementById('jetpack-ui');
             if (ui) ui.style.display = 'block';
             console.log("Jetpack Unlocked!");
+            showPickupNotice("JETPACK");
         } else {
+            addWeaponToInventory(this.weaponIdx);
             const w = weapons[this.weaponIdx];
             w.ammoCurrent = w.magSize;
             w.ammoReserve += w.magSize * 3; // Munición extra al recoger el arma
-            currentWeaponIndex = this.weaponIdx; // Equipar automáticamente
-            updateWeaponHUD();
             console.log(w.name + " Unlocked!");
         }
     }
@@ -2423,6 +2426,15 @@ class GenericParticleSystem {
                 this.positions[i * 3 + 1] += this.velocities[i].y * delta;
                 this.positions[i * 3 + 2] += this.velocities[i].z * delta;
                 this.velocities[i].y -= this.config.gravity * delta;
+
+                // Efecto de rebote en el suelo (sangre, físicas)
+                if (this.positions[i * 3 + 1] < 0.1 && this.velocities[i].y < 0) {
+                    this.positions[i * 3 + 1] = 0.1;
+                    this.velocities[i].y *= -0.5; // Rebote 
+                    this.velocities[i].x *= 0.8;  // Fricción
+                    this.velocities[i].z *= 0.8;
+                }
+
                 this.lifetimes[i] -= delta;
                 if (this.lifetimes[i] <= 0) this.positions[i * 3 + 1] = -100;
                 active = true;
