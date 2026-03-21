@@ -1326,11 +1326,11 @@ class Enemy {
         this.mesh.frustumCulled = false; // El grupo principal
         this.mesh.traverse(child => {
             child.frustumCulled = false; // Cada parte individual (torso, cabeza, brazos, etc)
+            // Trucar las bounding spheres de geometrias para evitar frustum culling por completo
             if ((child as THREE.Mesh).geometry) {
-                (child as THREE.Mesh).geometry.computeBoundingSphere(); // Refrescar bounding sphere
-                if ((child as THREE.Mesh).geometry.boundingSphere) {
-                    (child as THREE.Mesh).geometry.boundingSphere!.radius = 5000; // Forzar radio enorme para evitar culling
-                }
+                const geo = (child as THREE.Mesh).geometry;
+                // Nunca re-computar el bounding sphere despues de esto:
+                geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), Infinity);
             }
         });
 
@@ -1786,12 +1786,17 @@ class WaveManager {
             else if (r > 0.3) type = EnemyType.TANK;
             else type = EnemyType.HUMANOID;
         } else if (this.currentWave >= 7) {
-            if (r > 0.8) type = EnemyType.ROBOT;
-            else if (r > 0.5) type = EnemyType.FAST;
+            if (r > 0.6) type = EnemyType.ROBOT;
+            else if (r > 0.35) type = EnemyType.FAST;
             else type = EnemyType.STANDARD;
-        } else if (this.currentWave >= 4) {
-            if (r > 0.9) type = EnemyType.BOSS_GOLIATH;
-            else if (r > 0.6) type = EnemyType.TANK;
+        } else if (this.currentWave >= 5) {
+            if (r > 0.8) type = EnemyType.BOSS_GOLIATH;
+            else if (r > 0.5) type = EnemyType.TANK;
+            else type = EnemyType.STANDARD;
+        } else if (this.currentWave >= 3) {
+            // Wave 3+: Introduce robots y zombies grandes
+            if (r > 0.7) type = EnemyType.ROBOT;
+            else if (r > 0.5) type = EnemyType.TANK;
             else type = EnemyType.STANDARD;
         } else if (this.currentWave >= 2) {
             if (r > 0.7) type = EnemyType.FAST;
@@ -2628,21 +2633,23 @@ function closeShop() {
     }
 }
 
+// FIXED: Removed waveManager.preSpawnWave() which was resetting currentWave to 0 every time the shop closed.
+// The wave counter must NEVER reset between waves. Only call startNextWave() to advance forward.
 function startNextWaveWithLoading() {
     loadingScreen.style.display = 'flex';
-    waveManager.preSpawnWave();
     let progress = 0;
+    const nextWaveNum = waveManager.currentWave + 1;
     const interval = setInterval(() => {
-        progress += 2;
+        progress += 3;
         if (loadBar) loadBar.style.width = `${progress}%`;
         const txt = loadingScreen.querySelector('.loading-text') as HTMLElement;
-        if (txt) txt.innerText = `READYING WAVE ${waveManager.currentWave}... ${progress}%`;
+        if (txt) txt.innerText = `READYING WAVE ${nextWaveNum}... ${progress}%`;
         if (progress >= 100) {
             clearInterval(interval);
             loadingScreen.style.display = 'none';
             waveManager.startNextWave();
         }
-    }, 30);
+    }, 20);
 }
 
 function showPurchaseFeedback(success: boolean) {
