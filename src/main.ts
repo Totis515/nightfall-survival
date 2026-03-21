@@ -565,7 +565,7 @@ function gameOver() {
         // Mostrar cuántas oleadas se sobrevivió
         const finalStats = document.getElementById('final-stats');
         if (finalStats) {
-            finalStats.innerText = `Stages Survived: ${this.currentWave > 0 ? this.currentWave - 1 : 0}`;
+            finalStats.innerText = `Waves Survived: ${waveManager.currentWave > 0 ? waveManager.currentWave - 1 : 0}`;
         }
         // Mostrar el nombre del monstruo asesino
         const killedByEl = document.getElementById('killed-by');
@@ -618,11 +618,11 @@ function createClouds() {
 
 
 // ---- ILUMINACIÓN ----
-const ambientLight = new THREE.HemisphereLight(0x1a0b3e, 0x0a0a1a, 0.1); // Luz ambiental tenue
+const ambientLight = new THREE.HemisphereLight(0x2d1b4e, 0x1a1a2a, 0.4); // Luz ambiental más clara
 scene.add(ambientLight);
 
 // Dense exponential fog like the video
-scene.fog = new THREE.FogExp2(0x1a0b3e, 0.012);
+scene.fog = new THREE.FogExp2(0x1a0b3e, 0.008); // Niebla un poco más suave
 
 // Luz puntal naranja espeluznante cerca del Black Market para añadir variedad de color
 const bmLight = new THREE.PointLight(0xff6600, 3, 25);
@@ -668,7 +668,7 @@ fillLight.position.set(-30, 5, 30);
 scene.add(fillLight);
 
 // The Moon & Moon Light
-const moonLight = new THREE.DirectionalLight(0xffffff, 0.4); // Much darker moonlight
+const moonLight = new THREE.DirectionalLight(0xffffff, 0.7); // Luz de luna más clara
 moonLight.position.set(-60, 100, -120);
 moonLight.castShadow = true;
 // Optimizar sombras para mayor alcance - frustum más ajustado para rendimiento
@@ -1490,6 +1490,80 @@ class Enemy {
 
 
 
+// ---- SISTEMA DE DROPS DE ARMAS ----
+class WeaponDrop {
+    mesh: THREE.Group;
+    weaponIdx: number;
+    isJetpack: boolean;
+    active: boolean = true;
+    bobOffset: number = 0;
+
+    constructor(pos: THREE.Vector3, weaponIdx: number, isJetpack: boolean = false, displayColor: number = 0xffffff) {
+        this.weaponIdx = weaponIdx;
+        this.isJetpack = isJetpack;
+        this.mesh = new THREE.Group();
+        this.mesh.position.copy(pos);
+
+        // Caja flotante central
+        const boxGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+        const boxMat = new THREE.MeshStandardMaterial({ color: displayColor, emissive: displayColor, emissiveIntensity: 0.5 });
+        const box = new THREE.Mesh(boxGeo, boxMat);
+        box.position.y = 1;
+        this.mesh.add(box);
+
+        // Circulo resaltado en el suelo
+        const circleGeo = new THREE.TorusGeometry(0.8, 0.1, 8, 24);
+        const circleMat = new THREE.MeshBasicMaterial({ color: displayColor });
+        const circle = new THREE.Mesh(circleGeo, circleMat);
+        circle.rotation.x = Math.PI / 2;
+        circle.position.y = 0.1;
+        this.mesh.add(circle);
+
+        // Partículas/Luz central
+        const light = new THREE.PointLight(displayColor, 2, 5);
+        light.position.y = 1;
+        this.mesh.add(light);
+
+        scene.add(this.mesh);
+    }
+
+    update(delta: number, playerPos: THREE.Vector3) {
+        if (!this.active) return;
+        this.bobOffset += delta * 2;
+        this.mesh.children[0].position.y = 1 + Math.sin(this.bobOffset) * 0.3; // Bobbing caja
+        this.mesh.children[0].rotation.y += delta; // Rotación
+        this.mesh.children[0].rotation.z += delta * 0.5;
+
+        // Verificar si el jugador lo recoge
+        if (playerPos.distanceTo(this.mesh.position) < 2.0) {
+            this.pickup();
+        }
+    }
+
+    pickup() {
+        this.active = false;
+        scene.remove(this.mesh);
+        soundManager.playPickup();
+
+        if (this.isJetpack) {
+            hasJetpack = true;
+            playerJetpackFuel = MAX_FUEL;
+            const ui = document.getElementById('jetpack-ui');
+            if (ui) ui.style.display = 'block';
+            console.log("Jetpack Unlocked!");
+        } else {
+            const w = weapons[this.weaponIdx];
+            w.ammoCurrent = w.magSize;
+            w.ammoReserve += w.magSize * 3; // Munición extra al recoger el arma
+            currentWeaponIndex = this.weaponIdx; // Equipar automáticamente
+            updateWeaponHUD();
+            console.log(w.name + " Unlocked!");
+        }
+    }
+}
+
+const activeWeaponDrops: WeaponDrop[] = [];
+
 // ---- WAVE SYSTEM ----
 // Este sistema controla la aparición por oleadas de los enemigos y maneja los jefes
 // ---- CLASE WAVEMANAGER (Gestor de Oleadas) ----
@@ -1512,6 +1586,9 @@ class WaveManager {
         soundManager.startGameMusic();
         this.currentWave++;
 
+        // SPANW WEAPON DROPS
+        this.spawnWeaponDrop(this.currentWave);
+
         if (this.currentWave === this.maxWaves) {
             // Stage Final: El Jefe
             this.enemiesToSpawn = 1;
@@ -1521,20 +1598,39 @@ class WaveManager {
             this.spawnRate = Math.max(400, 2000 - (this.currentWave * 120));
         }
 
-        // Esconder pantalla de STAGE COMPLETE
+        // Esconder pantalla de WAVE COMPLETE
         const wc = document.getElementById('wave-complete');
         if (wc) wc.style.display = 'none';
 
         if (enemiesEl) enemiesEl.innerText = this.enemiesToSpawn.toString();
         if (hordeEl) hordeEl.innerText = `Enemies: 0 (To Spawn: ${this.enemiesToSpawn})`;
         if (stageEl) {
-            stageEl.innerText = `STAGE ${this.currentWave}`;
+            stageEl.innerText = `WAVE ${this.currentWave}`;
             if (this.currentWave === this.maxWaves) {
-                stageEl.innerText = "FINAL STAGE: BOSS";
+                stageEl.innerText = "FINAL WAVE: BOSS";
                 stageEl.style.color = '#ff0000';
             } else {
                 stageEl.style.color = '#ff3333';
             }
+        }
+    }
+
+    spawnWeaponDrop(wave: number) {
+        // Un drop al frente del spawn inicial para que sea obvio
+        const pos = new THREE.Vector3(0, 0, 10);
+        if (wave === 1) {
+            // Wave 1: Laser Pistol (5) & Jetpack
+            activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(-5, 0, 10), 5, false, 0x00ffff));
+            activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(5, 0, 10), 0, true, 0x00ff00));
+        } else if (wave === 2) {
+            // Wave 2: Rocket Launcher (4)
+            activeWeaponDrops.push(new WeaponDrop(pos, 4, false, 0xffaa00));
+        } else if (wave === 3) {
+            // Wave 3: Minigun (3)
+            activeWeaponDrops.push(new WeaponDrop(pos, 3, false, 0xff0000));
+        } else if (wave === 4) {
+            // Wave 4: Flamethrower (6)
+            activeWeaponDrops.push(new WeaponDrop(pos, 6, false, 0xff5500));
         }
     }
 
@@ -1565,11 +1661,11 @@ class WaveManager {
             return;
         }
 
-        // Mostrar pantalla de STAGE COMPLETE y luego tienda
+        // Mostrar pantalla de WAVE COMPLETE y luego tienda
         const wc = document.getElementById('wave-complete');
         const wcWave = document.getElementById('wc-wave');
         if (wc) wc.style.display = 'flex';
-        if (wcWave) wcWave.innerText = `STAGE ${this.currentWave} COMPLETE!`;
+        if (wcWave) wcWave.innerText = `WAVE ${this.currentWave} COMPLETE!`;
 
         setTimeout(() => {
             if (wc) wc.style.display = 'none';
@@ -1593,6 +1689,13 @@ class WaveManager {
 
     update(delta: number, playerPos: THREE.Vector3, time: number) {
         if (this.isGameOver) return;
+
+        // Actualizar drops
+        for (let i = activeWeaponDrops.length - 1; i >= 0; i--) {
+            const drop = activeWeaponDrops[i];
+            drop.update(delta, playerPos);
+            if (!drop.active) activeWeaponDrops.splice(i, 1);
+        }
 
         // Spawning dinámico
         if (!this.isBreak && this.enemiesToSpawn > 0) {
