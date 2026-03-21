@@ -9,7 +9,7 @@ import { io, Socket } from 'socket.io-client';
 // ══════════════════════════════════════════════════════════════════
 const SERVER_URL = (window.location.hostname === 'localhost')
     ? 'http://localhost:3001'
-    : 'https://REPLACE_WITH_RAILWAY_URL.up.railway.app';
+    : 'https://nightfall-survival-production.up.railway.app';
 
 let socket: Socket | null = null;
 let myUsername = '';
