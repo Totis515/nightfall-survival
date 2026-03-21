@@ -98,15 +98,42 @@ function connectMultiplayer() {
     if (socket?.connected) return;
     socket = io(SERVER_URL, { transports: ['websocket'], reconnectionAttempts: 3 });
     socket.on('connect', () => console.log('[MP] Connected:', socket!.id));
+
+    // ── Player visibility ────────────────────────────────────────
+    socket.on('existing-players', (players: any[]) => {
+        // Server sends this to newly joined players so they see everyone already in the game
+        players.forEach(p => {
+            if (p.id !== socket!.id) spawnRemotePlayer(p.id, p.username, p.x, p.y, p.z);
+        });
+    });
+    socket.on('player-joined', (p: any) => {
+        // Another player joined — spawn their model regardless of game state
+        spawnRemotePlayer(p.id, p.username, p.x || 0, p.y || 1.6, p.z || 0);
+        if (!gameStarted) {
+            // Update lobby list too
+            const container = document.getElementById('lobby-players');
+            const emptySlot = container?.querySelector('.lobby-player .slot-empty')?.parentElement;
+            if (emptySlot) {
+                const platIcon = p.platform === 'mobile' ? '📱' : '💻';
+                emptySlot.id = `slot-${p.id}`;
+                emptySlot.innerHTML = `<span class="slot-icon">${platIcon}</span>
+                    <span class="slot-other">${p.username}</span>
+                    <span class="slot-ready" style="margin-left:auto">⬜</span>`;
+            }
+        } else {
+            showPickupNotice(`${p.username} JOINED!`);
+        }
+    });
     socket.on('player-moved', (data: { id: string; x: number; y: number; z: number; rotY: number }) => {
         const p = remotePlayers.get(data.id);
         if (p) { p.group.position.set(data.x, data.y - 1.6, data.z); p.group.rotation.y = data.rotY; }
     });
     socket.on('player-left', (data: { id: string }) => {
         removeRemotePlayer(data.id);
-        // Remove from lobby list if still in lobby
         document.getElementById(`slot-${data.id}`)?.remove();
     });
+
+    // ── Ready system ─────────────────────────────────────────────
     socket.on('player-ready-changed', (data: { id: string; ready: boolean }) => {
         const el = document.getElementById(`slot-${data.id}`);
         if (el) {
@@ -114,25 +141,55 @@ function connectMultiplayer() {
             if (readyEl) readyEl.innerText = data.ready ? '✅' : '⬜';
         }
     });
-    socket.on('game-start', () => {
+    socket.on('game-start', (data: { hostId: string }) => {
+        isHost = (socket!.id === data.hostId);
+        if (!isHost) waveManager.isNetworkClient = true;
         hideAllMpScreens();
         if (!isMobile) controls.lock();
         else beginLoadingSequence();
     });
-    // Relay: apply damage from another player to our local enemies
-    socket.on('enemy-hit', (data: { enemyId: string; damage: number; kx: number; ky: number; kz: number }) => {
-        const enemy = waveManager.activeEnemies.find((e: any) => e.nid === data.enemyId);
+
+    // ── Enemy sync ───────────────────────────────────────────────
+    socket.on('spawn-enemy', (data: { nid: string; type: number; x: number; z: number }) => {
+        if (isHost || !gameStarted) return; // Host already has the enemy locally
+        const pos = new THREE.Vector3(data.x, 0, data.z);
+        const enemy = new Enemy(data.type as EnemyType, pos);
+        enemy.nid = data.nid; // Use server-assigned nid so kills sync
+        enemy.mesh.visible = true;
+        waveManager.activeEnemies.push(enemy);
+        waveManager.enemiesToSpawn = Math.max(0, waveManager.enemiesToSpawn - 1);
+        waveManager.enemiesAlive++;
+    });
+    socket.on('enemy-killed', (data: { nid: string }) => {
+        // Find enemy by nid and kill it from network (no coins for the receiver)
+        const enemy = waveManager.activeEnemies.find((e: any) => e.nid === data.nid);
         if (enemy && !enemy.isDead) {
-            const push = new THREE.Vector3(data.kx, data.ky, data.kz);
-            // Apply damage locally WITHOUT re-emitting to avoid infinite loop
-            enemy.health -= data.damage;
-            if (enemy.health <= 0 && !enemy.isDead) enemy.die();
+            enemy.die(true); // fromNetwork = true, skip re-emit
         }
     });
-    socket.on('enemy-killed', (data: { enemyId: string }) => {
-        const enemy = waveManager.activeEnemies.find((e: any) => e.nid === data.enemyId);
-        if (enemy && !enemy.isDead) enemy.die();
+
+    // ── Wave sync ────────────────────────────────────────────────
+    socket.on('wave-complete', () => {
+        // Non-hosts open shop when host says wave is done
+        if (!isHost) {
+            waveManager.isBreak = true;
+            const wc = document.getElementById('wave-complete');
+            if (wc) { wc.style.display = 'flex'; setTimeout(() => { wc.style.display = 'none'; openShop(); }, 1500); }
+            else openShop();
+        }
     });
+    socket.on('shop-closed', () => {
+        // Non-hosts advance wave when host closes shop
+        if (!isHost) closeShop();
+    });
+    socket.on('host-changed', (data: { newHostId: string }) => {
+        if (socket!.id === data.newHostId) {
+            isHost = true;
+            waveManager.isNetworkClient = false;
+            showPickupNotice('YOU ARE NOW THE HOST');
+        }
+    });
+
     socket.on('disconnect', () => {
         remotePlayers.forEach((_, id) => removeRemotePlayer(id));
     });
@@ -214,26 +271,9 @@ function initMultiplayerUI() {
             if (res.error) { roomErr.innerText = res.error; return; }
             myRoomCode = res.roomCode;
             isMultiplayer = true;
+            isHost = true; // Room creator is always the host
             document.getElementById('lobby-code')!.innerText = myRoomCode;
             updateLobbyUI(res.players, socket!.id!);
-            // Listen for new joiners while in lobby
-            socket!.on('player-joined', (p: any) => {
-                if (gameStarted) {
-                    spawnRemotePlayer(p.id, p.username, p.x, p.y, p.z);
-                    showPickupNotice(`${p.username} JOINED!`);
-                } else {
-                    // Add player row to lobby list
-                    const container = document.getElementById('lobby-players');
-                    const emptySlot = container?.querySelector('.lobby-player .slot-empty')?.parentElement;
-                    if (emptySlot) {
-                        const platIcon = p.platform === 'mobile' ? '📱' : '💻';
-                        emptySlot.id = `slot-${p.id}`;
-                        emptySlot.innerHTML = `<span class="slot-icon">${platIcon}</span>
-                            <span class="slot-other">${p.username}</span>
-                            <span class="slot-ready" style="margin-left:auto">⬜</span>`;
-                    }
-                }
-            });
             showScreen('lobby-screen');
         });
     });
@@ -256,22 +296,6 @@ function initMultiplayerUI() {
             // Spawn players already in room
             Object.values(res.players).forEach((p: any) => {
                 if (p.id !== socket!.id) spawnRemotePlayer(p.id, p.username, p.x, p.y, p.z);
-            });
-            socket!.on('player-joined', (p: any) => {
-                if (gameStarted) {
-                    spawnRemotePlayer(p.id, p.username, p.x, p.y, p.z);
-                    showPickupNotice(`${p.username} JOINED!`);
-                } else {
-                    const container = document.getElementById('lobby-players');
-                    const emptySlot = container?.querySelector('.lobby-player .slot-empty')?.parentElement;
-                    if (emptySlot) {
-                        const platIcon = p.platform === 'mobile' ? '📱' : '💻';
-                        emptySlot.id = `slot-${p.id}`;
-                        emptySlot.innerHTML = `<span class="slot-icon">${platIcon}</span>
-                            <span class="slot-other">${p.username}</span>
-                            <span class="slot-ready" style="margin-left:auto">⬜</span>`;
-                    }
-                }
             });
             showScreen('lobby-screen');
         });
@@ -1704,18 +1728,22 @@ class Enemy {
         }
     }
 
-    die() {
+    die(fromNetwork: boolean = false) {
         this.isDead = true;
-        playerCoins += ENEMY_DATA[this.type].reward;
-        updateStatsHUD();
+        if (!fromNetwork) {
+            // Only give coins + emit kill to server when killed locally
+            playerCoins += ENEMY_DATA[this.type].reward;
+            updateStatsHUD();
+            if (isMultiplayer && socket?.connected) {
+                socket.emit('enemy-killed', { nid: this.nid });
+            }
+        }
 
         // Spawn blood particles BEFORE removing the mesh so position is still valid
         const deathPos = this.mesh.position.clone();
         deathPos.y += 1.0;
-        bloodParticles.spawn(deathPos, 60); // Aumentar cantidad de partículas al morir para mejor feedback visual
+        bloodParticles.spawn(deathPos, 60);
 
-        // En lugar de remover instantáneamente, podemos hacerlo invisible o esperar un frame
-        // para asegurar que las partículas se originen en el lugar correcto.
         this.mesh.visible = false;
 
         // Remove from collidables
@@ -1723,10 +1751,7 @@ class Enemy {
         const collIdx = collidables.indexOf(torso);
         if (collIdx > -1) collidables.splice(collIdx, 1);
 
-        // Remover de la escena después de un micro-delay
-        setTimeout(() => {
-            scene.remove(this.mesh);
-        }, 50);
+        setTimeout(() => { scene.remove(this.mesh); }, 50);
     }
 
     update(delta: number, playerPos: THREE.Vector3, time: number) {
@@ -2044,13 +2069,16 @@ class WaveManager {
         this.isBreak = true;
         soundManager.startWinMusic();
 
-        // Si terminamos el stage 15, ¡Victoria!
         if (this.currentWave === this.maxWaves) {
             this.victory();
             return;
         }
 
-        // Mostrar pantalla de WAVE COMPLETE y luego tienda
+        // Host drives wave transitions for all players
+        if (isMultiplayer && isHost && socket?.connected) {
+            socket.emit('wave-complete', { wave: this.currentWave });
+        }
+
         const wc = document.getElementById('wave-complete');
         const wcWave = document.getElementById('wc-wave');
         if (wc) wc.style.display = 'flex';
@@ -2110,13 +2138,19 @@ class WaveManager {
             hordeEl.innerText = `Enemies: ${this.enemiesAlive} (To Spawn: ${this.enemiesToSpawn})`;
         }
 
-        // Verificación de oleada completada
+        // Non-host: skip wave-complete detection (server will notify them)
+        if (isMultiplayer && this.isNetworkClient) return;
+
+        // Check wave complete
         if (this.enemiesToSpawn === 0 && this.enemiesAlive === 0 && !this.isBreak) {
             this.waveComplete();
         }
     }
 
     spawnEnemy() {
+        // Non-host clients don't self-spawn - they receive spawn commands from host
+        if (this.isNetworkClient) return;
+
         if (this.enemiesToSpawn <= 0) return;
 
         let type = EnemyType.STANDARD;
@@ -2166,6 +2200,11 @@ class WaveManager {
         this.activeEnemies.push(enemy);
         this.enemiesToSpawn--;
         this.enemiesAlive++;
+
+        // HOST: broadcast this enemy to all other players so they spawn the same one
+        if (isMultiplayer && isHost && socket?.connected) {
+            socket.emit('spawn-enemy', { nid: enemy.nid, type: enemy.type, x: pos.x, z: pos.z });
+        }
     }
 }
 
@@ -2994,6 +3033,8 @@ function closeShop() {
     if (gameStarted) {
         if (mainMenu) mainMenu.style.display = 'none';
         if (!isMobile) controls.lock();
+        // Host tells non-hosts to also advance to next wave
+        if (isMultiplayer && isHost && socket?.connected) socket.emit('shop-closed', {});
         startNextWaveWithLoading();
     }
 }

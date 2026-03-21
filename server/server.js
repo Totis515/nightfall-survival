@@ -5,24 +5,20 @@ const cors = require('cors');
 
 const app = express();
 app.use(cors());
-
 const httpServer = createServer(app);
-const io = new Server(httpServer, {
-    cors: { origin: '*', methods: ['GET', 'POST'] }
-});
+const io = new Server(httpServer, { cors: { origin: '*', methods: ['GET', 'POST'] } });
 
 app.get('/', (req, res) => {
-    res.json({
-        status: 'ok',
-        rooms: Object.keys(rooms).length,
-        totalPlayers: Object.values(rooms).reduce((sum, r) => sum + Object.keys(r.players).length, 0)
-    });
+    const totalPlayers = Object.values(rooms).reduce((s, r) => s + Object.keys(r.players).length, 0);
+    res.json({ status: 'ok', rooms: Object.keys(rooms).length, totalPlayers });
 });
 
 // ─────────────────────────────────────────────────────────────────
 // ROOM STRUCTURE:
 // rooms[code] = {
-//   players: { [socketId]: { id, username, platform, x, y, z, rotY, ready } }
+//   players:  { [id]: { id, username, platform, x,y,z, rotY, ready } }
+//   enemies:  { [nid]: { nid, type, x, z } }   ← active enemy state
+//   hostId:   string                             ← room creator (drives enemy spawning)
 //   gameStarted: bool
 // }
 // ─────────────────────────────────────────────────────────────────
@@ -36,7 +32,6 @@ function generateCode() {
     return rooms[code] ? generateCode() : code;
 }
 
-/** Check if all players in a room are ready */
 function allReady(room) {
     const players = Object.values(room.players);
     return players.length > 0 && players.every(p => p.ready);
@@ -51,7 +46,7 @@ io.on('connection', (socket) => {
         if (username.length < 2) return callback({ error: 'Min 2 characters.' });
 
         const code = generateCode();
-        rooms[code] = { players: {}, gameStarted: false };
+        rooms[code] = { players: {}, enemies: {}, hostId: socket.id, gameStarted: false };
         rooms[code].players[socket.id] = {
             id: socket.id, username, platform: platform || 'pc',
             x: 0, y: 1.6, z: 0, rotY: 0, ready: false
@@ -61,7 +56,7 @@ io.on('connection', (socket) => {
         socket.data.roomCode = code;
         socket.data.username = username;
 
-        console.log(`[ROOM] Created ${code} by ${username}`);
+        console.log(`[ROOM] Created ${code} by ${username} (host)`);
         callback({ roomCode: code, players: rooms[code].players });
     });
 
@@ -72,14 +67,11 @@ io.on('connection', (socket) => {
 
         if (username.length < 2) return callback({ error: 'Min 2 characters.' });
         if (!rooms[code]) return callback({ error: `Room "${code}" not found.` });
-        if (Object.keys(rooms[code].players).length >= MAX_PLAYERS)
-            return callback({ error: `Room "${code}" is full.` });
-        if (rooms[code].gameStarted)
-            return callback({ error: 'Game already in progress.' });
+        if (Object.keys(rooms[code].players).length >= MAX_PLAYERS) return callback({ error: 'Room is full.' });
+        if (rooms[code].gameStarted) return callback({ error: 'Game already started.' });
 
-        // Reject duplicate username in same room
         const taken = Object.values(rooms[code].players).some(p => p.username === username);
-        if (taken) return callback({ error: `"${username}" is already taken in this room.` });
+        if (taken) return callback({ error: `"${username}" already taken in this room.` });
 
         rooms[code].players[socket.id] = {
             id: socket.id, username, platform: platform || 'pc',
@@ -90,7 +82,10 @@ io.on('connection', (socket) => {
         socket.data.roomCode = code;
         socket.data.username = username;
 
-        // Notify existing players
+        // Tell the new player about ALL existing players (fix late-join visibility)
+        socket.emit('existing-players', Object.values(rooms[code].players).filter(p => p.id !== socket.id));
+
+        // Tell EXISTING players about the new person
         socket.to(code).emit('player-joined', rooms[code].players[socket.id]);
 
         console.log(`[ROOM] ${username} joined ${code}`);
@@ -100,23 +95,17 @@ io.on('connection', (socket) => {
     // ── READY TOGGLE ─────────────────────────────────────────────
     socket.on('toggle-ready', (callback) => {
         const code = socket.data.roomCode;
-        if (!code || !rooms[code] || !rooms[code].players[socket.id]) return;
+        if (!code || !rooms[code]?.players[socket.id]) return;
 
         const player = rooms[code].players[socket.id];
         player.ready = !player.ready;
-
-        // Broadcast new ready state to everyone in room
         io.to(code).emit('player-ready-changed', { id: socket.id, ready: player.ready });
 
-        console.log(`[READY] ${player.username} → ${player.ready ? '✅' : '❌'} in ${code}`);
-
-        // Check if all players are ready → start game
         if (allReady(rooms[code])) {
             rooms[code].gameStarted = true;
-            io.to(code).emit('game-start');
-            console.log(`[GAME] Starting room ${code}!`);
+            io.to(code).emit('game-start', { hostId: rooms[code].hostId });
+            console.log(`[GAME] Room ${code} starting! Host: ${rooms[code].hostId}`);
         }
-
         if (callback) callback({ ready: player.ready });
     });
 
@@ -129,30 +118,56 @@ io.on('connection', (socket) => {
         socket.to(code).emit('player-moved', { id: socket.id, x: data.x, y: data.y, z: data.z, rotY: data.rotY });
     });
 
-    // ── ENEMY HIT RELAY ──────────────────────────────────────────
-    // When any player damages an enemy, relay to ALL others so they apply
-    // the same damage to that enemy on their local simulation.
-    socket.on('enemy-hit', (data) => {
+    // ── ENEMY SPAWNED (host → server → all others) ───────────────
+    socket.on('spawn-enemy', (data) => {
         const code = socket.data.roomCode;
         if (!code || !rooms[code]) return;
-        // data = { enemyId, damage, kx, ky, kz }
-        socket.to(code).emit('enemy-hit', { ...data, fromId: socket.id });
+        // Store enemy state for late joiners
+        rooms[code].enemies[data.nid] = { nid: data.nid, type: data.type, x: data.x, z: data.z };
+        // Relay to all OTHER players
+        socket.to(code).emit('spawn-enemy', data);
     });
 
-    // ── ENEMY DEAD CONFIRM ───────────────────────────────────────
-    // When a player confirms an enemy is dead (health reached 0 on their side)
+    // ── ENEMY KILLED (any player → server → ALL players) ─────────
     socket.on('enemy-killed', (data) => {
         const code = socket.data.roomCode;
         if (!code || !rooms[code]) return;
-        socket.to(code).emit('enemy-killed', { enemyId: data.enemyId, fromId: socket.id });
+        delete rooms[code].enemies[data.nid];
+        // Broadcast to ALL players in room (including sender for confirmation)
+        io.to(code).emit('enemy-killed', { nid: data.nid });
+        console.log(`[KILL] Enemy ${data.nid} killed in room ${code}`);
     });
 
-    // ── DISCONNECT ───────────────────────────────────────────────
+    // ── WAVE COMPLETE (host → server → all players) ───────────────
+    socket.on('wave-complete', (data) => {
+        const code = socket.data.roomCode;
+        if (!code || !rooms[code]) return;
+        rooms[code].enemies = {}; // Clear enemy state for next wave
+        io.to(code).emit('wave-complete', data);
+        console.log(`[WAVE] Wave ${data.wave} complete in room ${code}`);
+    });
+
+    // ── SHOP CLOSED (host → all close shop and advance wave) ─────
+    socket.on('shop-closed', (data) => {
+        const code = socket.data.roomCode;
+        if (!code || !rooms[code]) return;
+        socket.to(code).emit('shop-closed', data);
+    });
+
+    // ── DISCONNECT ────────────────────────────────────────────────
     socket.on('disconnect', () => {
         const code = socket.data.roomCode;
         if (code && rooms[code]) {
             delete rooms[code].players[socket.id];
             io.to(code).emit('player-left', { id: socket.id });
+            // If host disconnects, assign new host
+            if (rooms[code].hostId === socket.id) {
+                const remaining = Object.keys(rooms[code].players);
+                if (remaining.length > 0) {
+                    rooms[code].hostId = remaining[0];
+                    io.to(code).emit('host-changed', { newHostId: remaining[0] });
+                }
+            }
             if (Object.keys(rooms[code].players).length === 0) {
                 delete rooms[code];
                 console.log(`[ROOM] Deleted empty room ${code}`);
@@ -163,6 +178,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3001;
-httpServer.listen(PORT, () => {
-    console.log(`🟢 Nightfall Survival server on port ${PORT}`);
-});
+httpServer.listen(PORT, () => console.log(`🟢 Nightfall Survival server on port ${PORT}`));
