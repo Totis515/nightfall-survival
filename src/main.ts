@@ -565,7 +565,7 @@ function gameOver() {
         // Mostrar cuántas oleadas se sobrevivió
         const finalStats = document.getElementById('final-stats');
         if (finalStats) {
-            finalStats.innerText = `Waves Survived: ${waveManager.currentWave > 0 ? waveManager.currentWave - 1 : 0}`;
+            finalStats.innerText = `Stages Survived: ${this.currentWave > 0 ? this.currentWave - 1 : 0}`;
         }
         // Mostrar el nombre del monstruo asesino
         const killedByEl = document.getElementById('killed-by');
@@ -620,6 +620,9 @@ function createClouds() {
 // ---- ILUMINACIÓN ----
 const ambientLight = new THREE.HemisphereLight(0x1a0b3e, 0x0a0a1a, 0.1); // Luz ambiental tenue
 scene.add(ambientLight);
+
+// Dense exponential fog like the video
+scene.fog = new THREE.FogExp2(0x1a0b3e, 0.012);
 
 // Luz puntal naranja espeluznante cerca del Black Market para añadir variedad de color
 const bmLight = new THREE.PointLight(0xff6600, 3, 25);
@@ -750,8 +753,8 @@ const grassMat = new THREE.MeshStandardMaterial({
     color: 0x3a4d1a, // Verde oliva oscuro
     flatShading: true
 });
-// Más triángulos de césped para un aspecto de suelo más rico
-const grassCount = 1000;
+// Más triángulos de césped para un aspecto de suelo// ---- HIERBA ----
+const grassCount = 8000; // Increased significantly for visual richness
 const grassInstanced = new THREE.InstancedMesh(grassGeo, grassMat, grassCount);
 // grassInstanced.receiveShadow = true; // Desactivar sombras en el césped para aumentar FPS
 
@@ -1100,9 +1103,11 @@ enum EnemyType {
     STANDARD,
     TANK,
     FAST,
+    HUMANOID,   // New: Pale skin, blue shirt
     ROBOT,
     BOSS_GOLIATH,
-    BOSS_SENTINEL
+    BOSS_SENTINEL,
+    BOSS_FINAL_ROBOT // Final boss for Stage 15
 }
 
 interface EnemyStats {
@@ -1125,12 +1130,16 @@ const ENEMY_DATA: Record<EnemyType, EnemyStats> = {
     [EnemyType.TANK]: { health: 180, speed: 1.3, damage: 25, shirtColor: 0x37474f, skinColor: 0x6d4c41, size: 1.4, attackRange: 1.8, attackCooldown: 1500, reward: 50, name: "TANK ZOMBIE" },
     // Fast: Yellow-green Skin, red shirt
     [EnemyType.FAST]: { health: 40, speed: 3.8, damage: 5, shirtColor: 0xb71c1c, skinColor: 0x827717, size: 0.85, attackRange: 1.2, attackCooldown: 500, reward: 30, name: "FAST ZOMBIE" },
+    // Humanoid: Pale skin, blue shirt (From video!)
+    [EnemyType.HUMANOID]: { health: 60, speed: 2.5, damage: 12, shirtColor: 0x2196f3, skinColor: 0xd1d1d1, size: 1.0, attackRange: 1.5, attackCooldown: 900, reward: 20, name: "HUMAN ZOMBIE" },
     // Robot: Grey metal, cyan glow (Wave 3+)
     [EnemyType.ROBOT]: { health: 250, speed: 2.5, damage: 15, shirtColor: 0x444444, skinColor: 0x888888, size: 1.1, attackRange: 15.0, attackCooldown: 2000, reward: 100, name: "ROBOT" },
     // Boss Goliath: Massive, slow zombie (Wave 5)
     [EnemyType.BOSS_GOLIATH]: { health: 1200, speed: 1.8, damage: 45, shirtColor: 0x1a1a1a, skinColor: 0x2d3d1d, size: 2.5, attackRange: 2.5, attackCooldown: 1200, reward: 500, name: "GOLIATH" },
     // Boss Sentinel: Advanced Robot (Wave 10)
     [EnemyType.BOSS_SENTINEL]: { health: 2000, speed: 1.2, damage: 20, shirtColor: 0x222222, skinColor: 0x555555, size: 2.2, attackRange: 18.0, attackCooldown: 250, reward: 1000, name: "SENTINEL" },
+    // Final Boss: Gigantic Robot Zombie (Stage 15)
+    [EnemyType.BOSS_FINAL_ROBOT]: { health: 6000, speed: 4.5, damage: 40, shirtColor: 0x000000, skinColor: 0x555555, size: 4.5, attackRange: 15.0, attackCooldown: 300, reward: 5000, name: "ULTIMATE MECHA-ZOMBIE" },
 };
 
 class Enemy {
@@ -1185,9 +1194,14 @@ class Enemy {
             return mesh;
         };
 
-        if (this.type === EnemyType.ROBOT || this.type === EnemyType.BOSS_SENTINEL) {
+        if (this.type === EnemyType.ROBOT || this.type === EnemyType.BOSS_SENTINEL || this.type === EnemyType.BOSS_FINAL_ROBOT) {
             const metMat = new THREE.MeshStandardMaterial({ color: stats.skinColor, metalness: 0.8, roughness: 0.2 });
-            const glowMat = new THREE.MeshBasicMaterial({ color: this.type === EnemyType.BOSS_SENTINEL ? 0xff00ff : 0x00ffff });
+            const glowMat = new THREE.MeshBasicMaterial({ color: (this.type === EnemyType.BOSS_SENTINEL || this.type === EnemyType.BOSS_FINAL_ROBOT) ? 0xff0000 : 0x00ffff });
+
+            // Final Boss gets even more metallic/dark look
+            if (this.type === EnemyType.BOSS_FINAL_ROBOT) {
+                metMat.color.setHex(0x111111);
+            }
 
             // Base Mecánica / "Pies"
             const ballGeo = new THREE.SphereGeometry(0.4 * s, 12, 12);
@@ -1201,9 +1215,16 @@ class Enemy {
             core.position.set(0, 1.0 * s, 0);
             this.mesh.add(core);
 
-            // Cabeza Esférica
-            const headGeo = new THREE.SphereGeometry(0.35 * s, 16, 16);
-            const head = addPart(new THREE.Mesh(headGeo, metMat), stats.skinColor);
+            // Cabeza (Esférica para Robots, Cuadrada para el Mecha-Zombie Final)
+            let head;
+            if (this.type === EnemyType.BOSS_FINAL_ROBOT) {
+                const headGeo = new THREE.BoxGeometry(0.5 * s, 0.5 * s, 0.5 * s);
+                const zombieSkinMat = new THREE.MeshStandardMaterial({ color: 0x2d3d1d, flatShading: true });
+                head = addPart(new THREE.Mesh(headGeo, zombieSkinMat), 0x2d3d1d);
+            } else {
+                const headGeo = new THREE.SphereGeometry(0.35 * s, 16, 16);
+                head = addPart(new THREE.Mesh(headGeo, metMat), stats.skinColor);
+            }
             head.position.set(0, 1.6 * s, 0);
             this.mesh.add(head);
 
@@ -1480,130 +1501,109 @@ class WaveManager {
     spawnTimer: number = 0;
     spawnRate: number = 2000; // ms
     activeEnemies: Enemy[] = [];
-    isBreak: boolean = false; // Verdadero entre oleadas (tiempo de descanso)
+    isBreak: boolean = false; // Verdadero entre oleadas
+    maxWaves: number = 15; // Límite de la Phase 10
+    isGameOver: boolean = false;
 
     startNextWave() {
+        if (this.currentWave >= this.maxWaves) return;
+
         this.isBreak = false;
         soundManager.startGameMusic();
-        // currentWave ya se incrementó en preSpawnWave
+        this.currentWave++;
 
-        // Hacer visibles todos los enemigos pre-generados
-        this.activeEnemies.forEach(en => {
-            en.mesh.visible = true;
-        });
-
-        // ---- APARICIÓN DE ARMAS POR OLEADA ----
-        // Según la oleada actual, coloca armas específicas en el suelo para el jugador.
-        // Las armas aparecen en posiciones fijas cerca del punto de inicio del jugador.
-        if (this.currentWave === 1) {
-            // Oleada 1: Pistola Láser (idx 5) y Jetpack - armas de larga distancia
-            if (!playerInventory.includes(5))
-                weaponPickups.push(new WeaponPickup(5, new THREE.Vector3(-8, 0, -5)));
-            // El jetpack ya existe en pos (15, 0, -25) desde el inicio
-        } else if (this.currentWave === 2) {
-            // Oleada 2: Lanzacohetes (idx 4) - arma pesada de área
-            if (!playerInventory.includes(4))
-                weaponPickups.push(new WeaponPickup(4, new THREE.Vector3(10, 0, 8)));
-        } else if (this.currentWave === 3) {
-            // Oleada 3: Minigun (idx 3) - cadencia máxima de fuego
-            if (!playerInventory.includes(3))
-                weaponPickups.push(new WeaponPickup(3, new THREE.Vector3(-10, 0, 10)));
-        } else if (this.currentWave === 4) {
-            // Oleada 4: Lanzallamas (idx 6) - daño de área continuo con fuego
-            if (!playerInventory.includes(6))
-                weaponPickups.push(new WeaponPickup(6, new THREE.Vector3(5, 0, -12)));
+        if (this.currentWave === this.maxWaves) {
+            // Stage Final: El Jefe
+            this.enemiesToSpawn = 1;
+            this.spawnRate = 3000;
+        } else {
+            this.enemiesToSpawn = 6 + (this.currentWave * 4); // 10, 14, 18, 22...
+            this.spawnRate = Math.max(400, 2000 - (this.currentWave * 120));
         }
 
-        // Ocultar pantalla de oleada completada
+        // Esconder pantalla de STAGE COMPLETE
         const wc = document.getElementById('wave-complete');
         if (wc) wc.style.display = 'none';
-        if (enemiesEl) enemiesEl.innerText = this.enemiesAlive.toString();
+
+        if (enemiesEl) enemiesEl.innerText = this.enemiesToSpawn.toString();
+        if (hordeEl) hordeEl.innerText = `Enemies: 0 (To Spawn: ${this.enemiesToSpawn})`;
         if (stageEl) {
-            stageEl.innerText = `WAVE ${this.currentWave}`;
-            stageEl.style.color = '#ff0000';
-            setTimeout(() => { if (stageEl) stageEl.style.color = '#ff3333'; }, 500);
-        }
-    }
-
-    preSpawnWave() {
-        this.currentWave++;
-        this.activeEnemies = this.activeEnemies.filter(en => !en.isDead);
-
-        let count = 4 + (this.currentWave * 4);
-        this.enemiesToSpawn = count;
-        this.enemiesAlive = 0;
-
-        // LÓGICA DE OLEADAS DE JEFES
-        if (this.currentWave === 5) {
-            const bossPos = new THREE.Vector3(50, 0, 50);
-            this.activeEnemies.push(new Enemy(EnemyType.BOSS_GOLIATH, bossPos));
-            this.enemiesAlive++;
-        } else if (this.currentWave === 10) {
-            const bossPos = new THREE.Vector3(50, 0, 50);
-            this.activeEnemies.push(new Enemy(EnemyType.BOSS_SENTINEL, bossPos));
-            this.enemiesAlive++;
-        }
-
-        for (let i = 0; i < count; i++) {
-            let type = EnemyType.STANDARD;
-            const rand = Math.random();
-            if (this.currentWave >= 3) {
-                if (rand > 0.75) type = EnemyType.ROBOT;
-                else if (rand > 0.55) type = EnemyType.TANK;
-                else if (rand > 0.35) type = EnemyType.FAST;
-            } else if (this.currentWave >= 2) {
-                if (rand > 0.8) type = EnemyType.FAST;
-                else if (rand > 0.6) type = EnemyType.TANK;
+            stageEl.innerText = `STAGE ${this.currentWave}`;
+            if (this.currentWave === this.maxWaves) {
+                stageEl.innerText = "FINAL STAGE: BOSS";
+                stageEl.style.color = '#ff0000';
+            } else {
+                stageEl.style.color = '#ff3333';
             }
-            // Se pasa el índice y el total para distribuir los ángulos equitativamente
-            this.spawnEnemyWithType(type, i, count);
         }
-
-        this.enemiesToSpawn = 0; // Todos generados por adelantado
     }
 
-    spawnEnemyWithType(type: EnemyType, index: number = 0, total: number = 1) {
-        // --- CORRECCIÓN DE SPAWN DE ENEMIGOS ---
-        // Usamos el ORIGEN DEL MUNDO (0,0,0) como centro de spawn, NO el camera.position.
-        // Si usáramos camera.position durante la pantalla de carga, los enemigos aparecerían
-        // todos agrupados en el punto de spawn inicial y luego "teleportarían" al arrancar.
-        // Con el origen fijo, cada enemigo aparece en su punto permanente y camina hacia el jugador.
-        const baseAngle = (index / total) * Math.PI * 2;
-        const jitter = (Math.random() - 0.5) * (Math.PI / Math.max(total, 1));
-        const angle = baseAngle + jitter;
-        const radius = 70 + Math.random() * 40; // Entre 70 y 110 unidades del centro del mapa
-        const pos = new THREE.Vector3(
-            Math.cos(angle) * radius,
-            0,
-            Math.sin(angle) * radius
-        );
+    // Inicialización al empezar el juego
+    preSpawnWave() {
+        this.activeEnemies = this.activeEnemies.filter(en => !en.isDead);
+        this.enemiesAlive = 0;
+        this.currentWave = 0;
+        this.isGameOver = false;
+        this.startNextWave();
+    }
+
+    spawnEnemyWithType(type: EnemyType, pos: THREE.Vector3) {
         const enemy = new Enemy(type, pos);
-        // Enemigos visibles desde el inicio: ya están en posición fija lejana al jugador.
-        // Esto evita el "pop-in" sin necesidad de ocultarlos.
         enemy.mesh.visible = true;
         this.activeEnemies.push(enemy);
         this.enemiesAlive++;
     }
 
     waveComplete() {
-        if (this.isBreak) return;
+        if (this.isBreak || this.isGameOver) return;
         this.isBreak = true;
         soundManager.startWinMusic();
 
-        // COMPORTAMIENTO DEL VIDEO: Mostrar tienda inmediatamente sin aviso
+        // Si terminamos el stage 15, ¡Victoria!
+        if (this.currentWave === this.maxWaves) {
+            this.victory();
+            return;
+        }
+
+        // Mostrar pantalla de STAGE COMPLETE y luego tienda
+        const wc = document.getElementById('wave-complete');
+        const wcWave = document.getElementById('wc-wave');
+        if (wc) wc.style.display = 'flex';
+        if (wcWave) wcWave.innerText = `STAGE ${this.currentWave} COMPLETE!`;
+
         setTimeout(() => {
-            const wc = document.getElementById('wave-complete');
             if (wc) wc.style.display = 'none';
             openShop();
-        }, 1200); // Pequeño retraso para disfrutar la victoria
+        }, 1500);
 
         if (stageEl) stageEl.innerText = `RESTORING...`;
     }
 
-    update(delta: number, playerPos: THREE.Vector3, time: number) {
-        // La lógica de generación se eliminó de aquí para corregir lag - ahora se hace en preSpawnWave
+    victory() {
+        this.isGameOver = true;
+        if (!isMobile) controls.unlock();
+        const victoryScreen = document.getElementById('victory-screen');
+        if (victoryScreen) victoryScreen.style.display = 'flex';
+        soundManager.startWinMusic();
 
-        // Actualizar enemigos activos
+        // Ocultar el HUD y la mira para la victoria
+        uiLayer.style.display = 'none';
+        crosshair.style.display = 'none';
+    }
+
+    update(delta: number, playerPos: THREE.Vector3, time: number) {
+        if (this.isGameOver) return;
+
+        // Spawning dinámico
+        if (!this.isBreak && this.enemiesToSpawn > 0) {
+            this.spawnTimer += delta * 1000;
+            if (this.spawnTimer >= this.spawnRate) {
+                this.spawnEnemy();
+                this.spawnTimer = 0;
+            }
+        }
+
+        // Actualizar enemigos actuales
         for (let i = this.activeEnemies.length - 1; i >= 0; i--) {
             const en = this.activeEnemies[i];
             en.update(delta, playerPos, time);
@@ -1615,7 +1615,7 @@ class WaveManager {
         }
 
         if (hordeEl) {
-            hordeEl.innerText = `Enemies: ${this.enemiesAlive}`;
+            hordeEl.innerText = `Enemies: ${this.enemiesAlive} (To Spawn: ${this.enemiesToSpawn})`;
         }
 
         // Verificación de oleada completada
@@ -1625,29 +1625,53 @@ class WaveManager {
     }
 
     spawnEnemy() {
+        if (this.enemiesToSpawn <= 0) return;
+
+        let type = EnemyType.STANDARD;
+        const r = Math.random();
+
+        if (this.currentWave === this.maxWaves) {
+            type = EnemyType.BOSS_FINAL_ROBOT;
+        } else if (this.currentWave >= 13) {
+            if (r > 0.6) type = EnemyType.ROBOT;
+            else if (r > 0.4) type = EnemyType.TANK;
+            else if (r > 0.2) type = EnemyType.FAST;
+            else type = EnemyType.HUMANOID;
+        } else if (this.currentWave >= 10) {
+            if (r > 0.8) type = EnemyType.BOSS_SENTINEL;
+            else if (r > 0.6) type = EnemyType.ROBOT;
+            else if (r > 0.3) type = EnemyType.TANK;
+            else type = EnemyType.HUMANOID;
+        } else if (this.currentWave >= 7) {
+            if (r > 0.8) type = EnemyType.ROBOT;
+            else if (r > 0.5) type = EnemyType.FAST;
+            else type = EnemyType.STANDARD;
+        } else if (this.currentWave >= 4) {
+            if (r > 0.9) type = EnemyType.BOSS_GOLIATH;
+            else if (r > 0.6) type = EnemyType.TANK;
+            else type = EnemyType.STANDARD;
+        } else if (this.currentWave >= 2) {
+            if (r > 0.7) type = EnemyType.FAST;
+            else if (r > 0.5) type = EnemyType.HUMANOID;
+            else type = EnemyType.STANDARD;
+        }
+
         const angle = Math.random() * Math.PI * 2;
-        const radius = 45 + Math.random() * 30; // Más lejos (45 a 75 unidades)
+        const radius = 50 + Math.random() * 20;
         const pos = new THREE.Vector3(
             camera.position.x + Math.cos(angle) * radius,
             0,
             camera.position.z + Math.sin(angle) * radius
         );
 
-        let type = EnemyType.STANDARD;
-        const rand = Math.random();
-        if (this.currentWave >= 3) {
-            if (rand > 0.8) type = EnemyType.TANK;
-            else if (rand > 0.6) type = EnemyType.FAST;
-        } else if (this.currentWave >= 2) {
-            if (rand > 0.8) type = EnemyType.FAST;
-        }
-
         const enemy = new Enemy(type, pos);
+        enemy.mesh.visible = true;
         this.activeEnemies.push(enemy);
         this.enemiesToSpawn--;
         this.enemiesAlive++;
     }
 }
+
 
 const waveManager = new WaveManager();
 
@@ -1730,6 +1754,7 @@ controls.addEventListener('unlock', () => {
 // Elementos de la interfaz para la selección de plataforma
 const menuButtonsDiv = document.getElementById('menu-buttons') as HTMLElement;
 const platformSelectionDiv = document.getElementById('platform-selection') as HTMLElement;
+// btnStart ya está declarado al inicio del archivo
 
 btnStart.addEventListener('click', () => {
     // En lugar de lockear de inmediato, preguntamos la plataforma
@@ -1794,7 +1819,7 @@ function startGame() {
     uiLayer.style.display = 'block';         // Mostrar el HUD del juego
     crosshair.style.display = 'block';       // Mostrar la mira de apuntado
     prevTime = performance.now();            // Resetear el tiempo para evitar un delta enorme
-    waveManager.startNextWave();             // Iniciar la primera oleada de enemigos
+    // waveManager.startNextWave() ya fue llamada al final de la carga (progress >= 100)
 }
 
 // Arma de pocos polígonos (Low Poly) unida a la cámara
