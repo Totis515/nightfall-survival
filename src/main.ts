@@ -15,6 +15,7 @@ let socket: Socket | null = null;
 let myUsername = '';
 let myRoomCode = '';
 let isMultiplayer = false;
+let isHost = false;
 
 // Map of other players in our room: socketId → { group, label }
 const remotePlayers: Map<string, { group: THREE.Group; label: THREE.Sprite }> = new Map();
