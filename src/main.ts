@@ -168,6 +168,18 @@ function connectMultiplayer() {
             enemy.die(true); // fromNetwork = true, skip re-emit
         }
     });
+    socket.on('enemy-sync', (enemiesArray: {nid: string, x: number, z: number, rotY: number}[]) => {
+        if (isHost || !gameStarted) return; // We are authoritative or early
+        for (const data of enemiesArray) {
+            const enemy = waveManager.activeEnemies.find(e => e.nid === data.nid);
+            if (enemy) {
+                if (!enemy.networkPosition) enemy.networkPosition = new THREE.Vector3();
+                enemy.networkPosition.set(data.x, enemy.mesh.position.y, data.z); // keep current Y for bobbing/spawning
+                enemy.networkRotY = data.rotY;
+            }
+        }
+    });
+
 
     // ── Wave sync ────────────────────────────────────────────────
     socket.on('wave-complete', () => {
@@ -180,8 +192,13 @@ function connectMultiplayer() {
         }
     });
     socket.on('shop-closed', () => {
-        // Non-hosts advance wave when host closes shop
-        if (!isHost) closeShop();
+        if (shopOpen) actuallyCloseShopAndStartNextWave();
+    });
+    socket.on('shop-players-update', (data: { players: any[] }) => {
+        if (shopOpen) updateShopPlayersList(data.players);
+    });
+    socket.on('all-shop-ready', () => {
+        if (shopOpen) actuallyCloseShopAndStartNextWave();
     });
     socket.on('host-changed', (data: { newHostId: string }) => {
         if (socket!.id === data.newHostId) {
@@ -1556,6 +1573,8 @@ class Enemy {
     skinColor: number;
     nid: string; // Unique network ID for multiplayer sync
     isAlive: boolean = true;
+    networkPosition: THREE.Vector3 | null = null;
+    networkRotY: number | null = null;
     private avoidVector = new THREE.Vector3(); // Para evitar colisiones
     // Guardar referencias para restaurar colores fácilmente
     bodyParts: { mesh: THREE.Mesh; color: number }[] = [];
@@ -1822,6 +1841,37 @@ class Enemy {
             return;
         }
 
+        // Lógica de red: Si NO somos el host, solo interpolar a la red y comprobar ataques locales
+        if (isMultiplayer && !isHost) {
+            if (this.networkPosition) {
+                // Interpolar suavemente hacia la pos. objetivo (lerp)
+                this.mesh.position.lerp(this.networkPosition, delta * 15);
+                
+                // Efecto de bobbing si se mueve
+                const distMoved = this.mesh.position.distanceTo(this.networkPosition);
+                if (distMoved > 0.05) this.bobOffset += delta * 4;
+            }
+            if (this.networkRotY !== null) {
+                this.mesh.rotation.y = this.networkRotY;
+            }
+            this.mesh.position.y = Math.max(0, Math.sin(this.bobOffset) * 0.04);
+
+            // Efectos de jefe
+            if (this.type === EnemyType.BOSS_GOLIATH || this.type === EnemyType.BOSS_SENTINEL) {
+                const bossScale = ENEMY_DATA[this.type].size + Math.sin(time * 0.002) * 0.05;
+                this.mesh.scale.setScalar(bossScale);
+            }
+
+            // Comprobar daño cuerpo a cuerpo local para reproducir animaciones/daño en el jugador actual
+            const localPosXZ = new THREE.Vector3(playerPos.x, 0, playerPos.z);
+            const myPosXZ = new THREE.Vector3(this.mesh.position.x, 0, this.mesh.position.z);
+            if (myPosXZ.distanceTo(localPosXZ) <= this.attackRange && time - this.lastAttackTime > this.attackCooldown) {
+                this.attackPlayer(playerPos);
+                this.lastAttackTime = time;
+            }
+            return;
+        }
+
         const playerPosXZ = new THREE.Vector3(playerPos.x, 0, playerPos.z);
         const enemyPosXZ = new THREE.Vector3(this.mesh.position.x, 0, this.mesh.position.z);
         const dist = enemyPosXZ.distanceTo(playerPosXZ);
@@ -2032,6 +2082,8 @@ class WaveManager {
     isBreak: boolean = false; // Verdadero entre oleadas
     maxWaves: number = 15; // Límite de la Phase 10
     isGameOver: boolean = false;
+    isNetworkClient: boolean = false; // set to true if multiplayer and NOT host
+    syncTimer: number = 0;
 
     startNextWave() {
         if (this.currentWave >= this.maxWaves) return;
@@ -2164,9 +2216,24 @@ class WaveManager {
         }
 
         // Actualizar enemigos actuales
+        const allPlayers = [playerPos];
+        if (isMultiplayer && isHost) {
+            remotePlayers.forEach(rp => allPlayers.push(rp.group.position));
+        }
+
         for (let i = this.activeEnemies.length - 1; i >= 0; i--) {
             const en = this.activeEnemies[i];
-            en.update(delta, playerPos, time);
+            
+            let closestPos = playerPos;
+            if (isMultiplayer && isHost && allPlayers.length > 1) {
+                let minDist = Infinity;
+                for (const p of allPlayers) {
+                    const d = en.mesh.position.distanceToSquared(p);
+                    if (d < minDist) { minDist = d; closestPos = p; }
+                }
+            }
+
+            en.update(delta, closestPos, time);
             if (en.isDead) {
                 this.activeEnemies.splice(i, 1);
                 this.enemiesAlive--;
@@ -2176,6 +2243,21 @@ class WaveManager {
 
         if (hordeEl) {
             hordeEl.innerText = `Enemies: ${this.enemiesAlive} (To Spawn: ${this.enemiesToSpawn})`;
+        }
+
+        // Host envía posiciones de enemigos 10 veces por segundo
+        if (isMultiplayer && isHost && socket?.connected && this.activeEnemies.length > 0) {
+            this.syncTimer += delta;
+            if (this.syncTimer >= 0.1) {
+                this.syncTimer = 0;
+                const syncData = this.activeEnemies.filter(e => !e.isDead).map(e => ({
+                    nid: e.nid,
+                    x: Number(e.mesh.position.x.toFixed(2)),
+                    z: Number(e.mesh.position.z.toFixed(2)),
+                    rotY: Number(e.mesh.rotation.y.toFixed(2))
+                }));
+                socket.emit('enemy-sync', syncData);
+            }
         }
 
         // Non-host: skip wave-complete detection (server will notify them)
@@ -3056,6 +3138,9 @@ shopItems.forEach(item => {
 
 function openShop() {
     isUIShowing = true; shopOpen = true;
+    myShopReady = false;
+    updateShopReadyUI();
+    if (isMultiplayer && socket?.connected) socket.emit('shop-ready', { ready: false }); // Sync initial unready state
     const coinsStr = playerCoins.toString();
     if (shopCoinsEl) shopCoinsEl.innerText = coinsStr;
     const shopCoinsMobile = document.getElementById('shop-coins-mobile');
@@ -3067,14 +3152,49 @@ function openShop() {
     controls.unlock();
 }
 
-function closeShop() {
+let myShopReady = false;
+
+function updateShopPlayersList(players: any[]) {
+    ['shop-players', 'shop-players-mobile'].forEach(id => {
+        const container = document.getElementById(id);
+        if (!container) return;
+        container.innerHTML = players.map(p => 
+            `<div style="color:${p.id === socket?.id ? '#0f0' : (p.shopReady ? '#aaa' : '#fff')}">
+                ${p.platform === 'mobile' ? '📱' : '💻'} ${p.username}: ${p.shopReady ? '✅' : '⏳'}
+            </div>`
+        ).join('');
+    });
+}
+
+function updateShopReadyUI() {
+    const text = myShopReady ? '❌ CANCEL READY' : '✔ READY FOR NEXT WAVE';
+    const bg = myShopReady ? '#a00' : '#0a0';
+    ['shop-close', 'shop-close-mobile'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) {
+            btn.innerText = text;
+            btn.style.background = bg;
+            btn.style.boxShadow = `0 0 10px ${bg}`;
+        }
+    });
+}
+
+function toggleShopReady() {
+    if (!isMultiplayer) {
+        actuallyCloseShopAndStartNextWave();
+        return;
+    }
+    myShopReady = !myShopReady;
+    updateShopReadyUI();
+    if (socket?.connected) socket.emit('shop-ready', { ready: myShopReady });
+}
+
+function actuallyCloseShopAndStartNextWave() {
     isUIShowing = false; shopOpen = false;
     [document.getElementById('shop-menu'), document.getElementById('shop-menu-mobile')].forEach(m => { if (m) m.style.display = 'none'; });
     if (gameStarted) {
         if (mainMenu) mainMenu.style.display = 'none';
         if (!isMobile) controls.lock();
-        // Host tells non-hosts to also advance to next wave
-        if (isMultiplayer && isHost && socket?.connected) socket.emit('shop-closed', {});
         startNextWaveWithLoading();
     }
 }
@@ -3105,9 +3225,9 @@ function showPurchaseFeedback(success: boolean) {
     }
 }
 
-// Cerrar tienda
-document.getElementById('shop-close')?.addEventListener('click', closeShop);
-document.getElementById('shop-close-mobile')?.addEventListener('click', closeShop);
+// Cerrar tienda / Toggle Ready
+document.getElementById('shop-close')?.addEventListener('click', toggleShopReady);
+document.getElementById('shop-close-mobile')?.addEventListener('click', toggleShopReady);
 
 
 

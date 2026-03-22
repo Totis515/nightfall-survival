@@ -1341,7 +1341,10 @@
             </div>
         </div>
 
-        <button id="shop-close">✕ CLOSE SHOP</button>
+        <div id="shop-players" style="margin: 10px 0; display:flex; gap:15px; justify-content:center; font-family: monospace; font-size: 16px;">
+            <!-- Player ready states go here -->
+        </div>
+        <button id="shop-close" style="background:#0a0; box-shadow:0 0 10px #0a0;">✔ READY FOR NEXT WAVE</button>
     </div>
 
     <!-- =====================================================
@@ -1421,8 +1424,11 @@
             </div>
         </div>
 
+        <div id="shop-players-mobile" style="margin: 6px 0; display:flex; gap:10px; justify-content:center; flex-wrap:wrap; font-family: monospace; font-size: 14px;">
+            <!-- Player ready states go here -->
+        </div>
         <button id="shop-close-mobile" style="
-            background: #ff2222;
+            background: #0a0;
             color: #fff;
             border: 2px solid #fff;
             padding: 10px 20px;
@@ -1433,8 +1439,8 @@
             width: 100%;
             border-radius: 5px;
             font-weight: bold;
-            box-shadow: 0 0 10px rgba(255,0,0,0.5);
-        ">✕ CLOSE MARKET</button>
+            box-shadow: 0 0 10px rgba(0,255,0,0.5);
+        ">✔ READY FOR NEXT WAVE</button>
     </div>
 
     <!-- Efectos visuales superpuestos (como el borde rojo al recibir daño o parpadeos de compra) -->

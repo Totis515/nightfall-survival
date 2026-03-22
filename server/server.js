@@ -128,12 +128,19 @@ io.on('connection', (socket) => {
         socket.to(code).emit('spawn-enemy', data);
     });
 
+    // ── ENEMY SYNC (Continuous Move) ─────────────────────────────
+    socket.on('enemy-sync', (enemiesArray) => {
+        const code = socket.data.roomCode;
+        if (!code || !rooms[code]) return;
+        // Broadcast directly to non-hosts without storing
+        socket.broadcast.to(code).emit('enemy-sync', enemiesArray);
+    });
+
     // ── ENEMY KILLED (any player → server → ALL players) ─────────
     socket.on('enemy-killed', (data) => {
         const code = socket.data.roomCode;
         if (!code || !rooms[code]) return;
         delete rooms[code].enemies[data.nid];
-        // Broadcast to ALL players in room (including sender for confirmation)
         io.to(code).emit('enemy-killed', { nid: data.nid });
         console.log(`[KILL] Enemy ${data.nid} killed in room ${code}`);
     });
@@ -143,15 +150,37 @@ io.on('connection', (socket) => {
         const code = socket.data.roomCode;
         if (!code || !rooms[code]) return;
         rooms[code].enemies = {}; // Clear enemy state for next wave
+        
+        // Reset shop ready state for next wave
+        Object.values(rooms[code].players).forEach(p => p.shopReady = false);
+        
         io.to(code).emit('wave-complete', data);
         console.log(`[WAVE] Wave ${data.wave} complete in room ${code}`);
     });
 
-    // ── SHOP CLOSED (host → all close shop and advance wave) ─────
+    // ── SHOP READY / SHOP CLOSED ──────────────────────────────────
     socket.on('shop-closed', (data) => {
         const code = socket.data.roomCode;
         if (!code || !rooms[code]) return;
         socket.to(code).emit('shop-closed', data);
+    });
+
+    socket.on('shop-ready', ({ ready }) => {
+        const code = socket.data.roomCode;
+        if (!code || !rooms[code]) return;
+
+        rooms[code].players[socket.id].shopReady = ready;
+        const playerList = Object.values(rooms[code].players);
+
+        // Relay updated list to show checkmarks in UI
+        io.to(code).emit('shop-players-update', { players: playerList });
+
+        // If everyone in room is ready
+        if (playerList.length > 0 && playerList.every(p => p.shopReady)) {
+            io.to(code).emit('all-shop-ready');
+            // Reset for the future
+            playerList.forEach(p => p.shopReady = false);
+        }
     });
 
     // ── DISCONNECT ────────────────────────────────────────────────
