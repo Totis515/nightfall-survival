@@ -22,6 +22,7 @@ const remotePlayers: Map<string, { group: THREE.Group; label: THREE.Sprite }> = 
 
 function createRemotePlayerModel(): THREE.Group {
     const group = new THREE.Group();
+    const model = new THREE.Group();
     const skinMat = new THREE.MeshStandardMaterial({ color: 0x4fc3f7, flatShading: true });
     const clothMat = new THREE.MeshStandardMaterial({ color: 0x1565c0, flatShading: true });
     const darkMat = new THREE.MeshStandardMaterial({ color: 0x0d47a1, flatShading: true });
@@ -42,7 +43,9 @@ function createRemotePlayerModel(): THREE.Group {
     const lEye = new THREE.Mesh(eyeGeo, eyeMat); lEye.position.set(-0.12, 0.05, 0.245);
     const rEye = new THREE.Mesh(eyeGeo, eyeMat); rEye.position.set(0.12, 0.05, 0.245);
     head.add(lEye, rEye);
-    group.add(lShoe, rShoe, lLeg, rLeg, torso, lArm, rArm, head);
+    model.add(lShoe, rShoe, lLeg, rLeg, torso, lArm, rArm, head);
+    model.rotation.y = Math.PI;
+    group.add(model);
     group.traverse(c => { c.frustumCulled = false; });
     return group;
 }
@@ -1813,7 +1816,7 @@ class Enemy {
         setTimeout(() => { scene.remove(this.mesh); }, 50);
     }
 
-    update(delta: number, playerPos: THREE.Vector3, time: number) {
+    update(delta: number, playerPos: THREE.Vector3, time: number, targetIsLocal: boolean = true) {
         if (this.isDead) return;
 
         // Animación de emergencia (Rise Animation)
@@ -1895,7 +1898,7 @@ class Enemy {
             this.mesh.position.add(dir.multiplyScalar(this.speed * delta));
             this.mesh.lookAt(playerPos.x, this.mesh.position.y, playerPos.z);
         } else if (dist <= this.attackRange) {
-            if (time - this.lastAttackTime > this.attackCooldown) {
+            if (targetIsLocal && time - this.lastAttackTime > this.attackCooldown) {
                 this.attackPlayer(playerPos);
                 this.lastAttackTime = time;
             }
@@ -1949,13 +1952,13 @@ class Enemy {
 class WeaponDrop {
     mesh: THREE.Group;
     weaponIdx: number;
-    isJetpack: boolean;
+    dropType: 'weapon' | 'jetpack' | 'ammo' | 'fuel';
     active: boolean = true;
     bobOffset: number = 0;
 
-    constructor(pos: THREE.Vector3, weaponIdx: number, isJetpack: boolean = false, displayColor: number = 0xffffff) {
+    constructor(pos: THREE.Vector3, weaponIdx: number, dropType: 'weapon' | 'jetpack' | 'ammo' | 'fuel' = 'weapon', displayColor: number = 0xffffff) {
         this.weaponIdx = weaponIdx;
-        this.isJetpack = isJetpack;
+        this.dropType = dropType;
         this.mesh = new THREE.Group();
         this.mesh.position.copy(pos);
 
@@ -1964,13 +1967,19 @@ class WeaponDrop {
         const mat = new THREE.MeshStandardMaterial({ color: displayColor, flatShading: true, emissive: displayColor, emissiveIntensity: 0.2 });
         const darkMat = new THREE.MeshStandardMaterial({ color: 0x222222, flatShading: true });
 
-        if (isJetpack) {
+        if (dropType === 'jetpack') {
             // Jetpack: Dos tanques verdes
             for (let i = -1; i <= 1; i += 2) {
                 const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.8, 6), mat);
                 tank.position.set(i * 0.25, 0, 0);
                 weaponModel.add(tank);
             }
+        } else if (dropType === 'fuel') {
+            const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.5, 6), mat);
+            weaponModel.add(tank);
+        } else if (dropType === 'ammo') {
+            const box = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.35, 0.6), mat);
+            weaponModel.add(box);
         } else if (weaponIdx === 1) {
             // Laser Gun: Pistola futurista elegante
             const body = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 0.6), darkMat);
@@ -2040,6 +2049,7 @@ class WeaponDrop {
 
         // Verificar si el jugador lo recoge
         if (playerPos.distanceTo(this.mesh.position) < 2.0) {
+            if (this.dropType === 'fuel' && !hasJetpack) return; // Ignorar recargas si no tiene el item
             this.pickup();
         }
     }
@@ -2049,7 +2059,18 @@ class WeaponDrop {
         scene.remove(this.mesh);
         soundManager.playPickup();
 
-        if (this.isJetpack) {
+        if (this.dropType === 'fuel') {
+            playerJetpackFuel = MAX_FUEL;
+            const ui = document.getElementById('jetpack-ui');
+            if (ui) ui.style.display = 'block';
+            showPickupNotice("FUEL REFILLED");
+        } else if (this.dropType === 'ammo') {
+            for (let i = 1; i < weapons.length; i++) {
+                const w = weapons[i];
+                if (playerInventory.includes(i)) w.ammoReserve += w.magSize * 2;
+            }
+            showPickupNotice("AMMO REFILLED");
+        } else if (this.dropType === 'jetpack') {
             hasJetpack = true;
             playerJetpackFuel = MAX_FUEL;
             const ui = document.getElementById('jetpack-ui');
@@ -2125,18 +2146,23 @@ class WaveManager {
         // Un drop al frente del spawn inicial para que sea obvio
         const pos = new THREE.Vector3(0, 0, 10);
         if (wave === 1) {
-            // Wave 1: Laser Gun (Index 1) celeste & Jetpack
-            activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(-5, 0, 10), 1, false, 0x00ffff));
-            activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(5, 0, 10), 0, true, 0x00ff00));
+            // Wave 1: Laser Gun (Index 1) celeste (eliminado jetpack duplicado verde)
+            activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(0, 0, 10), 1, 'weapon', 0x00ffff));
         } else if (wave === 2) {
             // Wave 2: Rocket Launcher (Index 2) rojo
-            activeWeaponDrops.push(new WeaponDrop(pos, 2, false, 0xff0000));
+            activeWeaponDrops.push(new WeaponDrop(pos, 2, 'weapon', 0xff0000));
         } else if (wave === 3) {
             // Wave 3: Mini Gun (Index 3) amarillo
-            activeWeaponDrops.push(new WeaponDrop(pos, 3, false, 0xffff00));
+            activeWeaponDrops.push(new WeaponDrop(pos, 3, 'weapon', 0xffff00));
         } else if (wave === 4) {
             // Wave 4: Fire Gun (Index 4) naranja
-            activeWeaponDrops.push(new WeaponDrop(pos, 4, false, 0xffaa00));
+            activeWeaponDrops.push(new WeaponDrop(pos, 4, 'weapon', 0xffaa00));
+        } else if (wave >= 5) {
+            // Higher waves: drop ammo & fuel refills
+            activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(-5, 0, 10), 0, 'ammo', 0x99ccff));
+            if (hasJetpack) {
+                activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(5, 0, 10), 0, 'fuel', 0x00ff00));
+            }
         }
     }
 
@@ -2225,15 +2251,20 @@ class WaveManager {
             const en = this.activeEnemies[i];
             
             let closestPos = playerPos;
+            let targetIsLocal = true;
             if (isMultiplayer && isHost && allPlayers.length > 1) {
                 let minDist = Infinity;
                 for (const p of allPlayers) {
                     const d = en.mesh.position.distanceToSquared(p);
-                    if (d < minDist) { minDist = d; closestPos = p; }
+                    if (d < minDist) { 
+                        minDist = d; 
+                        closestPos = p; 
+                        targetIsLocal = (p === playerPos);
+                    }
                 }
             }
 
-            en.update(delta, closestPos, time);
+            en.update(delta, closestPos, time, targetIsLocal);
             if (en.isDead) {
                 this.activeEnemies.splice(i, 1);
                 this.enemiesAlive--;
