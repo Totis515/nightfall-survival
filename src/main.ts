@@ -264,18 +264,35 @@ function initMultiplayerUI() {
 
     // Room screen - Create
     document.getElementById('btn-create-room')?.addEventListener('click', () => {
-        if (!socket) return;
         const roomErr = document.getElementById('room-error')!;
+        if (!socket) { roomErr.innerText = 'Not connected to server. Try again.'; return; }
         const platStr = isMobile ? 'mobile' : 'pc';
-        socket.emit('create-room', { username: myUsername, platform: platStr }, (res: any) => {
-            if (res.error) { roomErr.innerText = res.error; return; }
-            myRoomCode = res.roomCode;
-            isMultiplayer = true;
-            isHost = true; // Room creator is always the host
-            document.getElementById('lobby-code')!.innerText = myRoomCode;
-            updateLobbyUI(res.players, socket!.id!);
-            showScreen('lobby-screen');
-        });
+
+        const doCreate = () => {
+            socket!.emit('create-room', { username: myUsername, platform: platStr }, (res: any) => {
+                if (!res || res.error) { roomErr.innerText = res?.error || 'Server error.'; return; }
+                myRoomCode = res.roomCode;
+                isMultiplayer = true;
+                isHost = true;
+                document.getElementById('lobby-code')!.innerText = myRoomCode;
+                updateLobbyUI(res.players, socket!.id!);
+                showScreen('lobby-screen');
+            });
+        };
+
+        if (socket.connected) {
+            doCreate();
+        } else {
+            roomErr.innerText = 'Connecting to server...';
+            const timeout = setTimeout(() => {
+                roomErr.innerText = 'Could not connect to server. Check Railway is running.';
+            }, 5000);
+            socket.once('connect', () => {
+                clearTimeout(timeout);
+                roomErr.innerText = '';
+                doCreate();
+            });
+        }
     });
 
     // Room screen - Join
