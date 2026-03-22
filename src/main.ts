@@ -183,6 +183,31 @@ function connectMultiplayer() {
         }
     });
 
+    // ── Pause sync ───────────────────────────────────────────────
+    socket.on('game-paused', () => {
+        if (gameStarted && !isUIShowing && !isGameOver && !isPaused) {
+            isPaused = true;
+            isUIShowing = true;
+            const pauseScreen = document.getElementById('pause-screen');
+            if (pauseScreen) pauseScreen.style.display = 'flex';
+            if (soundManager.bgAudio) soundManager.bgAudio.pause();
+            
+            // Desbloquear controles para el jugador que recibe la pausa
+            // No dispara un bucle porque requieres que isPaused sea falso en el callback
+            if (!isMobile) document.exitPointerLock();
+        }
+    });
+
+    socket.on('game-resumed', () => {
+        if (gameStarted && isPaused) {
+            isPaused = false;
+            isUIShowing = false;
+            const pauseScreen = document.getElementById('pause-screen');
+            if (pauseScreen) pauseScreen.style.display = 'none';
+            if (soundManager.bgAudio) soundManager.bgAudio.play();
+            // Nota: el jugador debe hacer clic libremente para volver a bloquear su puntero
+        }
+    });
 
     // ── Wave sync ────────────────────────────────────────────────
     socket.on('wave-complete', () => {
@@ -410,11 +435,17 @@ let _mpFrame = 0;
 function multiplayerUpdate() {
     if (!isMultiplayer || !socket?.connected || !gameStarted) return;
     if (++_mpFrame % 3 !== 0) return;
+
+    // Calcular el yaw exacto basándonos en la dirección real de la mira
+    const dir = new THREE.Vector3();
+    controls.getDirection(dir);
+    const yaw = Math.atan2(dir.x, dir.z);
+
     socket.emit('player-update', {
         x: camera.position.x,
         y: camera.position.y,
         z: camera.position.z,
-        rotY: camera.rotation.y
+        rotY: yaw
     });
 }
 
@@ -2416,6 +2447,14 @@ controls.addEventListener('lock', () => {
     // Mostrar pantalla de carga INMEDIATAMENTE al obtener permiso del puntero (si es PC)
     if (!gameStarted) {
         beginLoadingSequence();
+    } else if (isPaused) {
+        // Al reanudar el juego desde pausa
+        isPaused = false;
+        isUIShowing = false;
+        pauseScreen.style.display = 'none';
+        crosshair.style.display = 'block';
+        if (soundManager.bgAudio) soundManager.bgAudio.play();
+        if (isMultiplayer && socket?.connected) socket.emit('game-resumed');
     }
 });
 
@@ -2423,22 +2462,27 @@ controls.addEventListener('unlock', () => {
     // Este evento se dispara cuando el puntero se libera (ESC del navegador)
     // GUARD: No mostrar el menú principal si se desbloqueó por una UI interna o si es móvil
     if (gameStarted && !isUIShowing && !isMobile) {
-        // El jugador presionó ESC durante la partida → mostrar pantalla de PAUSA
-        isPaused = true;
-        isUIShowing = true;
-        pauseScreen.style.display = 'flex';
-        // Mantener el HUD visible detrás de la pausa
-        uiLayer.style.display = 'block';
-        crosshair.style.display = 'none';
-        // Pausar la música de fondo mientras el juego está en pausa
-        if (soundManager.bgAudio) soundManager.bgAudio.pause();
-        // Congelar movimiento
-        moveForward = false;
-        moveBackward = false;
-        moveLeft = false;
-        moveRight = false;
+        if (!isPaused) {
+            // El jugador presionó ESC durante la partida → mostrar pantalla de PAUSA
+            isPaused = true;
+            isUIShowing = true;
+            pauseScreen.style.display = 'flex';
+            // Mantener el HUD visible detrás de la pausa
+            uiLayer.style.display = 'block';
+            crosshair.style.display = 'none';
+            // Pausar la música de fondo mientras el juego está en pausa
+            if (soundManager.bgAudio) soundManager.bgAudio.pause();
+            // Congelar movimiento
+            moveForward = false;
+            moveBackward = false;
+            moveLeft = false;
+            moveRight = false;
+
+            if (isMultiplayer && socket?.connected) socket.emit('game-paused');
+        }
     }
 });
+
 
 // Elementos de la interfaz para la selección de plataforma
 const menuButtonsDiv = document.getElementById('menu-buttons') as HTMLElement;

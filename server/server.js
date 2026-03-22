@@ -183,7 +183,21 @@ io.on('connection', (socket) => {
         }
     });
 
+    // ── PAUSE SYNC ────────────────────────────────────────────────
+    socket.on('game-paused', () => {
+        const code = socket.data.roomCode;
+        if (!code || !rooms[code]) return;
+        socket.to(code).emit('game-paused');
+    });
+
+    socket.on('game-resumed', () => {
+        const code = socket.data.roomCode;
+        if (!code || !rooms[code]) return;
+        socket.to(code).emit('game-resumed');
+    });
+
     // ── DISCONNECT ────────────────────────────────────────────────
+
     socket.on('disconnect', () => {
         const code = socket.data.roomCode;
         if (code && rooms[code]) {
