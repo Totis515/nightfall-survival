@@ -265,11 +265,15 @@ function initMultiplayerUI() {
     // Room screen - Create
     document.getElementById('btn-create-room')?.addEventListener('click', () => {
         const roomErr = document.getElementById('room-error')!;
-        if (!socket) { roomErr.innerText = 'Not connected to server. Try again.'; return; }
-        const platStr = isMobile ? 'mobile' : 'pc';
 
-        const doCreate = () => {
-            socket!.emit('create-room', { username: myUsername, platform: platStr }, (res: any) => {
+        const tryCreate = () => {
+            if (!socket || !socket.connected) {
+                roomErr.innerText = '⚠️ Server unreachable. Try again or play Solo.';
+                return;
+            }
+            roomErr.innerText = '';
+            const platStr = isMobile ? 'mobile' : 'pc';
+            socket.emit('create-room', { username: myUsername, platform: platStr }, (res: any) => {
                 if (!res || res.error) { roomErr.innerText = res?.error || 'Server error.'; return; }
                 myRoomCode = res.roomCode;
                 isMultiplayer = true;
@@ -280,20 +284,38 @@ function initMultiplayerUI() {
             });
         };
 
-        if (socket.connected) {
-            doCreate();
+        if (socket?.connected) {
+            tryCreate();
         } else {
-            roomErr.innerText = 'Connecting to server...';
-            const timeout = setTimeout(() => {
-                roomErr.innerText = 'Could not connect to server. Check Railway is running.';
-            }, 5000);
-            socket.once('connect', () => {
-                clearTimeout(timeout);
-                roomErr.innerText = '';
-                doCreate();
-            });
+            // Kick off a fresh connection attempt if not connected
+            if (!socket) connectMultiplayer();
+            roomErr.innerText = '🔄 Connecting to server...';
+            let waited = 0;
+            const poll = setInterval(() => {
+                waited += 200;
+                if (socket?.connected) { clearInterval(poll); tryCreate(); }
+                else if (waited >= 5000) {
+                    clearInterval(poll);
+                    roomErr.innerText = '⚠️ Server offline. Use SOLO PLAY instead or check Railway.';
+                }
+            }, 200);
         }
     });
+
+    // Solo play: skip server entirely
+    const soloBtn = document.createElement('button');
+    soloBtn.id = 'btn-solo-play';
+    soloBtn.className = 'mp-btn';
+    soloBtn.style.cssText = 'margin-top:6px;background:rgba(255,255,255,0.08);color:#aaa;border:1px solid #555;font-size:13px;';
+    soloBtn.innerText = '🎮 SOLO PLAY (no server)';
+    soloBtn.addEventListener('click', () => {
+        isMultiplayer = false;
+        isHost = true;
+        hideAllMpScreens();
+        if (!isMobile) controls.lock();
+        else beginLoadingSequence();
+    });
+    document.getElementById('room-screen')?.appendChild(soloBtn);
 
     // Room screen - Join
     const roomCodeInput = document.getElementById('room-code-input') as HTMLInputElement;
