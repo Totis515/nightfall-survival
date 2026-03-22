@@ -185,7 +185,7 @@ function connectMultiplayer() {
 
     // ── Pause sync ───────────────────────────────────────────────
     socket.on('game-paused', () => {
-        if (gameStarted && !isUIShowing && !isGameOver && !isPaused) {
+        if (gameStarted && !isUIShowing && playerHealth > 0 && !isPaused) {
             isPaused = true;
             isUIShowing = true;
             const pauseScreen = document.getElementById('pause-screen');
