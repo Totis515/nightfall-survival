@@ -185,9 +185,10 @@ function connectMultiplayer() {
 
     socket.on('player-died', (data: { id: string, name: string }) => {
         // Player died => remove their mesh
-        if (remotePlayers[data.id]) {
-            scene.remove(remotePlayers[data.id].mesh);
-            delete remotePlayers[data.id];
+        const p = remotePlayers.get(data.id);
+        if (p) {
+            scene.remove(p.group);
+            remotePlayers.delete(data.id);
         }
         // Show banner
         const banner = document.getElementById('death-banner');
@@ -559,7 +560,7 @@ const weapons: Weapon[] = [
 // ---- CONFIGURACIÓN DE LA ESCENA ----
 // Configuración principal del mundo 3D (escena, cámara y renderizador)
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x1a0b2e);
+scene.background = new THREE.Color(0x0a0a1a); // Darker, more ominous background
 scene.fog = new THREE.FogExp2(0x1a0b2e, 0.025);
 
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -910,7 +911,7 @@ class JetpackPickup {
         ring.rotation.x = Math.PI / 2;
 
         const light = new THREE.PointLight(0x00eeff, 2, 8);
-        light.position.y = 0.5;
+        light.position.y = 1;
 
         this.mesh.add(pack, leftThruster, rightThruster, light, ring);
         scene.add(this.mesh);
@@ -1979,13 +1980,22 @@ class Enemy {
             }
         }
 
-        // Ajuste al suelo + balanceo sutil
-        this.bobOffset += delta * 4;
-        this.mesh.position.y = Math.max(0, Math.sin(this.bobOffset) * 0.04);
-        this.mesh.rotation.z = Math.sin(this.bobOffset * 0.5) * 0.03;
-
-        // Protección contra caída al vacío
-        if (this.mesh.position.y < -2) this.die();
+        // --- AJUSTE AL SUELO (Host Only or Single Player) ---
+        if (!isMultiplayer || isHost) {
+            const downDir = new THREE.Vector3(0, -1, 0);
+            const rayOrigin = this.mesh.position.clone();
+            rayOrigin.y = 10; // Empezar desde arriba
+            const groundRay = new THREE.Raycaster(rayOrigin, downDir, 0, 15);
+            const intersects = groundRay.intersectObject(floor);
+            let groundY = 0;
+            if (intersects.length > 0) {
+                groundY = intersects[0].point.y;
+            }
+            this.mesh.position.y = groundY + Math.max(0, Math.sin(this.bobOffset) * 0.04);
+        } else if (this.networkPosition) {
+            // Los clientes siguen la Y de la red (o su lerp) pero añadimos bobbing local
+            this.mesh.position.y = this.networkPosition.y + Math.max(0, Math.sin(this.bobOffset) * 0.04);
+        }
 
         // LÓGICA DE JEFES: Ojos pulsantes o cambio de escala sutil
         if (this.type === EnemyType.BOSS_GOLIATH || this.type === EnemyType.BOSS_SENTINEL) {
@@ -2317,9 +2327,13 @@ class WaveManager {
         }
 
         // Actualizar enemigos actuales
-        const allPlayers = [playerPos];
+        const allPlayers: THREE.Vector3[] = [];
+        if (playerHealth > 0) allPlayers.push(playerPos);
+
         if (isMultiplayer && isHost) {
-            remotePlayers.forEach(rp => allPlayers.push(rp.group.position));
+            remotePlayers.forEach(rp => {
+                allPlayers.push(rp.group.position);
+            });
         }
 
         for (let i = this.activeEnemies.length - 1; i >= 0; i--) {
@@ -2683,7 +2697,7 @@ document.getElementById('opt-show-fps')?.addEventListener('change', (e) => {
     const checked = (e.target as HTMLInputElement).checked;
     const knob = document.getElementById('opt-fps-knob');
     if (knob) {
-        knob.style.left = checked ? '24px' : '4px';
+        knob.style.left = '24px';
         knob.style.background = checked ? '#00ffcc' : '#555';
         knob.style.boxShadow = checked ? '0 0 8px #00ffcc' : 'none';
     }
@@ -2707,6 +2721,10 @@ function resumeGame() {
     // Reanudar la música de fondo después de volver del menú de pausa
     if (soundManager.bgAudio) soundManager.bgAudio.play().catch(() => { });
     // Volver a bloquear el puntero para reanudar el juego (solo en PC)
+    if (isMultiplayer && socket?.connected) {
+        socket.emit('game-resumed');
+    }
+
     if (!isMobile) controls.lock();
 }
 
@@ -3492,9 +3510,10 @@ document.getElementById('btn-spectate')?.addEventListener('click', () => {
     document.getElementById('game-over')!.style.display = 'none';
     if (!isMobile) controls.lock();
     // Choose first available living player
-    const pids = Object.keys(remotePlayers);
+    const pids = Array.from(remotePlayers.keys());
     if (pids.length > 0) spectatingPlayerId = pids[0];
-});// ---- CICLO DE ANIMACIÓN (RENDER LOOP) ----
+});
+// ---- CICLO DE ANIMACIÓN (RENDER LOOP) ----
 // Ciclo principal que corre en cada frame: dibuja la escena y actualiza todas las físicas
 let bobAngle = 0;
 let frameCount = 0;
@@ -3526,14 +3545,15 @@ function animate() {
 
     if (isSpectator) {
         // SPECTATOR MODE: bypass normal physics, snap camera to alive player
-        if (spectatingPlayerId && remotePlayers[spectatingPlayerId]) {
-            const p = remotePlayers[spectatingPlayerId];
-            camera.position.lerp(p.networkPosition, 0.2); // Sigue su vector suavemente
-            camera.position.y = 1.7; // Fixed height since network y is usually 0
+        const p = spectatingPlayerId ? remotePlayers.get(spectatingPlayerId) : null;
+        if (p) {
+            camera.position.lerp(p.group.position, 0.2); 
+            camera.position.y += 1.6;
         } else {
-            // Find another one
-            const pids = Object.keys(remotePlayers);
+            // Find another one if current target is gone
+            const pids = Array.from(remotePlayers.keys());
             if (pids.length > 0) spectatingPlayerId = pids[0];
+            else spectatingPlayerId = null;
         }
     } else if ((controls.isLocked === true || isMobile) && gameStarted && playerHealth > 0) {
         handleShooting(time);
