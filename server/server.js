@@ -184,16 +184,26 @@ io.on('connection', (socket) => {
     });
 
     // ── PAUSE SYNC ────────────────────────────────────────────────
-    socket.on('game-paused', () => {
+    socket.on('game-paused', (data) => {
         const code = socket.data.roomCode;
         if (!code || !rooms[code]) return;
-        socket.to(code).emit('game-paused');
+        socket.to(code).emit('game-paused', data);
     });
 
     socket.on('game-resumed', () => {
         const code = socket.data.roomCode;
         if (!code || !rooms[code]) return;
         socket.to(code).emit('game-resumed');
+    });
+
+    // ── PLAYER DEATH ──────────────────────────────────────────────
+    socket.on('player-died', (data) => {
+        const code = socket.data.roomCode;
+        if (!code || !rooms[code]) return;
+        if (rooms[code].players[socket.id]) {
+            rooms[code].players[socket.id].isDead = true;
+        }
+        io.to(code).emit('player-died', { id: socket.id, name: data.name });
     });
 
     // ── DISCONNECT ────────────────────────────────────────────────

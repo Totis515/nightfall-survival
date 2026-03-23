@@ -1327,6 +1327,9 @@
         </div>
     </div>
 
+    <!-- Death Notification Banner -->
+    <div id="death-banner" style="display:none; position:absolute; top:80px; left:50%; transform:translateX(-50%); background:rgba(200,0,0,0.8); border:2px solid #ff3333; color:white; padding:10px 40px; font-family:'Impact',sans-serif; font-size:24px; letter-spacing:2px; z-index:40; border-radius:5px; box-shadow:0 0 20px rgba(255,50,50,0.5); text-transform:uppercase;">PLAYER HAS DIED</div>
+
     <!-- Pantalla de "Game Over" que se muestra cuando la vida del jugador llega a cero -->
     <!-- Game Over Screen -->
     <div id="game-over">
@@ -1335,7 +1338,15 @@
         <p id="killed-by"
             style="color: #ff3333; font-size: 18px; font-weight: bold; margin-bottom: 25px; font-family: monospace; letter-spacing: 2px;">
             KILLED BY: UNKNOWN</p>
-        <button class="menu-btn" onclick="location.reload()">Restart</button>
+        
+        <!-- Standard button (Singleplayer) -->
+        <button class="menu-btn" id="btn-restart" onclick="location.reload()">Restart</button>
+        
+        <!-- Multiplayer Death Buttons -->
+        <div id="mp-death-btns" style="display:none; flex-direction:column; gap:15px;">
+            <button class="mp-btn primary" id="btn-spectate" style="width:250px;">👀 SPECTATE</button>
+            <button class="mp-btn danger" onclick="location.reload()" style="width:250px;">✕ LEAVE ROOM</button>
+        </div>
     </div>
 
     <!-- VICTORY SCREEN -->
@@ -1350,8 +1361,8 @@
 
     <!-- PAUSE SCREEN: Aparece al presionar ESC durante la partida -->
     <div id="pause-screen">
-        <h1>PAUSED</h1>
-        <p>Press ESC or click the button to resume</p>
+        <h1 id="pause-title">PAUSED</h1>
+        <p id="pause-subtitle">Press ESC or click the button to resume</p>
         <button id="btn-resume">▶ RESUME</button>
     </div>
 

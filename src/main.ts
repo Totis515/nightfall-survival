@@ -183,29 +183,56 @@ function connectMultiplayer() {
         }
     });
 
+    socket.on('player-died', (data: { id: string, name: string }) => {
+        // Player died => remove their mesh
+        if (remotePlayers[data.id]) {
+            scene.remove(remotePlayers[data.id].mesh);
+            delete remotePlayers[data.id];
+        }
+        // Show banner
+        const banner = document.getElementById('death-banner');
+        if (banner) {
+            banner.innerText = `${data.name} HAS DIED`;
+            banner.style.display = 'block';
+            setTimeout(() => banner.style.display = 'none', 3000);
+        }
+    });
+
     // ── Pause sync ───────────────────────────────────────────────
-    socket.on('game-paused', () => {
-        if (gameStarted && !isUIShowing && playerHealth > 0 && !isPaused) {
+    socket.on('game-paused', (data: { pauserName: string }) => {
+        // Alguien más pausó el juego
+        if (gameStarted && playerHealth > 0 && !isPaused) {
             isPaused = true;
             isUIShowing = true;
             const pauseScreen = document.getElementById('pause-screen');
-            if (pauseScreen) pauseScreen.style.display = 'flex';
+            if (pauseScreen) {
+                pauseScreen.style.display = 'flex';
+                const pauseTitle = document.getElementById('pause-title');
+                const pauseSub = document.getElementById('pause-subtitle');
+                const btnResume = document.getElementById('btn-resume');
+                if (pauseTitle) pauseTitle.innerText = "GAME PAUSED";
+                if (pauseSub) pauseSub.innerText = `Paused by ${data.pauserName}`;
+                if (btnResume) btnResume.style.display = 'none'; // El espectador no puede reanudar
+            }
             if (soundManager.bgAudio) soundManager.bgAudio.pause();
-            
-            // Desbloquear controles para el jugador que recibe la pausa
-            // No dispara un bucle porque requieres que isPaused sea falso en el callback
             if (!isMobile) document.exitPointerLock();
         }
     });
 
     socket.on('game-resumed', () => {
-        if (gameStarted && isPaused) {
+        if (gameStarted && isPaused && playerHealth > 0) {
             isPaused = false;
             isUIShowing = false;
             const pauseScreen = document.getElementById('pause-screen');
             if (pauseScreen) pauseScreen.style.display = 'none';
             if (soundManager.bgAudio) soundManager.bgAudio.play();
-            // Nota: el jugador debe hacer clic libremente para volver a bloquear su puntero
+            // Restablecer textos por si acaso
+            const pauseTitle = document.getElementById('pause-title');
+            const pauseSub = document.getElementById('pause-subtitle');
+            const btnResume = document.getElementById('btn-resume');
+            if (pauseTitle) pauseTitle.innerText = "PAUSED";
+            if (pauseSub) pauseSub.innerText = "Press ESC or click the button to resume";
+            if (btnResume) btnResume.style.display = 'block';
         }
     });
 
@@ -434,6 +461,7 @@ function initMultiplayerUI() {
 let _mpFrame = 0;
 function multiplayerUpdate() {
     if (!isMultiplayer || !socket?.connected || !gameStarted) return;
+    if (isSpectator || playerHealth <= 0) return;
     if (++_mpFrame % 3 !== 0) return;
 
     // Calcular el yaw exacto basándonos en la dirección real de la mira
@@ -1003,6 +1031,10 @@ function gameOver() {
     // Solo se ejecuta en modo PC donde el PointerLock está activo.
     if (!isMobile) controls.unlock();
 
+    if (isMultiplayer && socket?.connected) {
+        socket.emit('player-died', { name: playerName });
+    }
+
     const goScreen = document.getElementById('game-over');
     if (goScreen) {
         goScreen.style.display = 'flex';
@@ -1016,6 +1048,17 @@ function gameOver() {
         if (killedByEl) {
             const killerName = lastAttackerName === 'UNKNOWN' ? 'A GRUESOME MONSTER' : lastAttackerName.toUpperCase();
             killedByEl.innerText = `KILLED BY: ${killerName}`;
+        }
+
+        // Multiplayer / Singleplayer logic
+        const btnRestart = document.getElementById('btn-restart');
+        const mpBtns = document.getElementById('mp-death-btns');
+        if (isMultiplayer) {
+            if (btnRestart) btnRestart.style.display = 'none';
+            if (mpBtns) mpBtns.style.display = 'flex';
+        } else {
+            if (btnRestart) btnRestart.style.display = 'block';
+            if (mpBtns) mpBtns.style.display = 'none';
         }
     }
 
@@ -2448,6 +2491,13 @@ controls.addEventListener('lock', () => {
     if (!gameStarted) {
         beginLoadingSequence();
     } else if (isPaused) {
+        // Prevent resuming if paused by someone else (the resume button is hidden, so if they click, we ignore)
+        const btnResume = document.getElementById('btn-resume');
+        if (btnResume && btnResume.style.display === 'none') {
+            document.exitPointerLock(); // Force unlock again
+            return;
+        }
+
         // Al reanudar el juego desde pausa
         isPaused = false;
         isUIShowing = false;
@@ -2462,11 +2512,19 @@ controls.addEventListener('unlock', () => {
     // Este evento se dispara cuando el puntero se libera (ESC del navegador)
     // GUARD: No mostrar el menú principal si se desbloqueó por una UI interna o si es móvil
     if (gameStarted && !isUIShowing && !isMobile) {
-        if (!isPaused) {
+        if (!isPaused && playerHealth > 0) {
             // El jugador presionó ESC durante la partida → mostrar pantalla de PAUSA
             isPaused = true;
             isUIShowing = true;
             pauseScreen.style.display = 'flex';
+            
+            const pauseTitle = document.getElementById('pause-title');
+            const pauseSub = document.getElementById('pause-subtitle');
+            const btnResume = document.getElementById('btn-resume');
+            if (pauseTitle) pauseTitle.innerText = "PAUSED";
+            if (pauseSub) pauseSub.innerText = "Press ESC or click the button to resume";
+            if (btnResume) btnResume.style.display = 'block';
+
             // Mantener el HUD visible detrás de la pausa
             uiLayer.style.display = 'block';
             crosshair.style.display = 'none';
@@ -2478,7 +2536,7 @@ controls.addEventListener('unlock', () => {
             moveLeft = false;
             moveRight = false;
 
-            if (isMultiplayer && socket?.connected) socket.emit('game-paused');
+            if (isMultiplayer && socket?.connected) socket.emit('game-paused', { pauserName: playerName });
         }
     }
 });
@@ -3415,9 +3473,18 @@ function showPurchaseFeedback(success: boolean) {
 document.getElementById('shop-close')?.addEventListener('click', toggleShopReady);
 document.getElementById('shop-close-mobile')?.addEventListener('click', toggleShopReady);
 
+// ---- SPECTATOR GLOBALS ----
+let isSpectator = false;
+let spectatingPlayerId: string | null = null;
 
-
-// ---- CICLO DE ANIMACIÓN (RENDER LOOP) ----
+document.getElementById('btn-spectate')?.addEventListener('click', () => {
+    isSpectator = true;
+    document.getElementById('game-over')!.style.display = 'none';
+    if (!isMobile) controls.lock();
+    // Choose first available living player
+    const pids = Object.keys(remotePlayers);
+    if (pids.length > 0) spectatingPlayerId = pids[0];
+});// ---- CICLO DE ANIMACIÓN (RENDER LOOP) ----
 // Ciclo principal que corre en cada frame: dibuja la escena y actualiza todas las físicas
 let bobAngle = 0;
 let frameCount = 0;
@@ -3447,8 +3514,18 @@ function animate() {
         return;
     }
 
-    // El juego procesa movimiento en PC solo si el ratón está bloqueado, o SIEMPRE en celular mientras esté activo
-    if ((controls.isLocked === true || isMobile) && gameStarted) {
+    if (isSpectator) {
+        // SPECTATOR MODE: bypass normal physics, snap camera to alive player
+        if (spectatingPlayerId && remotePlayers[spectatingPlayerId]) {
+            const p = remotePlayers[spectatingPlayerId];
+            camera.position.lerp(p.networkPosition, 0.2); // Sigue su vector suavemente
+            camera.position.y = 1.7; // Fixed height since network y is usually 0
+        } else {
+            // Find another one
+            const pids = Object.keys(remotePlayers);
+            if (pids.length > 0) spectatingPlayerId = pids[0];
+        }
+    } else if ((controls.isLocked === true || isMobile) && gameStarted && playerHealth > 0) {
         handleShooting(time);
 
         // Lógica de resistencia (Stamina)
