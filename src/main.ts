@@ -2518,9 +2518,103 @@ document.getElementById('btn-platform-mobile')?.addEventListener('click', () => 
     if (mbp) mbp.style.display = 'flex';
 });
 
+// ---- OPTIONS SCREEN LOGIC ----
+const optionsScreen = document.getElementById('options-screen') as HTMLElement;
+
 document.getElementById('btn-options')?.addEventListener('click', () => {
-    alert("Options coming soon!");
+    // Show options screen, hide main menu
+    if (mainMenu) mainMenu.style.display = 'none';
+    optionsScreen.style.display = 'flex';
 });
+
+document.getElementById('btn-options-back')?.addEventListener('click', () => {
+    // Return to main menu
+    optionsScreen.style.display = 'none';
+    if (mainMenu) mainMenu.style.display = 'flex';
+});
+
+// --- Volume Sliders ---
+let masterVolume = 0.8;
+let musicVolume = 0.6;
+let sfxVolume = 1.0;
+
+function applyVolumes() {
+    // Music volume = master * music slider
+    if (soundManager.bgAudio) {
+        soundManager.bgAudio.volume = masterVolume * musicVolume;
+    }
+    // SFX volume stored for future use in sound playback
+    (soundManager as any).sfxVolume = masterVolume * sfxVolume;
+}
+
+document.getElementById('opt-master-vol')?.addEventListener('input', (e) => {
+    const val = parseInt((e.target as HTMLInputElement).value);
+    masterVolume = val / 100;
+    const label = document.getElementById('opt-master-vol-val');
+    if (label) label.innerText = val + '%';
+    applyVolumes();
+});
+
+document.getElementById('opt-music-vol')?.addEventListener('input', (e) => {
+    const val = parseInt((e.target as HTMLInputElement).value);
+    musicVolume = val / 100;
+    const label = document.getElementById('opt-music-vol-val');
+    if (label) label.innerText = val + '%';
+    applyVolumes();
+});
+
+document.getElementById('opt-sfx-vol')?.addEventListener('input', (e) => {
+    const val = parseInt((e.target as HTMLInputElement).value);
+    sfxVolume = val / 100;
+    const label = document.getElementById('opt-sfx-vol-val');
+    if (label) label.innerText = val + '%';
+    applyVolumes();
+});
+
+// --- Sensitivity ---
+document.getElementById('opt-sensitivity')?.addEventListener('input', (e) => {
+    const val = parseInt((e.target as HTMLInputElement).value);
+    const label = document.getElementById('opt-sensitivity-val');
+    if (label) label.innerText = val + '%';
+    // Adjust PointerLockControls sensitivity (default pointerSpeed is 1.0)
+    (controls as any).pointerSpeed = val / 100;
+});
+
+// --- Graphics Quality ---
+document.querySelectorAll('.opt-q-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.opt-q-btn').forEach(b => {
+            (b as HTMLElement).style.background = 'transparent';
+            (b as HTMLElement).style.borderColor = '#555';
+            (b as HTMLElement).style.color = '#aaa';
+        });
+        (btn as HTMLElement).style.background = '#ff6644';
+        (btn as HTMLElement).style.borderColor = '#ff6644';
+        (btn as HTMLElement).style.color = '#000';
+        const quality = (btn as HTMLElement).dataset.quality;
+        if (quality === 'low') {
+            renderer.setPixelRatio(0.75);
+        } else if (quality === 'medium') {
+            renderer.setPixelRatio(1.0);
+        } else {
+            renderer.setPixelRatio(window.devicePixelRatio);
+        }
+    });
+});
+
+// --- Show FPS Toggle ---
+document.getElementById('opt-show-fps')?.addEventListener('change', (e) => {
+    const checked = (e.target as HTMLInputElement).checked;
+    const knob = document.getElementById('opt-fps-knob');
+    if (knob) {
+        knob.style.left = checked ? '24px' : '4px';
+        knob.style.background = checked ? '#00ffcc' : '#555';
+        knob.style.boxShadow = checked ? '0 0 8px #00ffcc' : 'none';
+    }
+    const fpsBox = document.querySelector('.stat-box:nth-child(2)') as HTMLElement;
+    if (fpsBox) fpsBox.style.display = checked ? 'block' : 'none';
+});
+
 document.getElementById('btn-exit')?.addEventListener('click', () => {
     alert("You cannot escape the night!");
 });
