@@ -972,7 +972,7 @@
             display: none;
             position: absolute;
             inset: 0;
-            background: linear-gradient(rgba(5, 3, 15, 0.75), rgba(5, 3, 15, 0.9)), url('phase13_bg.png') center/cover no-repeat;
+            background: linear-gradient(rgba(5, 3, 15, 0.3), rgba(5, 3, 15, 0.5)), url('phase13_bg.png') center/cover no-repeat;
             backdrop-filter: blur(8px);
             z-index: 80;
             flex-direction: column;
@@ -1179,11 +1179,11 @@
     </div>
 
     <!-- ──────────────── OPTIONS SCREEN ──────────────── -->
-    <div id="options-screen" style="display:none; position:absolute; inset:0; background: linear-gradient(rgba(5,3,15,0.78), rgba(5,3,15,0.92)), url('options_bg.png') center/cover no-repeat; z-index:25; flex-direction:column; align-items:center; justify-content:center; font-family:'Impact',sans-serif;">
-        <h1 style="color:#ff6644; font-size:48px; letter-spacing:6px; text-shadow:0 0 20px #ff664488; margin-bottom:8px;">⚙ OPTIONS</h1>
-        <p style="color:#888; font-size:14px; font-family:monospace; letter-spacing:2px; margin-bottom:30px;">NIGHTFALL SURVIVAL — SETTINGS</p>
+    <div id="options-screen" style="display:none; position:absolute; inset:0; background: linear-gradient(rgba(5,3,15,0.2), rgba(5,3,15,0.4)), url('options_bg.png') center/cover no-repeat; z-index:25; flex-direction:column; align-items:center; justify-content:center; font-family:'Impact',sans-serif;">
+        <h1 style="text-shadow:0 0 10px #000; color:#ff6644; font-size:48px; letter-spacing:6px; margin-bottom:8px;">⚙ OPTIONS</h1>
+        <p style="text-shadow:0 0 5px #000; color:#eee; font-size:14px; font-family:monospace; letter-spacing:2px; margin-bottom:20px;">NIGHTFALL SURVIVAL — SETTINGS</p>
 
-        <div style="display:flex; flex-direction:column; gap:18px; width:380px; max-width:90vw;">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:12px 30px; width:700px; max-width:95vw; background:rgba(0,0,0,0.6); padding:20px; border-radius:12px; border:1px solid #333;">
             <!-- Master Volume -->
             <div style="display:flex; align-items:center; justify-content:space-between;">
                 <span style="color:#ccc; font-size:18px; letter-spacing:2px;">🔊 MASTER</span>

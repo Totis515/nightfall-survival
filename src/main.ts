@@ -199,7 +199,7 @@ function connectMultiplayer() {
     });
 
     // ── Pause sync ───────────────────────────────────────────────
-    socket.on('game-paused', (data: { pauserName: string }) => {
+    socket.on('game-paused', (data?: { pauserName: string }) => {
         // Alguien más pausó el juego
         if (gameStarted && playerHealth > 0 && !isPaused) {
             isPaused = true;
@@ -210,8 +210,9 @@ function connectMultiplayer() {
                 const pauseTitle = document.getElementById('pause-title');
                 const pauseSub = document.getElementById('pause-subtitle');
                 const btnResume = document.getElementById('btn-resume');
+                const pauser = data?.pauserName || "A PLAYER";
                 if (pauseTitle) pauseTitle.innerText = "GAME PAUSED";
-                if (pauseSub) pauseSub.innerText = `Paused by ${data.pauserName}`;
+                if (pauseSub) pauseSub.innerText = `Paused by ${pauser}`;
                 if (btnResume) btnResume.style.display = 'none'; // El espectador no puede reanudar
             }
             if (soundManager.bgAudio) soundManager.bgAudio.pause();
@@ -1032,7 +1033,7 @@ function gameOver() {
     if (!isMobile) controls.unlock();
 
     if (isMultiplayer && socket?.connected) {
-        socket.emit('player-died', { name: playerName });
+        socket.emit('player-died', { name: myUsername });
     }
 
     const goScreen = document.getElementById('game-over');
@@ -2536,7 +2537,7 @@ controls.addEventListener('unlock', () => {
             moveLeft = false;
             moveRight = false;
 
-            if (isMultiplayer && socket?.connected) socket.emit('game-paused', { pauserName: playerName });
+            if (isMultiplayer && socket?.connected) socket.emit('game-paused', { pauserName: myUsername });
         }
     }
 });
@@ -2873,12 +2874,21 @@ if (mobilePauseBtn) {
         if (gameStarted && !isPaused && !shopOpen) {
             isPaused = true;
             isUIShowing = true;
+            const pauseTitle = document.getElementById('pause-title');
+            const pauseSub = document.getElementById('pause-subtitle');
+            const btnResume = document.getElementById('btn-resume');
+            if (pauseTitle) pauseTitle.innerText = "PAUSED";
+            if (pauseSub) pauseSub.innerText = "Press the button to resume";
+            if (btnResume) btnResume.style.display = 'block';
+
             pauseScreen.style.display = 'flex';
             crosshair.style.display = 'none';
             if (soundManager.bgAudio) soundManager.bgAudio.pause();
             // Pequeña animación de pulsación
             mobilePauseBtn.style.transform = 'scale(0.9)';
             setTimeout(() => { mobilePauseBtn.style.transform = 'scale(1)'; }, 100);
+
+            if (isMultiplayer && socket?.connected) socket.emit('game-paused', { pauserName: myUsername });
         }
     };
     mobilePauseBtn.addEventListener('touchstart', handlePause);
