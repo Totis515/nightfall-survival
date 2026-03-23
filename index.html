@@ -507,11 +507,18 @@
         /* ===================== BLACK MARKET ===================== */
         #shop-menu {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at center, rgba(15, 10, 30, 0.95) 0%, rgba(5, 5, 10, 0.98) 100%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 900px;
+            max-width: 95%;
+            height: 650px;
+            max-height: 90%;
+            background: linear-gradient(135deg, rgba(15, 10, 30, 0.98) 0%, rgba(5, 5, 10, 0.99) 100%);
+            backdrop-filter: blur(12px);
+            border: 2px solid #ffcc00;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(255, 204, 0, 0.1);
+            border-radius: 12px;
             display: none;
             flex-direction: column;
             align-items: center;
