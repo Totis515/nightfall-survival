@@ -2547,37 +2547,54 @@ function applyVolumes() {
     (soundManager as any).sfxVolume = masterVolume * sfxVolume;
 }
 
-document.getElementById('opt-master-vol')?.addEventListener('input', (e) => {
-    const val = parseInt((e.target as HTMLInputElement).value);
-    masterVolume = val / 100;
-    const label = document.getElementById('opt-master-vol-val');
-    if (label) label.innerText = val + '%';
+// Helper: sync slider ↔ number input bi-directionally
+function linkSliderAndInput(sliderId: string, inputId: string, onChange: (val: number) => void) {
+    const slider = document.getElementById(sliderId) as HTMLInputElement;
+    const numInput = document.getElementById(inputId) as HTMLInputElement;
+    if (!slider || !numInput) return;
+
+    slider.addEventListener('input', () => {
+        numInput.value = slider.value;
+        onChange(parseInt(slider.value));
+    });
+    numInput.addEventListener('input', () => {
+        let v = parseInt(numInput.value) || 0;
+        const min = parseInt(numInput.min) || 0;
+        const max = parseInt(numInput.max) || 100;
+        if (v < min) v = min;
+        if (v > max) v = max;
+        slider.value = v.toString();
+        onChange(v);
+    });
+    numInput.addEventListener('blur', () => {
+        // Clamp on blur
+        let v = parseInt(numInput.value) || 0;
+        const min = parseInt(numInput.min) || 0;
+        const max = parseInt(numInput.max) || 100;
+        v = Math.max(min, Math.min(max, v));
+        numInput.value = v.toString();
+        slider.value = v.toString();
+    });
+}
+
+linkSliderAndInput('opt-master-vol', 'opt-master-vol-val', (v) => {
+    masterVolume = v / 100;
     applyVolumes();
 });
 
-document.getElementById('opt-music-vol')?.addEventListener('input', (e) => {
-    const val = parseInt((e.target as HTMLInputElement).value);
-    musicVolume = val / 100;
-    const label = document.getElementById('opt-music-vol-val');
-    if (label) label.innerText = val + '%';
+linkSliderAndInput('opt-music-vol', 'opt-music-vol-val', (v) => {
+    musicVolume = v / 100;
     applyVolumes();
 });
 
-document.getElementById('opt-sfx-vol')?.addEventListener('input', (e) => {
-    const val = parseInt((e.target as HTMLInputElement).value);
-    sfxVolume = val / 100;
-    const label = document.getElementById('opt-sfx-vol-val');
-    if (label) label.innerText = val + '%';
+linkSliderAndInput('opt-sfx-vol', 'opt-sfx-vol-val', (v) => {
+    sfxVolume = v / 100;
     applyVolumes();
 });
 
 // --- Sensitivity ---
-document.getElementById('opt-sensitivity')?.addEventListener('input', (e) => {
-    const val = parseInt((e.target as HTMLInputElement).value);
-    const label = document.getElementById('opt-sensitivity-val');
-    if (label) label.innerText = val + '%';
-    // Adjust PointerLockControls sensitivity (default pointerSpeed is 1.0)
-    (controls as any).pointerSpeed = val / 100;
+linkSliderAndInput('opt-sensitivity', 'opt-sensitivity-val', (v) => {
+    (controls as any).pointerSpeed = v / 100;
 });
 
 // --- Graphics Quality ---
