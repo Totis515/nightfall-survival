@@ -293,6 +293,8 @@ function connectMultiplayer() {
     });
 }
 
+let lobbyTrees: THREE.Group[] = [];
+
 function setup3DLobby() {
     inLobby3D = true;
     lobbyCamera.position.set(0, 2.5, 5);
@@ -303,6 +305,16 @@ function setup3DLobby() {
         lobbyLocalGroup = null;
     }
     spawnRemotePlayer('local_dummy', myUsername || 'YOU', -1.5, 1.6, 0, currentSkin, true);
+
+    // Create dark forest diorama background
+    if (lobbyTrees.length === 0) {
+        for (let i = 0; i < 7; i++) {
+            const tree = createTree();
+            tree.position.set(-6 + i * 2.0 + (Math.random() * 1.5), 0, -5 - Math.random() * 3);
+            scene.add(tree);
+            lobbyTrees.push(tree);
+        }
+    }
 
     rearrangeLobbySlots();
 }
@@ -332,6 +344,16 @@ function rearrangeLobbySlots() {
 function showScreen(id: string) {
     document.querySelectorAll('.mp-screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id)?.classList.add('active');
+    
+    // Manage Main Menu overlay visibility for immersive 3D screens
+    const mainMenu = document.getElementById('main-menu');
+    if (id === 'username-screen' || id === 'room-screen' || id === 'lobby-screen') {
+        if (mainMenu) mainMenu.style.display = 'none';
+        // Clear blur styling to show engine underneath without occlusion
+        document.getElementById(id)!.style.background = 'transparent';
+    } else {
+        if (mainMenu) mainMenu.style.display = 'flex';
+    }
     
     if (id === 'lobby-screen') setup3DLobby();
     else cleanup3DLobby();
@@ -517,7 +539,10 @@ function initMultiplayerUI() {
         tabSkins?.classList.remove('active');
         if (lobbyContent) lobbyContent.style.display = 'flex';
         if (skinsContent) skinsContent.style.display = 'none';
-        inLobby3D = true; // Show camera view again
+        inLobby3D = true;
+        // Wide cinematic view
+        lobbyCamera.position.set(0, 2.5, 5);
+        lobbyCamera.lookAt(0, 1.4, 0);
     });
 
     tabSkins?.addEventListener('click', () => {
@@ -525,7 +550,10 @@ function initMultiplayerUI() {
         tabLobby?.classList.remove('active');
         if (lobbyContent) lobbyContent.style.display = 'none';
         if (skinsContent) skinsContent.style.display = 'flex';
-        inLobby3D = true; // Keep displaying character
+        inLobby3D = true;
+        // Fortnite Locker view: dynamic zoom on dummy
+        lobbyCamera.position.set(-1.0, 2.0, 3.5);
+        lobbyCamera.lookAt(-1.5, 1.6, 0);
     });
 
     // Skin Selection Logic
