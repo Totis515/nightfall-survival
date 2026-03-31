@@ -293,38 +293,49 @@ function connectMultiplayer() {
     });
 }
 
-let lobbyTrees: THREE.Group[] = [];
+let lobbyLight: THREE.DirectionalLight | null = null;
+let lobbyAmbient: THREE.AmbientLight | null = null;
+const LOBBY_X = 10000;
 
 function setup3DLobby() {
     inLobby3D = true;
-    lobbyCamera.position.set(0, 2.5, 5);
-    lobbyCamera.lookAt(0, 1.4, 0);
+    lobbyCamera.position.set(LOBBY_X, 2.5, 5);
+    lobbyCamera.lookAt(LOBBY_X, 1.4, 0);
+    
+    // Background as requested
+    scene.background = new THREE.TextureLoader().load('fondo.png');
+
+    // Add lighting so the skins are actually visible and not pitch black
+    if (!lobbyLight) {
+        lobbyLight = new THREE.DirectionalLight(0xffffff, 2.0);
+        lobbyLight.position.set(LOBBY_X + 2, 5, 5);
+        scene.add(lobbyLight);
+    }
+    if (!lobbyAmbient) {
+        lobbyAmbient = new THREE.AmbientLight(0xffffff, 1.0);
+        scene.add(lobbyAmbient);
+    }
 
     if (lobbyLocalGroup) {
         scene.remove(lobbyLocalGroup);
         lobbyLocalGroup = null;
     }
-    spawnRemotePlayer('local_dummy', myUsername || 'YOU', -1.5, 1.6, 0, currentSkin, true);
-
-    // Create dark forest diorama background
-    if (lobbyTrees.length === 0) {
-        for (let i = 0; i < 7; i++) {
-            const tree = createTree();
-            tree.position.set(-6 + i * 2.0 + (Math.random() * 1.5), 0, -5 - Math.random() * 3);
-            scene.add(tree);
-            lobbyTrees.push(tree);
-        }
-    }
+    spawnRemotePlayer('local_dummy', myUsername || 'YOU', LOBBY_X - 1.5, 1.6, 0, currentSkin, true);
 
     rearrangeLobbySlots();
 }
 
 function cleanup3DLobby() {
     inLobby3D = false;
+    scene.background = null; // Revert background to game default
     if (lobbyLocalGroup) {
         scene.remove(lobbyLocalGroup);
         lobbyLocalGroup = null;
     }
+    // Return other players to safety before game starts
+    remotePlayers.forEach((p) => {
+        p.group.position.set(0, 0, 0);
+    });
 }
 
 function rearrangeLobbySlots() {
@@ -333,7 +344,7 @@ function rearrangeLobbySlots() {
     const slotsX = [-1.5, -0.5, 0.5, 1.5];
     remotePlayers.forEach((p) => {
         if (slotIndex < 4) {
-            p.group.position.x = slotsX[slotIndex];
+            p.group.position.x = LOBBY_X + slotsX[slotIndex];
             p.group.position.z = 0;
             p.group.rotation.y = Math.PI; // Face camera
             slotIndex++;
@@ -345,12 +356,17 @@ function showScreen(id: string) {
     document.querySelectorAll('.mp-screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id)?.classList.add('active');
     
-    // Manage Main Menu overlay visibility for immersive 3D screens
+    // Manage Main Menu overlay visibility 
     const mainMenu = document.getElementById('main-menu');
     if (id === 'username-screen' || id === 'room-screen' || id === 'lobby-screen') {
         if (mainMenu) mainMenu.style.display = 'none';
-        // Clear blur styling to show engine underneath without occlusion
-        document.getElementById(id)!.style.background = 'transparent';
+        
+        if (id === 'lobby-screen') {
+            document.getElementById(id)!.style.background = 'transparent';
+        } else {
+            // Revert background to standard Phase 13 image
+            document.getElementById(id)!.style.background = '';
+        }
     } else {
         if (mainMenu) mainMenu.style.display = 'flex';
     }
@@ -541,8 +557,8 @@ function initMultiplayerUI() {
         if (skinsContent) skinsContent.style.display = 'none';
         inLobby3D = true;
         // Wide cinematic view
-        lobbyCamera.position.set(0, 2.5, 5);
-        lobbyCamera.lookAt(0, 1.4, 0);
+        lobbyCamera.position.set(LOBBY_X, 2.5, 5);
+        lobbyCamera.lookAt(LOBBY_X, 1.4, 0);
     });
 
     tabSkins?.addEventListener('click', () => {
@@ -552,8 +568,8 @@ function initMultiplayerUI() {
         if (skinsContent) skinsContent.style.display = 'flex';
         inLobby3D = true;
         // Fortnite Locker view: dynamic zoom on dummy
-        lobbyCamera.position.set(-1.0, 2.0, 3.5);
-        lobbyCamera.lookAt(-1.5, 1.6, 0);
+        lobbyCamera.position.set(LOBBY_X - 1.0, 2.0, 3.5);
+        lobbyCamera.lookAt(LOBBY_X - 1.5, 1.6, 0);
     });
 
     // Skin Selection Logic
