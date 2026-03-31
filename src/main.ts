@@ -17,15 +17,33 @@ let myRoomCode = '';
 let isMultiplayer = false;
 let isHost = false;
 
+let currentSkin = 'default';
+let lobbyLocalGroup: THREE.Group | null = null;
+let inLobby3D = false;
+
 // Map of other players in our room: socketId → { group, label }
 const remotePlayers: Map<string, { group: THREE.Group; label: THREE.Sprite }> = new Map();
 
-function createRemotePlayerModel(): THREE.Group {
+function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
     const group = new THREE.Group();
     const model = new THREE.Group();
-    const skinMat = new THREE.MeshStandardMaterial({ color: 0x4fc3f7, flatShading: true });
-    const clothMat = new THREE.MeshStandardMaterial({ color: 0x1565c0, flatShading: true });
-    const darkMat = new THREE.MeshStandardMaterial({ color: 0x0d47a1, flatShading: true });
+    
+    // Default colors
+    let skinHex = 0x4fc3f7;
+    let clothHex = 0x1565c0;
+    let darkHex = 0x0d47a1;
+
+    // Apply Light Yagami colors
+    if (skinId === 'light_yagami') {
+        skinHex = 0xffe0bd; // Pale skin
+        clothHex = 0xc1a986; // Beige suit
+        darkHex = 0x4a2c11; // Brown hair/suit details
+    }
+
+    const skinMat = new THREE.MeshStandardMaterial({ color: skinHex, flatShading: true });
+    const clothMat = new THREE.MeshStandardMaterial({ color: clothHex, flatShading: true });
+    const darkMat = new THREE.MeshStandardMaterial({ color: darkHex, flatShading: true });
+    
     const shoeGeo = new THREE.BoxGeometry(0.22, 0.15, 0.35);
     const lShoe = new THREE.Mesh(shoeGeo, darkMat); lShoe.position.set(-0.2, 0.075, 0.06);
     const rShoe = new THREE.Mesh(shoeGeo, darkMat); rShoe.position.set(0.2, 0.075, 0.06);
@@ -37,12 +55,21 @@ function createRemotePlayerModel(): THREE.Group {
     const armGeo = new THREE.BoxGeometry(0.2, 0.5, 0.2);
     const lArm = new THREE.Mesh(armGeo, skinMat); lArm.position.set(-0.46, 1.1, 0.2); lArm.rotation.x = -Math.PI / 3;
     const rArm = new THREE.Mesh(armGeo, skinMat); rArm.position.set(0.46, 1.1, 0.2); rArm.rotation.x = -Math.PI / 3;
+    
+    // Draw hair block on head if Light Yagami
     const head = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.48, 0.48), skinMat); head.position.y = 1.65;
-    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc });
+    if (skinId === 'light_yagami') {
+        const hair = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.15, 0.52), darkMat);
+        hair.position.y = 0.22;
+        head.add(hair);
+    }
+
+    const eyeMat = new THREE.MeshBasicMaterial({ color: (skinId === 'light_yagami') ? 0x822f2f : 0x00ffcc });
     const eyeGeo = new THREE.PlaneGeometry(0.12, 0.09);
     const lEye = new THREE.Mesh(eyeGeo, eyeMat); lEye.position.set(-0.12, 0.05, 0.245);
     const rEye = new THREE.Mesh(eyeGeo, eyeMat); rEye.position.set(0.12, 0.05, 0.245);
     head.add(lEye, rEye);
+    
     model.add(lShoe, rShoe, lLeg, rLeg, torso, lArm, rArm, head);
     model.rotation.y = Math.PI;
     group.add(model);
@@ -83,14 +110,19 @@ function createNameLabel(username: string): THREE.Sprite {
     return sprite;
 }
 
-function spawnRemotePlayer(id: string, username: string, x: number, y: number, z: number) {
-    if (remotePlayers.has(id)) return;
-    const group = createRemotePlayerModel();
+function spawnRemotePlayer(id: string, username: string, x: number, y: number, z: number, skinId: string = 'default', isLocalLobbyDummy: boolean = false) {
+    if (!isLocalLobbyDummy && remotePlayers.has(id)) return;
+    const group = createRemotePlayerModel(skinId);
     group.position.set(x, y - 1.6, z);
     const label = createNameLabel(username);
     group.add(label);
     scene.add(group);
-    remotePlayers.set(id, { group, label });
+    
+    if (!isLocalLobbyDummy) {
+        remotePlayers.set(id, { group, label });
+    } else {
+        lobbyLocalGroup = group;
+    }
 }
 
 function removeRemotePlayer(id: string) {
@@ -111,19 +143,10 @@ function connectMultiplayer() {
         });
     });
     socket.on('player-joined', (p: any) => {
-        // Another player joined — spawn their model regardless of game state
-        spawnRemotePlayer(p.id, p.username, p.x || 0, p.y || 1.6, p.z || 0);
+        // Another player joined — spawn their model
+        spawnRemotePlayer(p.id, p.username, p.x || 0, p.y || 1.6, p.z || 0, p.skin || 'default');
         if (!gameStarted) {
-            // Update lobby list too
-            const container = document.getElementById('lobby-players');
-            const emptySlot = container?.querySelector('.lobby-player .slot-empty')?.parentElement;
-            if (emptySlot) {
-                const platIcon = p.platform === 'mobile' ? '📱' : '💻';
-                emptySlot.id = `slot-${p.id}`;
-                emptySlot.innerHTML = `<span class="slot-icon">${platIcon}</span>
-                    <span class="slot-other">${p.username}</span>
-                    <span class="slot-ready" style="margin-left:auto">⬜</span>`;
-            }
+            rearrangeLobbySlots();
         } else {
             showPickupNotice(`${p.username} JOINED!`);
         }
@@ -134,7 +157,7 @@ function connectMultiplayer() {
     });
     socket.on('player-left', (data: { id: string }) => {
         removeRemotePlayer(data.id);
-        document.getElementById(`slot-${data.id}`)?.remove();
+        rearrangeLobbySlots();
     });
 
     // ── Ready system ─────────────────────────────────────────────
@@ -270,35 +293,60 @@ function connectMultiplayer() {
     });
 }
 
+function setup3DLobby() {
+    inLobby3D = true;
+    lobbyCamera.position.set(0, 2.5, 5);
+    lobbyCamera.lookAt(0, 1.4, 0);
+
+    if (lobbyLocalGroup) {
+        scene.remove(lobbyLocalGroup);
+        lobbyLocalGroup = null;
+    }
+    spawnRemotePlayer('local_dummy', myUsername || 'YOU', -1.5, 1.6, 0, currentSkin, true);
+
+    rearrangeLobbySlots();
+}
+
+function cleanup3DLobby() {
+    inLobby3D = false;
+    if (lobbyLocalGroup) {
+        scene.remove(lobbyLocalGroup);
+        lobbyLocalGroup = null;
+    }
+}
+
+function rearrangeLobbySlots() {
+    if (!inLobby3D) return;
+    let slotIndex = 1; // 0 is reserved for local_dummy at -1.5
+    const slotsX = [-1.5, -0.5, 0.5, 1.5];
+    remotePlayers.forEach((p) => {
+        if (slotIndex < 4) {
+            p.group.position.x = slotsX[slotIndex];
+            p.group.position.z = 0;
+            p.group.rotation.y = Math.PI; // Face camera
+            slotIndex++;
+        }
+    });
+}
+
 function showScreen(id: string) {
     document.querySelectorAll('.mp-screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id)?.classList.add('active');
+    
+    if (id === 'lobby-screen') setup3DLobby();
+    else cleanup3DLobby();
 }
+
 function hideAllMpScreens() {
     document.querySelectorAll('.mp-screen').forEach(s => s.classList.remove('active'));
+    cleanup3DLobby();
 }
 
 function updateLobbyUI(players: Record<string, { id: string; username: string; platform?: string; ready?: boolean }>, myId: string) {
     const container = document.getElementById('lobby-players');
-    if (!container) return;
-    container.innerHTML = '';
-    const list = Object.values(players);
-    for (let i = 0; i < 4; i++) {
-        const div = document.createElement('div');
-        div.className = 'lobby-player';
-        if (list[i]) {
-            const isMe = list[i].id === myId;
-            const platIcon = list[i].platform === 'mobile' ? '📱' : '💻';
-            const readyIcon = list[i].ready ? '✅' : '⬜';
-            div.id = `slot-${list[i].id}`;
-            div.innerHTML = `<span class="slot-icon">${platIcon}</span>
-                <span class="${isMe ? 'slot-you' : 'slot-other'}">${list[i].username}${isMe ? ' (YOU)' : ''}</span>
-                <span class="slot-ready" style="margin-left:auto">${readyIcon}</span>`;
-        } else {
-            div.innerHTML = `<span class="slot-icon">⚫</span><span class="slot-empty">Empty slot</span>`;
-        }
-        container.appendChild(div);
-    }
+    // The HTML lobby list has been removed in favor of 3D display
+    // We just ensure slots are arranged properly.
+    rearrangeLobbySlots();
 }
 
 function initMultiplayerUI() {
@@ -348,7 +396,7 @@ function initMultiplayerUI() {
             }
             roomErr.innerText = '';
             const platStr = isMobile ? 'mobile' : 'pc';
-            socket.emit('create-room', { username: myUsername, platform: platStr }, (res: any) => {
+            socket.emit('create-room', { username: myUsername, platform: platStr, skin: currentSkin }, (res: any) => {
                 if (!res || res.error) { roomErr.innerText = res?.error || 'Server error.'; return; }
                 myRoomCode = res.roomCode;
                 isMultiplayer = true;
@@ -401,7 +449,7 @@ function initMultiplayerUI() {
         const code = (roomCodeInput?.value || '').trim().toUpperCase();
         if (code.length !== 6) { roomErr.innerText = 'Code must be 6 characters!'; return; }
         const platStr = isMobile ? 'mobile' : 'pc';
-        socket.emit('join-room', { roomCode: code, username: myUsername, platform: platStr }, (res: any) => {
+        socket.emit('join-room', { roomCode: code, username: myUsername, platform: platStr, skin: currentSkin }, (res: any) => {
             if (res.error) { roomErr.innerText = res.error; return; }
             myRoomCode = res.roomCode;
             isMultiplayer = true;
@@ -409,7 +457,7 @@ function initMultiplayerUI() {
             updateLobbyUI(res.players, socket!.id!);
             // Spawn players already in room
             Object.values(res.players).forEach((p: any) => {
-                if (p.id !== socket!.id) spawnRemotePlayer(p.id, p.username, p.x, p.y, p.z);
+                if (p.id !== socket!.id) spawnRemotePlayer(p.id, p.username, p.x, p.y, p.z, p.skin || 'default');
             });
             showScreen('lobby-screen');
         });
@@ -456,6 +504,41 @@ function initMultiplayerUI() {
         isMultiplayer = false;
         myRoomCode = '';
         showScreen('room-screen');
+    });
+
+    // Sub-Tabs within Lobby Screen
+    const tabLobby = document.getElementById('tab-lobby');
+    const tabSkins = document.getElementById('tab-skins');
+    const lobbyContent = document.getElementById('lobby-content');
+    const skinsContent = document.getElementById('skins-content');
+
+    tabLobby?.addEventListener('click', () => {
+        tabLobby.classList.add('active');
+        tabSkins?.classList.remove('active');
+        if (lobbyContent) lobbyContent.style.display = 'flex';
+        if (skinsContent) skinsContent.style.display = 'none';
+        inLobby3D = true; // Show camera view again
+    });
+
+    tabSkins?.addEventListener('click', () => {
+        tabSkins.classList.add('active');
+        tabLobby?.classList.remove('active');
+        if (lobbyContent) lobbyContent.style.display = 'none';
+        if (skinsContent) skinsContent.style.display = 'flex';
+        inLobby3D = true; // Keep displaying character
+    });
+
+    // Skin Selection Logic
+    document.querySelectorAll('.skin-card').forEach(card => {
+        card.addEventListener('click', () => {
+            document.querySelectorAll('.skin-card').forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+            const chosen = card.getAttribute('data-skin') || 'default';
+            currentSkin = chosen;
+            if (inLobby3D) {
+                setup3DLobby(); // Re-creates model with new skin
+            }
+        });
     });
 }
 
@@ -3539,7 +3622,7 @@ function animate() {
     // Si el juego está en pausa, no actualizamos físicas ni enemigos, solo renderizamos el frame
     if (isPaused) {
         prevTime = time;
-        renderer.render(scene, camera);
+        renderer.render(scene, inLobby3D ? lobbyCamera : camera);
         return;
     }
 
@@ -3756,7 +3839,7 @@ function animate() {
     }
 
     prevTime = time;
-    renderer.render(scene, camera);
+    renderer.render(scene, inLobby3D ? lobbyCamera : camera);
 }
 
 animate();

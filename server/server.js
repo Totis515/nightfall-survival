@@ -41,14 +41,14 @@ io.on('connection', (socket) => {
     console.log(`[+] ${socket.id}`);
 
     // ── CREATE ROOM ──────────────────────────────────────────────
-    socket.on('create-room', ({ username, platform }, callback) => {
+    socket.on('create-room', ({ username, platform, skin }, callback) => {
         username = (username || '').trim().toUpperCase();
         if (username.length < 2) return callback({ error: 'Min 2 characters.' });
 
         const code = generateCode();
         rooms[code] = { players: {}, enemies: {}, hostId: socket.id, gameStarted: false };
         rooms[code].players[socket.id] = {
-            id: socket.id, username, platform: platform || 'pc',
+            id: socket.id, username, platform: platform || 'pc', skin: skin || 'default',
             x: 0, y: 1.6, z: 0, rotY: 0, ready: false
         };
 
@@ -61,7 +61,7 @@ io.on('connection', (socket) => {
     });
 
     // ── JOIN ROOM ────────────────────────────────────────────────
-    socket.on('join-room', ({ roomCode, username, platform }, callback) => {
+    socket.on('join-room', ({ roomCode, username, platform, skin }, callback) => {
         username = (username || '').trim().toUpperCase();
         const code = (roomCode || '').trim().toUpperCase();
 
@@ -74,7 +74,7 @@ io.on('connection', (socket) => {
         if (taken) return callback({ error: `"${username}" already taken in this room.` });
 
         rooms[code].players[socket.id] = {
-            id: socket.id, username, platform: platform || 'pc',
+            id: socket.id, username, platform: platform || 'pc', skin: skin || 'default',
             x: 0, y: 1.6, z: 0, rotY: 0, ready: false
         };
 

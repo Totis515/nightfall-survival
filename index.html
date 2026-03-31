@@ -1159,6 +1159,54 @@
             color: #333;
             font-size: 14px;
         }
+
+        /* ──────────────── 3D LOBBY UI ──────────────── */
+        #lobby-screen {
+            background: transparent !important;
+            backdrop-filter: none !important;
+            justify-content: flex-start !important;
+            padding: 0 !important;
+        }
+
+        .lobby-tab {
+            background: transparent;
+            color: #aaa;
+            border: none;
+            font-size: 24px;
+            font-family: 'Impact', sans-serif;
+            text-transform: uppercase;
+            cursor: pointer;
+            letter-spacing: 2px;
+            transition: all 0.2s;
+            border-bottom: 4px solid transparent;
+            padding-bottom: 5px;
+        }
+
+        .lobby-tab:hover {
+            color: #fff;
+        }
+
+        .lobby-tab.active {
+            color: #fff;
+            border-bottom: 4px solid #ffcc00;
+        }
+
+        .skin-card {
+            transition: transform 0.2s, border-color 0.2s;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .skin-card:hover {
+            transform: scale(1.05);
+            border-color: #ffaa00 !important;
+        }
+
+        .skin-card.active {
+            border-color: #ffcc00 !important;
+            box-shadow: 0 0 20px rgba(255, 204, 0, 0.4);
+        }
     </style>
 </head>
 
@@ -1278,20 +1326,49 @@
         <button id="btn-room-back" class="mp-btn danger">← BACK</button>
     </div>
 
-    <!-- LOBBY SCREEN: waiting for players, shows room code and player list -->
+    <!-- LOBBY SCREEN: 3D Fortnite-style Lobby -->
     <div id="lobby-screen" class="mp-screen">
-        <div class="mp-title">🏠 LOBBY</div>
-        <div class="mp-code-label">ROOM CODE</div>
-        <div class="mp-code" id="lobby-code">------</div>
-        <div class="mp-sub" style="color:#888">Share this code with your friends</div>
-        <div class="lobby-players" id="lobby-players">
-            <div class="lobby-player"><span class="slot-icon">🟢</span><span class="slot-empty">Waiting...</span></div>
-            <div class="lobby-player"><span class="slot-icon">⚫</span><span class="slot-empty">Empty slot</span></div>
-            <div class="lobby-player"><span class="slot-icon">⚫</span><span class="slot-empty">Empty slot</span></div>
-            <div class="lobby-player"><span class="slot-icon">⚫</span><span class="slot-empty">Empty slot</span></div>
+        <!-- TOP NAVIGATION -->
+        <div style="width: 100%; display: flex; justify-content: space-between; padding: 30px; box-sizing: border-box; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);">
+            <div style="color: white; font-size: 32px; font-weight: bold; text-shadow: 0 0 10px #000; font-family: 'Impact', sans-serif;">PHASE <span style="color: #ffcc00">13</span></div>
+            <div style="display: flex; gap: 40px;">
+                <button id="tab-lobby" class="lobby-tab active">LOBBY</button>
+                <button id="tab-skins" class="lobby-tab">SKINS</button>
+            </div>
+            <div style="width: 150px;"></div> <!-- Spacer to center tabs -->
         </div>
-        <button id="btn-lobby-start" class="mp-btn primary">▶ START GAME</button>
-        <button id="btn-lobby-leave" class="mp-btn danger">✕ LEAVE ROOM</button>
+        
+        <!-- LOBBY CONTENT -->
+        <div id="lobby-content" style="width: 100%; flex: 1; display: flex; flex-direction: column; justify-content: space-between; padding: 40px; box-sizing: border-box;">
+            <!-- Server Info -->
+            <div style="align-self: flex-start; background: rgba(0,0,0,0.6); padding: 15px 25px; border-radius: 8px; border-left: 4px solid #00ffcc; backdrop-filter: blur(4px);">
+                <div style="color: #ccc; font-size: 14px; font-family: monospace;">ROOM CODE</div>
+                <div id="lobby-code" style="color: #00ffcc; font-size: 32px; letter-spacing: 4px; text-shadow: 0 0 10px #00ffcc; margin: 5px 0;">------</div>
+                <button id="btn-lobby-leave" class="mp-btn danger" style="padding: 8px 16px; font-size: 14px; margin-top: 15px; width: 100%;">LEAVE ROOM</button>
+            </div>
+            
+            <!-- Play Button Area -->
+            <div style="align-self: flex-end; margin-bottom: 20px;">
+                <button id="btn-lobby-start" class="mp-btn primary" style="font-size: 36px; padding: 20px 80px; text-shadow: none; box-shadow: 0 0 30px rgba(255, 204, 0, 0.4); background: #ffcc00; color: #000; border: none; letter-spacing: 2px;">▶ PLAY!</button>
+            </div>
+        </div>
+
+        <!-- SKINS CONTENT (Hidden by default) -->
+        <div id="skins-content" style="display: none; width: 100%; flex: 1; padding: 40px; box-sizing: border-box; flex-direction: column; align-items: center; background: radial-gradient(circle at center, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.8) 100%);">
+            <h2 style="color: white; font-size: 36px; text-shadow: 0 0 10px #000; margin-bottom: 40px; font-family: 'Impact', sans-serif;">SELECT SKIN</h2>
+            <div style="display: flex; gap: 30px; flex-wrap: wrap; justify-content: center; font-family: 'Impact', sans-serif;">
+                <div class="skin-card active" data-skin="default" style="width: 220px; height: 320px; background: rgba(50,50,60,0.8); border: 3px solid #00ffcc; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white;">
+                    <div style="font-size: 64px; margin-bottom: 20px;">👤</div>
+                    <div style="font-size: 24px; letter-spacing: 1px; text-shadow: 0 0 5px black;">BLOCK BOI</div>
+                    <div style="color: #00ffcc; font-size: 14px; margin-top: 5px; font-family: monospace;">Default Skin</div>
+                </div>
+                <!-- Light Yagami Skin -->
+                <div class="skin-card" data-skin="light_yagami" style="width: 220px; height: 320px; background: url('Light_Yagami.webp') center/cover; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 20px; color: white;">
+                    <div style="font-size: 24px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black;">LIGHT YAGAMI</div>
+                    <div style="color: #ffaa00; font-size: 14px; margin-top: 5px; font-family: monospace; text-shadow: 0 1px 3px black;">Anime Series</div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Pantalla de carga que se muestra temporalmente mientras el motor 3D prepara el nivel -->
