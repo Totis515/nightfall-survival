@@ -305,11 +305,16 @@ function setup3DLobby() {
     // Background as requested
     scene.background = new THREE.TextureLoader().load('fondo.png');
 
+    // Disable fog so the 2D image background is actually visible
+    scene.fog = null;
+    
     // Add lighting so the skins are actually visible and not pitch black
     if (!lobbyLight) {
         lobbyLight = new THREE.DirectionalLight(0xffffff, 2.0);
         lobbyLight.position.set(LOBBY_X + 2, 5, 5);
+        lobbyLight.target.position.set(LOBBY_X, 0, 0);
         scene.add(lobbyLight);
+        scene.add(lobbyLight.target);
     }
     if (!lobbyAmbient) {
         lobbyAmbient = new THREE.AmbientLight(0xffffff, 1.0);
@@ -327,7 +332,8 @@ function setup3DLobby() {
 
 function cleanup3DLobby() {
     inLobby3D = false;
-    scene.background = null; // Revert background to game default
+    scene.background = new THREE.Color(0x0a0a1a); // Revert to standard color
+    scene.fog = new THREE.FogExp2(0x1a0b2e, 0.025); // Restore game fog
     if (lobbyLocalGroup) {
         scene.remove(lobbyLocalGroup);
         lobbyLocalGroup = null;
