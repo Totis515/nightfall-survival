@@ -3669,7 +3669,7 @@ function animate() {
     // Si el juego está en pausa, no actualizamos físicas ni enemigos, solo renderizamos el frame
     if (isPaused) {
         prevTime = time;
-        renderer.render(scene, inLobby3D ? lobbyCamera : camera);
+        renderer.render(inLobby3D ? lobbyScene : scene, inLobby3D ? lobbyCamera : camera);
         return;
     }
 
@@ -3886,7 +3886,7 @@ function animate() {
     }
 
     prevTime = time;
-    renderer.render(scene, inLobby3D ? lobbyCamera : camera);
+    renderer.render(inLobby3D ? lobbyScene : scene, inLobby3D ? lobbyCamera : camera);
 }
 
 animate();
