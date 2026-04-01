@@ -116,7 +116,13 @@ function spawnRemotePlayer(id: string, username: string, x: number, y: number, z
     group.position.set(x, y - 1.6, z);
     const label = createNameLabel(username);
     group.add(label);
-    scene.add(group);
+    
+    // Add to the appropriate scene
+    if (inLobby3D || isLocalLobbyDummy) {
+        lobbyScene.add(group);
+    } else {
+        scene.add(group);
+    }
     
     if (!isLocalLobbyDummy) {
         remotePlayers.set(id, { group, label });
@@ -293,54 +299,29 @@ function connectMultiplayer() {
     });
 }
 
-let lobbyLight: THREE.DirectionalLight | null = null;
-let lobbyAmbient: THREE.AmbientLight | null = null;
-const LOBBY_X = 10000;
-
 function setup3DLobby() {
     inLobby3D = true;
-    lobbyCamera.position.set(LOBBY_X, 2.5, 5);
-    lobbyCamera.lookAt(LOBBY_X, 1.4, 0);
-    
-    // Background as requested
-    scene.background = new THREE.TextureLoader().load('fondo.png');
-
-    // Disable fog so the 2D image background is actually visible
-    scene.fog = null;
-    
-    // Add lighting so the skins are actually visible and not pitch black
-    if (!lobbyLight) {
-        lobbyLight = new THREE.DirectionalLight(0xffffff, 2.0);
-        lobbyLight.position.set(LOBBY_X + 2, 5, 5);
-        lobbyLight.target.position.set(LOBBY_X, 0, 0);
-        scene.add(lobbyLight);
-        scene.add(lobbyLight.target);
-    }
-    if (!lobbyAmbient) {
-        lobbyAmbient = new THREE.AmbientLight(0xffffff, 1.0);
-        scene.add(lobbyAmbient);
-    }
+    // WIDE view: all 4 slots visible
+    lobbyCamera.position.set(0, 2.5, 5);
+    lobbyCamera.lookAt(0, 1.4, 0);
 
     if (lobbyLocalGroup) {
-        scene.remove(lobbyLocalGroup);
+        lobbyScene.remove(lobbyLocalGroup);
         lobbyLocalGroup = null;
     }
-    spawnRemotePlayer('local_dummy', myUsername || 'YOU', LOBBY_X - 1.5, 1.6, 0, currentSkin, true);
+    spawnRemotePlayer('local_dummy', myUsername || 'YOU', -1.5, 1.6, 0, currentSkin, true);
 
     rearrangeLobbySlots();
 }
 
 function cleanup3DLobby() {
     inLobby3D = false;
-    scene.background = new THREE.Color(0x0a0a1a); // Revert to standard color
-    scene.fog = new THREE.FogExp2(0x1a0b2e, 0.025); // Restore game fog
     if (lobbyLocalGroup) {
-        scene.remove(lobbyLocalGroup);
+        lobbyScene.remove(lobbyLocalGroup);
         lobbyLocalGroup = null;
     }
-    // Return other players to safety before game starts
     remotePlayers.forEach((p) => {
-        p.group.position.set(0, 0, 0);
+        lobbyScene.remove(p.group);
     });
 }
 
@@ -350,8 +331,11 @@ function rearrangeLobbySlots() {
     const slotsX = [-1.5, -0.5, 0.5, 1.5];
     remotePlayers.forEach((p) => {
         if (slotIndex < 4) {
-            p.group.position.x = LOBBY_X + slotsX[slotIndex];
-            p.group.position.z = 0;
+            // Ensure the group is in the lobbyScene
+            if (!lobbyScene.children.includes(p.group)) {
+                lobbyScene.add(p.group);
+            }
+            p.group.position.set(slotsX[slotIndex], 0, 0);
             p.group.rotation.y = Math.PI; // Face camera
             slotIndex++;
         }
@@ -562,9 +546,9 @@ function initMultiplayerUI() {
         if (lobbyContent) lobbyContent.style.display = 'flex';
         if (skinsContent) skinsContent.style.display = 'none';
         inLobby3D = true;
-        // Wide cinematic view
-        lobbyCamera.position.set(LOBBY_X, 2.5, 5);
-        lobbyCamera.lookAt(LOBBY_X, 1.4, 0);
+        // Wide view: show all players
+        lobbyCamera.position.set(0, 2.5, 5);
+        lobbyCamera.lookAt(0, 1.4, 0);
     });
 
     tabSkins?.addEventListener('click', () => {
@@ -573,9 +557,9 @@ function initMultiplayerUI() {
         if (lobbyContent) lobbyContent.style.display = 'none';
         if (skinsContent) skinsContent.style.display = 'flex';
         inLobby3D = true;
-        // Fortnite Locker view: dynamic zoom on dummy
-        lobbyCamera.position.set(LOBBY_X - 1.0, 2.0, 3.5);
-        lobbyCamera.lookAt(LOBBY_X - 1.5, 1.6, 0);
+        // Fortnite Locker view: zoom on local dummy at slot -1.5
+        lobbyCamera.position.set(-1.0, 2.0, 3.5);
+        lobbyCamera.lookAt(-1.5, 1.6, 0);
     });
 
     // Skin Selection Logic
@@ -698,6 +682,19 @@ scene.fog = new THREE.FogExp2(0x1a0b2e, 0.025);
 
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.set(0, 1.6, 0);
+
+// ── LOBBY: dedicated isolated scene so the game world never contaminates the lobby view ──
+const lobbyScene = new THREE.Scene();
+const lobbyCamera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+lobbyCamera.position.set(0, 1.8, 4);
+lobbyCamera.lookAt(0, 1.4, 0);
+// Bright front + ambient lights so the block characters show their colours
+const _lobbyDir = new THREE.DirectionalLight(0xffffff, 2.5);
+_lobbyDir.position.set(2, 5, 6);
+lobbyScene.add(_lobbyDir);
+lobbyScene.add(new THREE.AmbientLight(0xffffff, 1.5));
+// fondo.png as background (no fog)
+new THREE.TextureLoader().load('fondo.png', (tex) => { lobbyScene.background = tex; });
 
 const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
 renderer.setSize(window.innerWidth, window.innerHeight);
