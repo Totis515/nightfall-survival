@@ -118,7 +118,8 @@ function createNameLabel(username: string, platform: string = 'PC', isReady: boo
     ctx.font = 'bold 20px Impact, Arial Black, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillStyle = '#00ffcc';
-    ctx.fillText(`${username.toUpperCase().slice(0, 12)} [${platform.toUpperCase()}]`, 128, 40);
+    const platSymbol = platform.toLowerCase() === 'mobile' ? '📱' : '🖥️';
+    ctx.fillText(`${username.toUpperCase().slice(0, 12)} ${platSymbol}`, 128, 40);
 
     ctx.fillStyle = isReady ? '#00ffcc' : '#ff3333';
     ctx.font = 'bold 16px Arial, sans-serif';
@@ -128,7 +129,7 @@ function createNameLabel(username: string, platform: string = 'PC', isReady: boo
     const tex = new THREE.CanvasTexture(canvas);
     const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true });
     const sprite = new THREE.Sprite(mat);
-    sprite.scale.set(1.1, 0.55, 1); // taller size for extra line
+    sprite.scale.set(1.4, 0.7, 1); // Extra large label scale
     sprite.position.y = 2.45;
     return sprite;
 }
@@ -396,19 +397,23 @@ function cleanup3DLobby() {
 function rearrangeLobbySlots() {
     if (!inLobby3D) return;
     
-    // Position local player dead center in foreground
+    // Position local player dead center in foreground (or moved right if in Skins Tab)
     if (lobbyLocalGroup) {
-        lobbyLocalGroup.scale.set(1.4, 1.4, 1.4);
+        lobbyLocalGroup.scale.set(1.8, 1.8, 1.8);
         lobbyLocalGroup.rotation.y = Math.PI;
-        lobbyLocalGroup.position.set(0, 0, 0);
+        if (inSkinsTab) {
+            lobbyLocalGroup.position.set(1.5, 0, 0); // Put model more to the right in the Locker
+        } else {
+            lobbyLocalGroup.position.set(0, 0, 0);
+        }
         lobbyLocalGroup.visible = true;
     }
 
     // Teammates scattered behind and slightly offset
     const teammatePositions = [
-        new THREE.Vector3(-2.8, 0, -1), // Left behind
-        new THREE.Vector3(2.8, 0, -1),  // Right behind
-        new THREE.Vector3(-5.5, 0, -2)  // Far behind
+        new THREE.Vector3(-3.5, 0, -1.5), // Left behind
+        new THREE.Vector3(3.5, 0, -1.5),  // Right behind
+        new THREE.Vector3(-6.5, 0, -3.0)  // Far behind
     ];
 
     let slotIndex = 0;
@@ -420,7 +425,7 @@ function rearrangeLobbySlots() {
             p.group.position.copy(teammatePositions[slotIndex]);
         }
         p.group.rotation.y = Math.PI;
-        p.group.scale.set(1.4, 1.4, 1.4);
+        p.group.scale.set(1.8, 1.8, 1.8);
         p.group.visible = !inSkinsTab; // Hide if in Skins
         slotIndex++;
     });
@@ -581,7 +586,8 @@ function initMultiplayerUI() {
     // Lobby - READY toggle (replaces old "START GAME")
     const readyBtn = document.getElementById('btn-lobby-start');
     if (readyBtn) {
-        readyBtn.innerText = '⚡ READY';
+        readyBtn.innerHTML = '⚡&nbsp;READY'; // Prevent wrapping with non-breaking space
+        readyBtn.style.whiteSpace = 'nowrap';
         readyBtn.style.background = 'transparent';
         readyBtn.style.color = '#00ffcc';
         readyBtn.style.border = '2px solid #00ffcc';
@@ -610,11 +616,11 @@ function initMultiplayerUI() {
                 }
                 // Update button style to reflect ready state
                 if (amReady) {
-                    readyBtn.innerText = '❌ CANCEL READY';
+                    readyBtn.innerHTML = '❌&nbsp;CANCEL READY';
                     readyBtn.classList.add('danger');
                     readyBtn.classList.remove('primary');
                 } else {
-                    readyBtn.innerText = '⚡ READY';
+                    readyBtn.innerHTML = '⚡&nbsp;READY';
                     readyBtn.classList.remove('danger');
                 }
             });
