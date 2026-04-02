@@ -91,6 +91,26 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         clothHex = 0x111111; // Black body
         darkHex = 0xffffff; // White gloves
         pantsHex = 0xdd0000; // Red pants
+    } else if (skinId === 'mario') {
+        skinHex = 0xffdab9; // Peach skin
+        clothHex = 0xdd0000; // Red shirt
+        darkHex = 0xdd0000; // Red hat
+        pantsHex = 0x0000dd; // Blue overalls
+    } else if (skinId === 'sonic') {
+        skinHex = 0xffdab9; // Muzzle color
+        clothHex = 0x0000ff; // Blue body
+        darkHex = 0x0000ff; // Blue spikes
+        pantsHex = 0x0000ff;
+    } else if (skinId === 'ben10') {
+        skinHex = 0xffe0bd;
+        clothHex = 0xffffff; // White shirt
+        darkHex = 0x3d2314; // Brown hair
+        pantsHex = 0x333333; // Dark pants
+    } else if (skinId === 'coraline') {
+        skinHex = 0xffe0bd;
+        clothHex = 0xffcc00; // Yellow raincoat
+        darkHex = 0x0000aa; // Blue hair
+        pantsHex = 0x333333;
     }
 
     const skinMat = new THREE.MeshStandardMaterial({ color: skinHex, flatShading: true });
@@ -129,7 +149,11 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
     } else if (skinId === 'gojo') {
         const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.25, 0.55), darkMat);
         hair.position.y = 0.24;
-        head.add(hair);
+        // White hair spikes
+        const s1 = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.35, 4), darkMat); s1.position.set(-0.2, 0.45, 0.1);
+        const s2 = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.3, 4), darkMat); s2.position.set(0.2, 0.4, -0.1);
+        const s3 = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.4, 4), darkMat); s3.position.set(0, 0.5, 0);
+        head.add(hair, s1, s2, s3);
         // Blindfold
         const blindfold = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.15, 0.5), new THREE.MeshBasicMaterial({ color: 0x000000 }));
         blindfold.position.set(0, 0.05, 0);
@@ -211,10 +235,10 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         const lBun = new THREE.Mesh(bunGeo, darkMat); lBun.position.set(-0.25, 0.25, 0);
         const rBun = new THREE.Mesh(bunGeo, darkMat); rBun.position.set(0.25, 0.25, 0);
         
-        // Pigtails (long boxes)
-        const pigtailGeo = new THREE.BoxGeometry(0.1, 0.6, 0.1);
-        const lTail = new THREE.Mesh(pigtailGeo, darkMat); lTail.position.set(-0.35, -0.1, -0.1); lTail.rotation.z = Math.PI/8;
-        const rTail = new THREE.Mesh(pigtailGeo, darkMat); rTail.position.set(0.35, -0.1, -0.1); rTail.rotation.z = -Math.PI/8;
+        // Pigtails (Cylinders for better hair look)
+        const pigtailGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.7, 8);
+        const lTail = new THREE.Mesh(pigtailGeo, darkMat); lTail.position.set(-0.3, -0.1, -0.05); lTail.rotation.z = Math.PI/10;
+        const rTail = new THREE.Mesh(pigtailGeo, darkMat); rTail.position.set(0.3, -0.1, -0.05); rTail.rotation.z = -Math.PI/10;
         head.add(lBun, rBun, lTail, rTail);
 
         // Red bow
@@ -244,10 +268,10 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         head.add(bun);
     } else if (skinId === 'pomni') {
         const hairDMat = new THREE.MeshStandardMaterial({ color: 0x3d2314 }); // Brown hair
-        // Hair strands on the sides (more like hair, less like boxes)
-        const hairGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.2, 4);
-        const hL = new THREE.Mesh(hairGeo, hairDMat); hL.position.set(-0.22, 0, 0.25); hL.rotation.z = 0.2;
-        const hR = new THREE.Mesh(hairGeo, hairDMat); hR.position.set(0.22, 0, 0.25); hR.rotation.z = -0.2;
+        // Hair strands on the sides (Anchored closer to head)
+        const hairStrandGeo = new THREE.BoxGeometry(0.04, 0.2, 0.1);
+        const hL = new THREE.Mesh(hairStrandGeo, hairDMat); hL.position.set(-0.25, 0, 0.22); hL.rotation.z = 0.1;
+        const hR = new THREE.Mesh(hairStrandGeo, hairDMat); hR.position.set(0.25, 0, 0.22); hR.rotation.z = -0.1;
         const hB = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, 0.05), hairDMat); hB.position.set(0, 0.1, -0.25);
         head.add(hL, hR, hB);
 
@@ -324,8 +348,71 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         // Normal hands (removed the giant blocks)
         // Big brown/red shoes
         const bigShoeMat = new THREE.MeshStandardMaterial({ color: 0x5c3a21 });
-        lShoe.material = bigShoeMat; lShoe.scale.set(1.5, 1.2, 1.5);
-        rShoe.material = bigShoeMat; rShoe.scale.set(1.5, 1.2, 1.5);
+        lShoe.material = bigShoeMat;
+        rShoe.material = bigShoeMat;
+    } else if (skinId === 'mario') {
+        // Red hat
+        const hat = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.15, 0.52), clothMat);
+        hat.position.y = 0.28;
+        const brim = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.08, 0.2), clothMat);
+        brim.position.set(0, 0.2, 0.3);
+        head.add(hat, brim);
+        // Overalls
+        const overalls = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.5), pantsMat);
+        overalls.position.set(0, 0, 0.191);
+        torso.add(overalls);
+        // Strap buttons
+        const btnGeo = new THREE.SphereGeometry(0.04);
+        const btnMat = new THREE.MeshStandardMaterial({ color: 0xffcc00 }); // Yellow buttons
+        const b1 = new THREE.Mesh(btnGeo, btnMat); b1.position.set(-0.15, 0.15, 0.2);
+        const b2 = new THREE.Mesh(btnGeo, btnMat); b2.position.set(0.15, 0.15, 0.2);
+        torso.add(b1, b2);
+        // White gloves
+        lArm.material = new THREE.MeshStandardMaterial({ color: 0xffffff });
+        rArm.material = new THREE.MeshStandardMaterial({ color: 0xffffff });
+    } else if (skinId === 'sonic') {
+        // Blue spikes
+        const spikeGeo = new THREE.ConeGeometry(0.1, 0.4, 4);
+        for(let i=0; i<6; i++) {
+            const s = new THREE.Mesh(spikeGeo, darkMat);
+            s.rotation.x = -Math.PI / 4;
+            s.position.set((i%2?0.15:-0.15), 0.25 - (i*0.1), -0.2 - (i*0.05));
+            head.add(s);
+        }
+        // Red shoes with white stripe
+        const rShoesMat = new THREE.MeshStandardMaterial({ color: 0xdd0000 });
+        lShoe.material = rShoesMat;
+        rShoe.material = rShoesMat;
+        const lStripe = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.05, 0.1), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+        lStripe.position.set(0, 0.05, 0.1); lShoe.add(lStripe);
+        const rStripe = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.05, 0.1), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+        rStripe.position.set(0, 0.05, 0.1); rShoe.add(rStripe);
+    } else if (skinId === 'ben10') {
+        // 10 shirt logo (green stripe)
+        const stripe = new THREE.Mesh(new THREE.PlaneGeometry(0.15, 0.7), new THREE.MeshBasicMaterial({ color: 0x00aa00 }));
+        stripe.position.set(0, 0, 0.191);
+        torso.add(stripe);
+        // Messy hair
+        const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.25, 0.55), darkMat);
+        hair.position.y = 0.24;
+        head.add(hair);
+        // Omnitrix
+        const watch = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 0.15), new THREE.MeshStandardMaterial({ color: 0x666666 }));
+        watch.position.set(0, -0.3, 0);
+        const face = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 0.1), new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
+        face.position.set(0, 0, 0.08); watch.add(face);
+        lArm.add(watch);
+    } else if (skinId === 'coraline') {
+        const raincoatMat = new THREE.MeshStandardMaterial({ color: 0xffcc00 });
+        lArm.material = raincoatMat;
+        rArm.material = raincoatMat;
+        // Blue hair (similar to L but blue)
+        const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.35, 0.55), darkMat);
+        hair.position.y = 0.28;
+        head.add(hair);
+        // Boots
+        lShoe.material = raincoatMat;
+        rShoe.material = raincoatMat;
     }
 
     const eyeMat = new THREE.MeshBasicMaterial({ color: (skinId === 'light_yagami' || skinId === 'pomni') ? 0x822f2f : (skinId === 'lawliet' || skinId === 'cuphead' || skinId === 'geto') ? 0x111111 : 0x00ffcc });
