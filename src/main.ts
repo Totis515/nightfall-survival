@@ -51,6 +51,26 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         clothHex = 0xff6600; // Orange Gi
         darkHex = 0x111116; // Black hair
         pantsHex = 0xff6600; // Orange pants
+    } else if (skinId === 'isagi') {
+        skinHex = 0xffe0bd;
+        clothHex = 0x0000aa; // Blue Blue Lock jersey
+        darkHex = 0x001144; // Dark blue hair
+        pantsHex = 0x0000aa; // Blue shorts
+    } else if (skinId === 'bugs_bunny') {
+        skinHex = 0xaaaaaa; // Grey fur
+        clothHex = 0xaaaaaa; // Grey fur torso
+        darkHex = 0xffffff; // White accents (feet)
+        pantsHex = 0xaaaaaa; // Grey fur legs
+    } else if (skinId === 'tung_tung') {
+        skinHex = 0xd2a679; // Tan skin
+        clothHex = 0xffffff; // White Baju Koko
+        darkHex = 0x111111; // Black peci
+        pantsHex = 0x222222; // Dark Sarong base
+    } else if (skinId === 'sailor_moon') {
+        skinHex = 0xffe0bd; // Pale skin
+        clothHex = 0xffffff; // White uniform top
+        darkHex = 0xffcc00; // Blonde hair
+        pantsHex = 0x0000aa; // Blue skirt
     }
 
     const skinMat = new THREE.MeshStandardMaterial({ color: skinHex, flatShading: true });
@@ -102,6 +122,76 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         const shirt = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.6), new THREE.MeshBasicMaterial({ color: 0x0000ff }));
         shirt.position.set(0, 0, 0.191);
         torso.add(shirt);
+    } else if (skinId === 'isagi') {
+        const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.25, 0.55), darkMat);
+        hair.position.y = 0.24;
+        head.add(hair);
+        // Jersey stripes (black V-neck or sides)
+        const stripe = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.6), new THREE.MeshBasicMaterial({ color: 0x111111 }));
+        stripe.position.set(0, 0, 0.191);
+        torso.add(stripe);
+    } else if (skinId === 'bugs_bunny') {
+        // Bunny ears
+        const earPMat = new THREE.MeshBasicMaterial({ color: 0xffcccc }); // Pink inside
+        const earGeo = new THREE.BoxGeometry(0.15, 0.6, 0.1);
+        const lEar = new THREE.Mesh(earGeo, skinMat); lEar.position.set(-0.15, 0.5, 0);
+        const rEar = new THREE.Mesh(earGeo, skinMat); rEar.position.set(0.15, 0.5, 0);
+        const innerGeo = new THREE.PlaneGeometry(0.08, 0.5);
+        const lInner = new THREE.Mesh(innerGeo, earPMat); lInner.position.set(0, 0, 0.051); lEar.add(lInner);
+        const rInner = new THREE.Mesh(innerGeo, earPMat); rInner.position.set(0, 0, 0.051); rEar.add(rInner);
+        head.add(lEar, rEar);
+
+        // White belly
+        const belly = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.5), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+        belly.position.set(0, -0.05, 0.191);
+        torso.add(belly);
+
+        // Muzzle
+        const muzzle = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.2), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+        muzzle.position.set(0, -0.1, 0.241);
+        head.add(muzzle);
+    } else if (skinId === 'tung_tung') {
+        // Peci (Black cap)
+        const peci = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.15, 0.5), darkMat);
+        peci.position.y = 0.25;
+        head.add(peci);
+
+        // Sarong (Wrap around legs)
+        const sarong = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.4, 0.4), new THREE.MeshBasicMaterial({ color: 0x550000 }));
+        sarong.position.set(0, -0.15, 0);
+        torso.add(sarong);
+
+        // Kentongan (Wooden drum in hand)
+        const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.4, 8), new THREE.MeshStandardMaterial({ color: 0x8b4513 }));
+        drum.rotation.x = Math.PI / 2;
+        drum.position.set(0, -0.2, 0.2);
+        lArm.add(drum);
+    } else if (skinId === 'sailor_moon') {
+        // Odango (buns)
+        const bunGeo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+        const lBun = new THREE.Mesh(bunGeo, darkMat); lBun.position.set(-0.25, 0.25, 0);
+        const rBun = new THREE.Mesh(bunGeo, darkMat); rBun.position.set(0.25, 0.25, 0);
+        
+        // Pigtails (long boxes)
+        const pigtailGeo = new THREE.BoxGeometry(0.1, 0.6, 0.1);
+        const lTail = new THREE.Mesh(pigtailGeo, darkMat); lTail.position.set(-0.35, -0.1, -0.1); lTail.rotation.z = Math.PI/8;
+        const rTail = new THREE.Mesh(pigtailGeo, darkMat); rTail.position.set(0.35, -0.1, -0.1); rTail.rotation.z = -Math.PI/8;
+        head.add(lBun, rBun, lTail, rTail);
+
+        // Red bow
+        const bow = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.15, 0.05), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
+        bow.position.set(0, 0.15, 0.2);
+        torso.add(bow);
+
+        // Sailor collar (blue flap over shoulders)
+        const collar = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.1, 0.4), new THREE.MeshBasicMaterial({ color: 0x0000aa }));
+        collar.position.set(0, 0.35, 0);
+        torso.add(collar);
+        
+        // Red boots
+        const bootMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+        lShoe.material = bootMat;
+        rShoe.material = bootMat;
     }
 
     const eyeMat = new THREE.MeshBasicMaterial({ color: (skinId === 'light_yagami') ? 0x822f2f : 0x00ffcc });
