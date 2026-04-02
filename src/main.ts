@@ -62,10 +62,10 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         darkHex = 0xffffff; // White accents (feet)
         pantsHex = 0xaaaaaa; // Grey fur legs
     } else if (skinId === 'tung_tung') {
-        skinHex = 0xd2a679; // Tan skin
-        clothHex = 0xffffff; // White Baju Koko
-        darkHex = 0x111111; // Black peci
-        pantsHex = 0x222222; // Dark Sarong base
+        skinHex = 0x8b4513; // Tan skin / Wood
+        clothHex = 0x8b4513; // White Baju Koko -> Wood
+        darkHex = 0x8b4513; // Black peci -> Wood
+        pantsHex = 0x8b4513; // Dark Sarong base -> Wood
     } else if (skinId === 'sailor_moon') {
         skinHex = 0xffe0bd; // Pale skin
         clothHex = 0xffffff; // White uniform top
@@ -151,22 +151,17 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         muzzle.position.set(0, -0.1, 0.241);
         head.add(muzzle);
     } else if (skinId === 'tung_tung') {
-        // Peci (Black cap)
-        const peci = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.15, 0.5), darkMat);
-        peci.position.y = 0.25;
-        head.add(peci);
-
-        // Sarong (Wrap around legs)
-        const sarong = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.4, 0.4), new THREE.MeshBasicMaterial({ color: 0x550000 }));
-        sarong.position.set(0, -0.15, 0);
-        torso.add(sarong);
-
         // Kentongan (Wooden drum in hand)
-        const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.4, 8), new THREE.MeshStandardMaterial({ color: 0x8b4513 }));
+        const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.4, 8), new THREE.MeshStandardMaterial({ color: 0x5a2d0c }));
         drum.rotation.x = Math.PI / 2;
         drum.position.set(0, -0.2, 0.2);
         lArm.add(drum);
     } else if (skinId === 'sailor_moon') {
+        // Skullcap hair base to avoid bald head
+        const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.25, 0.55), darkMat);
+        hair.position.y = 0.24;
+        head.add(hair);
+
         // Odango (buns)
         const bunGeo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
         const lBun = new THREE.Mesh(bunGeo, darkMat); lBun.position.set(-0.25, 0.25, 0);
