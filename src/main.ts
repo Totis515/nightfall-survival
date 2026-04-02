@@ -156,6 +156,11 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         drum.rotation.x = Math.PI / 2;
         drum.position.set(0, -0.2, 0.2);
         lArm.add(drum);
+
+        // Wooden nose
+        const nose = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.15), skinMat);
+        nose.position.set(0, 0, 0.25);
+        head.add(nose);
     } else if (skinId === 'sailor_moon') {
         // Skullcap hair base to avoid bald head
         const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.25, 0.55), darkMat);
