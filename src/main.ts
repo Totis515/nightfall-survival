@@ -121,10 +121,15 @@ function createNameLabel(username: string, platform: string = 'PC', isReady: boo
     const platSymbol = platform.toLowerCase() === 'mobile' ? '📱' : '🖥️';
     ctx.fillText(`${username.toUpperCase().slice(0, 12)} ${platSymbol}`, 128, 40);
 
-    ctx.fillStyle = isReady ? '#00ffcc' : '#ff3333';
-    ctx.font = 'bold 16px Arial, sans-serif';
     const readyText = isReady ? 'READY' : 'NOT READY';
-    ctx.fillText(readyText, 128, 70);
+    if (isReady) {
+        ctx.font = 'bold 16px Arial, sans-serif';
+        ctx.fillStyle = '#00ffcc';
+    } else {
+        ctx.font = 'bold 12px Arial, sans-serif';
+        ctx.fillStyle = '#ff3333';
+    }
+    ctx.fillText(readyText, 128, 65);
 
     const tex = new THREE.CanvasTexture(canvas);
     const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true });
@@ -363,9 +368,10 @@ function connectMultiplayer() {
 
 function setup3DLobby() {
     inLobby3D = true;
-    // WIDE view: show all 4 slots with extra spacing
-    lobbyCamera.position.set(0, 2.5, 8);
-    lobbyCamera.lookAt(0, 1.2, 0);
+    inSkinsTab = false;
+    // WIDE view: show all 4 slots with extra spacing (Matches exactly what tabLobby sets)
+    lobbyCamera.position.set(0, 3.5, 9);
+    lobbyCamera.lookAt(0, 1.8, 0);
 
     if (lobbyLocalGroup) {
         lobbyScene.remove(lobbyLocalGroup);
@@ -401,10 +407,14 @@ function rearrangeLobbySlots() {
     if (lobbyLocalGroup) {
         lobbyLocalGroup.scale.set(1.8, 1.8, 1.8);
         lobbyLocalGroup.rotation.y = Math.PI;
+        
+        const localLabel = lobbyLocalGroup.children.find(c => c.name === 'name_label');
         if (inSkinsTab) {
             lobbyLocalGroup.position.set(1.5, 0, 0); // Put model more to the right in the Locker
+            if (localLabel) localLabel.visible = false;
         } else {
             lobbyLocalGroup.position.set(0, 0, 0);
+            if (localLabel) localLabel.visible = true;
         }
         lobbyLocalGroup.visible = true;
     }
