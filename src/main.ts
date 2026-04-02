@@ -46,6 +46,11 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         clothHex = 0x111116; // Black uniform
         darkHex = 0xededed; // White hair
         pantsHex = 0x111116; // Black pants
+    } else if (skinId === 'goku') {
+        skinHex = 0xffe0bd; // Pale skin
+        clothHex = 0xff6600; // Orange Gi
+        darkHex = 0x111116; // Black hair
+        pantsHex = 0xff6600; // Orange pants
     }
 
     const skinMat = new THREE.MeshStandardMaterial({ color: skinHex, flatShading: true });
@@ -89,6 +94,14 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         const blindfold = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.15, 0.5), new THREE.MeshBasicMaterial({ color: 0x000000 }));
         blindfold.position.set(0, 0.05, 0);
         head.add(blindfold);
+    } else if (skinId === 'goku') {
+        const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.35, 0.55), darkMat);
+        hair.position.y = 0.28;
+        head.add(hair);
+        // Blue undershirt
+        const shirt = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.6), new THREE.MeshBasicMaterial({ color: 0x0000ff }));
+        shirt.position.set(0, 0, 0.191);
+        torso.add(shirt);
     }
 
     const eyeMat = new THREE.MeshBasicMaterial({ color: (skinId === 'light_yagami') ? 0x822f2f : 0x00ffcc });
@@ -689,14 +702,14 @@ function initMultiplayerUI() {
                 socket.emit('skin-changed', { skin: chosen });
             }
             if (inLobby3D) {
-                setup3DLobby();
-                if (inSkinsTab) {
-                    lobbyCamera.position.set(0, 3.5, 5);
-                    lobbyCamera.lookAt(0, 2.0, 0);
-                } else {
-                    lobbyCamera.position.set(0, 3.5, 9);
-                    lobbyCamera.lookAt(0, 1.8, 0);
+                // Rebuild local dummy instead of resetting the whole lobby camera structure
+                if (lobbyLocalGroup) {
+                    lobbyScene.remove(lobbyLocalGroup);
+                    lobbyLocalGroup = null;
                 }
+                const platStr = isMobile ? 'mobile' : 'pc';
+                spawnRemotePlayer('local_dummy', myUsername || 'YOU', 0, 1.6, 0, currentSkin, true, platStr, false);
+                rearrangeLobbySlots(); // Gracefully snap everything using existing state
             }
         });
     });

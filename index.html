@@ -1348,7 +1348,7 @@
             </div>
             
             <!-- Play Button Area -->
-            <div style="align-self: flex-end; margin-bottom: 20px;">
+            <div style="align-self: center; margin-bottom: 20px;">
                 <button id="btn-lobby-start" class="mp-btn primary" style="font-size: 36px; padding: 20px 80px; text-shadow: none; box-shadow: 0 0 30px rgba(255, 204, 0, 0.4); background: #ffcc00; color: #000; border: none; letter-spacing: 2px;">▶ PLAY!</button>
             </div>
         </div>
@@ -1359,16 +1359,24 @@
             <div style="width: 45%; max-width: 600px; display: flex; flex-direction: column; align-items: flex-start; padding-left: 20px;">
                 <h2 style="color: white; font-size: 48px; text-shadow: 0 0 10px #000; margin-bottom: 20px; font-family: 'Impact', sans-serif; font-style: italic;">LOCKER</h2>
                 <div style="display: flex; gap: 15px; flex-wrap: wrap; font-family: 'Impact', sans-serif; align-content: flex-start;">
-                    <div class="skin-card active" data-skin="default" style="width: 110px; height: 110px; background-image: url('/deffault.png'); background-size: cover; background-position: center; border: 3px solid #00ffcc; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 8px; color: white;">
+                    <div class="skin-card active" data-skin="default" style="width: 110px; height: 110px; position: relative; border: 3px solid #00ffcc; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 8px; overflow: hidden; color: white;">
+                        <img src="/deffault.png" style="position: absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:-1;">
                         <div style="font-size: 14px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">DEFFAULT</div>
                     </div>
                     <!-- Light Yagami Skin -->
-                    <div class="skin-card" data-skin="light_yagami" style="width: 110px; height: 110px; background-image: url('/Light_Yagami.webp'); background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 8px; color: white;">
+                    <div class="skin-card" data-skin="light_yagami" style="width: 110px; height: 110px; position: relative; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 8px; overflow: hidden; color: white;">
+                        <img src="/Light_Yagami.webp" style="position: absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:-1;">
                         <div style="font-size: 14px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">LIGHT<br>YAGAMI</div>
                     </div>
                     <!-- Satoru Gojo Skin -->
-                    <div class="skin-card" data-skin="gojo" style="width: 110px; height: 110px; background-image: url('/Gojo.jpg'); background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 8px; color: white;">
+                    <div class="skin-card" data-skin="gojo" style="width: 110px; height: 110px; position: relative; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 8px; overflow: hidden; color: white;">
+                        <img src="/Gojo.jpg" style="position: absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:-1;">
                         <div style="font-size: 14px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">SATORU<br>GOJŌ</div>
+                    </div>
+                    <!-- Son Goku Skin -->
+                    <div class="skin-card" data-skin="goku" style="width: 110px; height: 110px; position: relative; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 8px; overflow: hidden; color: white;">
+                        <img src="/Goku.jpg" style="position: absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:-1;">
+                        <div style="font-size: 14px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">SON<br>GOKU</div>
                     </div>
                 </div>
             </div>
