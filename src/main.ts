@@ -244,11 +244,12 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         head.add(bun);
     } else if (skinId === 'pomni') {
         const hairDMat = new THREE.MeshStandardMaterial({ color: 0x3d2314 }); // Brown hair
-        // Hair bangs peeking out under the hat (thinner boxes)
-        const bangL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.05), hairDMat); bangL.position.set(-0.22, 0.1, 0.25);
-        const bangR = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.05), hairDMat); bangR.position.set(0.22, 0.1, 0.25);
-        const bangBack = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.15, 0.05), hairDMat); bangBack.position.set(0, 0.1, -0.25);
-        head.add(bangL, bangR, bangBack);
+        // Hair strands on the sides (more like hair, less like boxes)
+        const hairGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.2, 4);
+        const hL = new THREE.Mesh(hairGeo, hairDMat); hL.position.set(-0.22, 0, 0.25); hL.rotation.z = 0.2;
+        const hR = new THREE.Mesh(hairGeo, hairDMat); hR.position.set(0.22, 0, 0.25); hR.rotation.z = -0.2;
+        const hB = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, 0.05), hairDMat); hB.position.set(0, 0.1, -0.25);
+        head.add(hL, hR, hB);
 
         // Jester hat
         const redMat = new THREE.MeshStandardMaterial({ color: 0xdd0000 });
@@ -320,12 +321,7 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         // handle isn't complete handle but a full ring stuck to back
         head.add(handle);
 
-        // Giant white cartoon gloves replacing block hands (reverted to boxy as requested)
-        const gloveGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
-        const lGlove = new THREE.Mesh(gloveGeo, whiteMat); lGlove.position.set(0, -0.32, 0);
-        const rGlove = new THREE.Mesh(gloveGeo, whiteMat); rGlove.position.set(0, -0.32, 0);
-        lArm.add(lGlove);
-        rArm.add(rGlove);
+        // Normal hands (removed the giant blocks)
         // Big brown/red shoes
         const bigShoeMat = new THREE.MeshStandardMaterial({ color: 0x5c3a21 });
         lShoe.material = bigShoeMat; lShoe.scale.set(1.5, 1.2, 1.5);
