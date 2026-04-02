@@ -71,6 +71,26 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         clothHex = 0xffffff; // White uniform top
         darkHex = 0xffcc00; // Blonde hair
         pantsHex = 0x0000aa; // Blue skirt
+    } else if (skinId === 'geto') {
+        skinHex = 0xffe0bd; // Pale skin
+        clothHex = 0x1a1a1f; // Black robe upper
+        darkHex = 0x111111; // Black hair
+        pantsHex = 0x1a1a1f; // Black robe lower
+    } else if (skinId === 'pomni') {
+        skinHex = 0xffffff; // White pale face
+        clothHex = 0xdd0000; // Left side red (will mix)
+        darkHex = 0x0000dd; // Right side blue
+        pantsHex = 0xdd0000; // Red/blue legs
+    } else if (skinId === 'lawliet') {
+        skinHex = 0xffe0bd;
+        clothHex = 0xffffff; // White shirt
+        darkHex = 0x0a0a0a; // Black messy hair
+        pantsHex = 0x4a6a8a; // Blue jeans
+    } else if (skinId === 'cuphead') {
+        skinHex = 0xffffff; // Cup goes pale white
+        clothHex = 0x111111; // Black body
+        darkHex = 0xffffff; // White gloves
+        pantsHex = 0xdd0000; // Red pants
     }
 
     const skinMat = new THREE.MeshStandardMaterial({ color: skinHex, flatShading: true });
@@ -192,9 +212,76 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         const bootMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
         lShoe.material = bootMat;
         rShoe.material = bootMat;
+    } else if (skinId === 'geto') {
+        // Long hair hanging back
+        const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.25, 0.55), darkMat);
+        hair.position.y = 0.24;
+        const hairBack = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.4, 0.15), darkMat);
+        hairBack.position.set(0, 0, -0.2);
+        head.add(hair, hairBack);
+        // Half bun
+        const bun = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 0.15), darkMat);
+        bun.position.set(0, 0.4, -0.15);
+        head.add(bun);
+    } else if (skinId === 'pomni') {
+        // Jester hat
+        const redMat = new THREE.MeshStandardMaterial({ color: 0xdd0000 });
+        const blueMat = new THREE.MeshStandardMaterial({ color: 0x0000dd });
+        const hatBase = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.15, 0.52), darkMat);
+        hatBase.position.y = 0.28;
+        head.add(hatBase);
+        
+        const lSpike = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.15), redMat);
+        lSpike.position.set(-0.35, 0.4, 0); lSpike.rotation.z = Math.PI/4;
+        const rSpike = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.15), blueMat);
+        rSpike.position.set(0.35, 0.4, 0); rSpike.rotation.z = -Math.PI/4;
+        head.add(lSpike, rSpike);
+
+        // Splitting body colors manually
+        lArm.material = blueMat;
+        rArm.material = redMat;
+        lLeg.material = blueMat;
+        rLeg.material = redMat;
+    } else if (skinId === 'lawliet') {
+        // Messy hair
+        const hairGeo = new THREE.BoxGeometry(0.55, 0.3, 0.55);
+        const hair = new THREE.Mesh(hairGeo, darkMat);
+        hair.position.y = 0.25;
+        head.add(hair);
+        // Hair spikes
+        const spike1 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.15, 0.1), darkMat); spike1.position.set(-0.2, 0.4, 0.2);
+        const spike2 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.15, 0.1), darkMat); spike2.position.set(0.2, 0.4, -0.2);
+        const spike3 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 0.1), darkMat); spike3.position.set(0, 0.4, 0.2);
+        head.add(spike1, spike2, spike3);
+        // Barefoot
+        lShoe.material = skinMat;
+        rShoe.material = skinMat;
+    } else if (skinId === 'cuphead') {
+        // Red Straw
+        const straw = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.3), new THREE.MeshStandardMaterial({color: 0xff0000}));
+        straw.position.set(0.15, 0.35, 0);
+        straw.rotation.z = -Math.PI/8;
+        head.add(straw);
+
+        // Handle on the back
+        const handle = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.04, 8, 16), skinMat); // Torus on back of head
+        handle.position.set(0, 0, -0.25);
+        // handle isn't complete handle but a full ring stuck to back
+        head.add(handle);
+
+        // Giant white gloves (using darkMat because darkHex is 0xffffff in cuphead config)
+        const gloveGeo = new THREE.BoxGeometry(0.25, 0.25, 0.25);
+        const lGlove = new THREE.Mesh(gloveGeo, darkMat); lGlove.position.set(0, -0.3, 0);
+        const rGlove = new THREE.Mesh(gloveGeo, darkMat); rGlove.position.set(0, -0.3, 0);
+        lArm.add(lGlove);
+        rArm.add(rGlove);
+        // Big brown/red shoes
+        const bigShoeMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
+        lShoe.material = bigShoeMat;
+        rShoe.material = bigShoeMat;
     }
 
-    const eyeMat = new THREE.MeshBasicMaterial({ color: (skinId === 'light_yagami') ? 0x822f2f : 0x00ffcc });
+    const eyeMat = new THREE.MeshBasicMaterial({ color: (skinId === 'light_yagami' || skinId === 'pomni') ? 0x822f2f : (skinId === 'lawliet' || skinId === 'cuphead' || skinId === 'geto') ? 0x111111 : 0x00ffcc });
     const eyeGeo = new THREE.PlaneGeometry(0.12, 0.09);
     const lEye = new THREE.Mesh(eyeGeo, eyeMat); lEye.position.set(-0.12, 0.05, 0.245);
     const rEye = new THREE.Mesh(eyeGeo, eyeMat); rEye.position.set(0.12, 0.05, 0.245);
@@ -699,11 +786,6 @@ function initMultiplayerUI() {
     // Lobby - READY toggle (replaces old "START GAME")
     const readyBtn = document.getElementById('btn-lobby-start');
     if (readyBtn) {
-        readyBtn.innerHTML = '⚡&nbsp;READY'; // Prevent wrapping with non-breaking space
-        readyBtn.style.whiteSpace = 'nowrap';
-        readyBtn.style.background = 'transparent';
-        readyBtn.style.color = '#00ffcc';
-        readyBtn.style.border = '2px solid #00ffcc';
         let amReady = false;
         readyBtn.addEventListener('click', () => {
             if (!socket) return;
@@ -729,12 +811,13 @@ function initMultiplayerUI() {
                 }
                 // Update button style to reflect ready state
                 if (amReady) {
-                    readyBtn.innerHTML = '❌&nbsp;CANCEL READY';
-                    readyBtn.classList.add('danger');
-                    readyBtn.classList.remove('primary');
+                    readyBtn.innerHTML = '❌ CANCEL READY';
+                    readyBtn.style.borderColor = '#ff0044';
+                    readyBtn.style.color = '#ff0044';
                 } else {
-                    readyBtn.innerHTML = '⚡&nbsp;READY';
-                    readyBtn.classList.remove('danger');
+                    readyBtn.innerHTML = '⚡ READY';
+                    readyBtn.style.borderColor = '#00ffcc';
+                    readyBtn.style.color = '#00ffcc';
                 }
             });
         });

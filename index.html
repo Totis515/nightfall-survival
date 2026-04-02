@@ -1348,8 +1348,8 @@
             </div>
             
             <!-- Play Button Area -->
-            <div style="align-self: center; margin-bottom: 20px;">
-                <button id="btn-lobby-start" class="mp-btn primary" style="font-size: 36px; padding: 20px 80px; text-shadow: none; box-shadow: 0 0 30px rgba(255, 204, 0, 0.4); background: #ffcc00; color: #000; border: none; letter-spacing: 2px;">▶ PLAY!</button>
+            <div style="align-self: center; margin-bottom: 20px; width: 100%; display: flex; justify-content: center;">
+                <button id="btn-lobby-start" class="mp-btn primary" style="font-size: 32px; padding: 15px 40px; min-width: 320px; text-shadow: none; box-shadow: 0 0 30px rgba(0, 255, 204, 0.2); background: transparent; color: #00ffcc; border: 3px solid #00ffcc; letter-spacing: 2px; display: flex; align-items: center; justify-content: center;">⚡ READY</button>
             </div>
         </div>
 
@@ -1359,36 +1359,52 @@
             <div style="width: 45%; max-width: 600px; display: flex; flex-direction: column; align-items: flex-start; padding-left: 20px;">
                 <h2 style="color: white; font-size: 48px; text-shadow: 0 0 10px #000; margin-bottom: 20px; font-family: 'Impact', sans-serif; font-style: italic;">LOCKER</h2>
                 <div style="display: flex; gap: 15px; flex-wrap: wrap; font-family: 'Impact', sans-serif; align-content: flex-start;">
-                    <div class="skin-card active" data-skin="default" style="width: 110px; height: 110px; background-image: url('deffault.png'); background-size: cover; background-position: center; border: 3px solid #00ffcc; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 8px; color: white;">
-                        <div style="font-size: 14px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">DEFFAULT</div>
+                    <div class="skin-card active" data-skin="default" style="width: 110px; height: 110px; background-image: url('deffault.png'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid #00ffcc; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">DEFFAULT</div>
                     </div>
                     <!-- Light Yagami Skin -->
-                    <div class="skin-card" data-skin="light_yagami" style="width: 110px; height: 110px; background-image: url('Light_Yagami.webp'); background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 8px; color: white;">
-                        <div style="font-size: 14px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">LIGHT<br>YAGAMI</div>
+                    <div class="skin-card" data-skin="light_yagami" style="width: 110px; height: 110px; background-image: url('Light_Yagami.webp'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">LIGHT<br>YAGAMI</div>
                     </div>
                     <!-- Satoru Gojo Skin -->
-                    <div class="skin-card" data-skin="gojo" style="width: 110px; height: 110px; background-image: url('Gojo.jpg'); background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 8px; color: white;">
-                        <div style="font-size: 14px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">SATORU<br>GOJŌ</div>
+                    <div class="skin-card" data-skin="gojo" style="width: 110px; height: 110px; background-image: url('Gojo.jpg'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">SATORU<br>GOJŌ</div>
                     </div>
                     <!-- Son Goku Skin -->
-                    <div class="skin-card" data-skin="goku" style="width: 110px; height: 110px; background-image: url('Goku.jpg'); background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 8px; color: white;">
-                        <div style="font-size: 14px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">SON<br>GOKU</div>
+                    <div class="skin-card" data-skin="goku" style="width: 110px; height: 110px; background-image: url('Goku.jpg'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">SON<br>GOKU</div>
                     </div>
                     <!-- Yoichi Isagi Skin -->
-                    <div class="skin-card" data-skin="isagi" style="width: 110px; height: 110px; background-image: url('Isagi.webp'); background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 8px; color: white;">
-                        <div style="font-size: 14px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">YOICHI<br>ISAGI</div>
+                    <div class="skin-card" data-skin="isagi" style="width: 110px; height: 110px; background-image: url('Isagi.webp'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">YOICHI<br>ISAGI</div>
                     </div>
                     <!-- Bugs Bunny Skin -->
-                    <div class="skin-card" data-skin="bugs_bunny" style="width: 110px; height: 110px; background-image: url('Bugs.jpg'); background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 8px; color: white;">
-                        <div style="font-size: 14px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">BUGS<br>BUNNY</div>
+                    <div class="skin-card" data-skin="bugs_bunny" style="width: 110px; height: 110px; background-image: url('Bugs.jpg'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">BUGS<br>BUNNY</div>
                     </div>
                     <!-- Tung Tung Sahur Skin -->
-                    <div class="skin-card" data-skin="tung_tung" style="width: 110px; height: 110px; background-image: url('Tung.webp'); background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 8px; color: white;">
-                        <div style="font-size: 14px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">TUNG TUNG<br>SAHUR</div>
+                    <div class="skin-card" data-skin="tung_tung" style="width: 110px; height: 110px; background-image: url('Tung.webp'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">TUNG TUNG<br>SAHUR</div>
                     </div>
                     <!-- Sailor Moon Skin -->
-                    <div class="skin-card" data-skin="sailor_moon" style="width: 110px; height: 110px; background-image: url('Sailor.jpg'); background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 8px; color: white;">
-                        <div style="font-size: 14px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">SAILOR<br>MOON</div>
+                    <div class="skin-card" data-skin="sailor_moon" style="width: 110px; height: 110px; background-image: url('Sailor.jpg'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">SAILOR<br>MOON</div>
+                    </div>
+                    <!-- Suguru Geto Skin -->
+                    <div class="skin-card" data-skin="geto" style="width: 110px; height: 110px; background-image: url('Geto.webp'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">SUGURU<br>GETŌ</div>
+                    </div>
+                    <!-- Pomni Skin -->
+                    <div class="skin-card" data-skin="pomni" style="width: 110px; height: 110px; background-image: url('Pomni.webp'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">POMNI</div>
+                    </div>
+                    <!-- L Lawliet Skin -->
+                    <div class="skin-card" data-skin="lawliet" style="width: 110px; height: 110px; background-image: url('L.jpg'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">L<br>LAWLIET</div>
+                    </div>
+                    <!-- Cuphead Skin -->
+                    <div class="skin-card" data-skin="cuphead" style="width: 110px; height: 110px; background-image: url('Cuphead.jpg'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">CUPHEAD</div>
                     </div>
                 </div>
             </div>
