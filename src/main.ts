@@ -20,6 +20,7 @@ let isHost = false;
 let currentSkin = 'default';
 let lobbyLocalGroup: THREE.Group | null = null;
 let inLobby3D = false;
+let inSkinsTab = false;
 
 // Map of other players in our room: socketId → { group, label }
 const remotePlayers: Map<string, { group: THREE.Group; label: THREE.Sprite }> = new Map();
@@ -33,23 +34,26 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
     let clothHex = 0x1565c0;
     let darkHex = 0x0d47a1;
 
+    let pantsHex = 0x1565c0; // Default pants color
     // Apply Light Yagami colors
     if (skinId === 'light_yagami') {
         skinHex = 0xffe0bd; // Pale skin
         clothHex = 0xc1a986; // Beige suit
         darkHex = 0x4a2c11; // Brown hair/suit details
+        pantsHex = 0x333333; // Dark grey pants
     }
 
     const skinMat = new THREE.MeshStandardMaterial({ color: skinHex, flatShading: true });
     const clothMat = new THREE.MeshStandardMaterial({ color: clothHex, flatShading: true });
     const darkMat = new THREE.MeshStandardMaterial({ color: darkHex, flatShading: true });
+    const pantsMat = new THREE.MeshStandardMaterial({ color: pantsHex, flatShading: true });
     
     const shoeGeo = new THREE.BoxGeometry(0.22, 0.15, 0.35);
     const lShoe = new THREE.Mesh(shoeGeo, darkMat); lShoe.position.set(-0.2, 0.075, 0.06);
     const rShoe = new THREE.Mesh(shoeGeo, darkMat); rShoe.position.set(0.2, 0.075, 0.06);
     const legGeo = new THREE.BoxGeometry(0.24, 0.6, 0.3);
-    const lLeg = new THREE.Mesh(legGeo, clothMat); lLeg.position.set(-0.2, 0.45, 0);
-    const rLeg = new THREE.Mesh(legGeo, clothMat); rLeg.position.set(0.2, 0.45, 0);
+    const lLeg = new THREE.Mesh(legGeo, pantsMat); lLeg.position.set(-0.2, 0.45, 0);
+    const rLeg = new THREE.Mesh(legGeo, pantsMat); rLeg.position.set(0.2, 0.45, 0);
     const torso = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.7, 0.38), clothMat);
     torso.position.set(0, 1.1, 0);
     const armGeo = new THREE.BoxGeometry(0.2, 0.5, 0.2);
@@ -62,6 +66,16 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         const hair = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.15, 0.52), darkMat);
         hair.position.y = 0.22;
         head.add(hair);
+        
+        // Add white shirt under the jacket
+        const shirt = new THREE.Mesh(new THREE.PlaneGeometry(0.25, 0.7), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+        shirt.position.set(0, 0, 0.191);
+        torso.add(shirt);
+        
+        // Add red tie
+        const tie = new THREE.Mesh(new THREE.PlaneGeometry(0.08, 0.5), new THREE.MeshBasicMaterial({ color: 0xaa0000 }));
+        tie.position.set(0, 0.05, 0.192);
+        torso.add(tie);
     }
 
     const eyeMat = new THREE.MeshBasicMaterial({ color: (skinId === 'light_yagami') ? 0x822f2f : 0x00ffcc });
@@ -338,16 +352,17 @@ function cleanup3DLobby() {
     remotePlayers.forEach((p) => {
         lobbyScene.remove(p.group);
         scene.add(p.group);
-        // Reset position to spawn area
+        // Reset scale and position
+        p.group.scale.set(1, 1, 1);
+        p.group.visible = true;
         p.group.position.set(0, 0, 0);
     });
 }
 
 function rearrangeLobbySlots() {
     if (!inLobby3D) return;
-    // Wider spacing: slot 0 = local dummy (fixed at -3)
-    // Remote players go on slots 1,2,3 at -1, 1, 3
-    const slotsX = [-3, -1, 1, 3];
+    // Massive spacing and scaling for the main lobby
+    const slotsX = [-4.5, -1.5, 1.5, 4.5];
     let slotIndex = 1;
     remotePlayers.forEach((p) => {
         if (slotIndex < 4) {
@@ -356,13 +371,23 @@ function rearrangeLobbySlots() {
             }
             p.group.position.set(slotsX[slotIndex], 0, 0);
             p.group.rotation.y = Math.PI;
+            p.group.scale.set(1.4, 1.4, 1.4); // Make characters bigger in lobby
+            p.group.visible = !inSkinsTab; // Completely hide teammates if in Skins tab
             slotIndex++;
         }
     });
-    // Also ensure local dummy stays at slot 0
+
     if (lobbyLocalGroup) {
-        lobbyLocalGroup.position.set(slotsX[0], 0, 0);
+        lobbyLocalGroup.scale.set(1.4, 1.4, 1.4);
         lobbyLocalGroup.rotation.y = Math.PI;
+        if (inSkinsTab) {
+            // Move completely to center, isolated locker view
+            lobbyLocalGroup.position.set(0, 0, 0);
+            lobbyLocalGroup.visible = true;
+        } else {
+            // Standard left slot in the lobby
+            lobbyLocalGroup.position.set(slotsX[0], 0, 0);
+        }
     }
 }
 
@@ -571,11 +596,11 @@ function initMultiplayerUI() {
         if (lobbyContent) lobbyContent.style.display = 'flex';
         if (skinsContent) skinsContent.style.display = 'none';
         inLobby3D = true;
-        // Wide view: show all players
-        lobbyCamera.position.set(0, 2.5, 8);
-        lobbyCamera.lookAt(0, 1.2, 0);
-        // Show teammates again
-        remotePlayers.forEach(p => { p.group.visible = true; });
+        inSkinsTab = false;
+        // Wide view: frame the 4 slots safely
+        lobbyCamera.position.set(0, 3.5, 9);
+        lobbyCamera.lookAt(0, 1.8, 0);
+        rearrangeLobbySlots(); // Will show teammates and position dummy at -4.5
     });
 
     tabSkins?.addEventListener('click', () => {
@@ -584,11 +609,11 @@ function initMultiplayerUI() {
         if (lobbyContent) lobbyContent.style.display = 'none';
         if (skinsContent) skinsContent.style.display = 'flex';
         inLobby3D = true;
-        // Fortnite Locker: zoom directly on YOUR local dummy at X=-3
-        lobbyCamera.position.set(-3.0, 2.0, 3.5);
-        lobbyCamera.lookAt(-3.0, 1.4, 0);
-        // Hide teammates so only your skin is visible
-        remotePlayers.forEach(p => { p.group.visible = false; });
+        inSkinsTab = true;
+        // True Isolated Locker view: aim at the center, hide everyone else
+        lobbyCamera.position.set(0, 3.5, 5);
+        lobbyCamera.lookAt(0, 2.0, 0);
+        rearrangeLobbySlots(); // Will center dummy at 0,0,0 and hide teammates
     });
 
     // Skin Selection Logic — with real-time broadcast
@@ -604,10 +629,13 @@ function initMultiplayerUI() {
             }
             if (inLobby3D) {
                 setup3DLobby();
-                // Re-focus on local dummy after skin refresh
-                lobbyCamera.position.set(-3.0, 2.0, 3.5);
-                lobbyCamera.lookAt(-3.0, 1.4, 0);
-                remotePlayers.forEach(p => { p.group.visible = false; });
+                if (inSkinsTab) {
+                    lobbyCamera.position.set(0, 3.5, 5);
+                    lobbyCamera.lookAt(0, 2.0, 0);
+                } else {
+                    lobbyCamera.position.set(0, 3.5, 9);
+                    lobbyCamera.lookAt(0, 1.8, 0);
+                }
             }
         });
     });
