@@ -133,7 +133,12 @@ function spawnRemotePlayer(id: string, username: string, x: number, y: number, z
 
 function removeRemotePlayer(id: string) {
     const p = remotePlayers.get(id);
-    if (p) { scene.remove(p.group); remotePlayers.delete(id); }
+    if (p) {
+        // Remove from whichever scene it's in
+        scene.remove(p.group);
+        lobbyScene.remove(p.group);
+        remotePlayers.delete(id);
+    }
 }
 
 function connectMultiplayer() {
@@ -145,7 +150,11 @@ function connectMultiplayer() {
     socket.on('existing-players', (players: any[]) => {
         // Server sends this to newly joined players so they see everyone already in the game
         players.forEach(p => {
-            if (p.id !== socket!.id) spawnRemotePlayer(p.id, p.username, p.x, p.y, p.z);
+            if (p.id !== socket!.id) {
+                // Use lobbyScene if we're in the lobby, otherwise the game scene
+                spawnRemotePlayer(p.id, p.username, p.x, p.y, p.z, p.skin || 'default');
+                if (inLobby3D) rearrangeLobbySlots();
+            }
         });
     });
     socket.on('player-joined', (p: any) => {
@@ -320,8 +329,12 @@ function cleanup3DLobby() {
         lobbyScene.remove(lobbyLocalGroup);
         lobbyLocalGroup = null;
     }
+    // Move remote players from lobby scene into the game scene for gameplay
     remotePlayers.forEach((p) => {
         lobbyScene.remove(p.group);
+        scene.add(p.group);
+        // Reset position to spawn area
+        p.group.position.set(0, 0, 0);
     });
 }
 
@@ -483,11 +496,12 @@ function initMultiplayerUI() {
             isMultiplayer = true;
             document.getElementById('lobby-code')!.innerText = myRoomCode;
             updateLobbyUI(res.players, socket!.id!);
-            // Spawn players already in room
-            Object.values(res.players).forEach((p: any) => {
-                if (p.id !== socket!.id) spawnRemotePlayer(p.id, p.username, p.x, p.y, p.z, p.skin || 'default');
-            });
+            // Show lobby FIRST (sets inLobby3D=true), THEN spawn players so they land in lobbyScene
             showScreen('lobby-screen');
+            Object.values(res.players).forEach((p: any) => {
+                if (p.id !== socket!.id) spawnRemotePlayer(p.id, p.username, 0, 1.6, 0, p.skin || 'default');
+            });
+            rearrangeLobbySlots();
         });
     });
     roomCodeInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') joinBtn?.click(); });
