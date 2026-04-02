@@ -79,34 +79,25 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
 
 function createNameLabel(username: string): THREE.Sprite {
     const canvas = document.createElement('canvas');
-    canvas.width = 256; canvas.height = 128; // taller to avoid clipping
+    canvas.width = 256; canvas.height = 80;
     const ctx = canvas.getContext('2d')!;
-    ctx.clearRect(0, 0, 256, 128);
+    ctx.clearRect(0, 0, 256, 80);
 
-    // Background bubble (simulated round rect)
-    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillStyle = 'rgba(0,0,0,0.75)';
     ctx.beginPath();
-    ctx.moveTo(20, 20);
-    ctx.lineTo(236, 20);
-    ctx.quadraticCurveTo(250, 20, 250, 34);
-    ctx.lineTo(250, 94);
-    ctx.quadraticCurveTo(250, 108, 236, 108);
-    ctx.lineTo(20, 108);
-    ctx.quadraticCurveTo(6, 108, 6, 94);
-    ctx.lineTo(6, 34);
-    ctx.quadraticCurveTo(6, 20, 20, 20);
+    ctx.roundRect(8, 8, 240, 64, 10);
     ctx.fill();
 
-    ctx.font = 'bold 32px Impact, Arial Black, sans-serif';
+    ctx.font = 'bold 20px Impact, Arial Black, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillStyle = '#00ffcc';
-    ctx.fillText(username.toUpperCase().slice(0, 14), 128, 70);
+    ctx.fillText(username.toUpperCase().slice(0, 12), 128, 46);
 
     const tex = new THREE.CanvasTexture(canvas);
     const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true });
     const sprite = new THREE.Sprite(mat);
-    sprite.scale.set(2, 1, 1); // adjusted scale
-    sprite.position.y = 2.6; // slightly higher
+    sprite.scale.set(1.1, 0.45, 1); // compact size
+    sprite.position.y = 2.35;
     return sprite;
 }
 
@@ -114,6 +105,7 @@ function spawnRemotePlayer(id: string, username: string, x: number, y: number, z
     if (!isLocalLobbyDummy && remotePlayers.has(id)) return;
     const group = createRemotePlayerModel(skinId);
     group.position.set(x, y - 1.6, z);
+    group.userData.username = username; // store for skin-changed lookup
     const label = createNameLabel(username);
     group.add(label);
     
@@ -172,6 +164,19 @@ function connectMultiplayer() {
     });
     socket.on('player-left', (data: { id: string }) => {
         removeRemotePlayer(data.id);
+        rearrangeLobbySlots();
+    });
+    // Real-time skin sync: rebuild teammate model when they change skin
+    socket.on('skin-changed', (data: { id: string; skin: string }) => {
+        const existing = remotePlayers.get(data.id);
+        if (!existing) return;
+        const username = existing.group.userData.username || 'PLAYER';
+        // Remove old model from whichever scene it's in
+        lobbyScene.remove(existing.group);
+        scene.remove(existing.group);
+        remotePlayers.delete(data.id);
+        // Re-spawn with new skin
+        spawnRemotePlayer(data.id, username, 0, 1.6, 0, data.skin);
         rearrangeLobbySlots();
     });
 
@@ -310,15 +315,15 @@ function connectMultiplayer() {
 
 function setup3DLobby() {
     inLobby3D = true;
-    // WIDE view: all 4 slots visible
-    lobbyCamera.position.set(0, 2.5, 5);
-    lobbyCamera.lookAt(0, 1.4, 0);
+    // WIDE view: show all 4 slots with extra spacing
+    lobbyCamera.position.set(0, 2.5, 8);
+    lobbyCamera.lookAt(0, 1.2, 0);
 
     if (lobbyLocalGroup) {
         lobbyScene.remove(lobbyLocalGroup);
         lobbyLocalGroup = null;
     }
-    spawnRemotePlayer('local_dummy', myUsername || 'YOU', -1.5, 1.6, 0, currentSkin, true);
+    spawnRemotePlayer('local_dummy', myUsername || 'YOU', -3, 1.6, 0, currentSkin, true);
 
     rearrangeLobbySlots();
 }
@@ -340,19 +345,25 @@ function cleanup3DLobby() {
 
 function rearrangeLobbySlots() {
     if (!inLobby3D) return;
-    let slotIndex = 1; // 0 is reserved for local_dummy at -1.5
-    const slotsX = [-1.5, -0.5, 0.5, 1.5];
+    // Wider spacing: slot 0 = local dummy (fixed at -3)
+    // Remote players go on slots 1,2,3 at -1, 1, 3
+    const slotsX = [-3, -1, 1, 3];
+    let slotIndex = 1;
     remotePlayers.forEach((p) => {
         if (slotIndex < 4) {
-            // Ensure the group is in the lobbyScene
             if (!lobbyScene.children.includes(p.group)) {
                 lobbyScene.add(p.group);
             }
             p.group.position.set(slotsX[slotIndex], 0, 0);
-            p.group.rotation.y = Math.PI; // Face camera
+            p.group.rotation.y = Math.PI;
             slotIndex++;
         }
     });
+    // Also ensure local dummy stays at slot 0
+    if (lobbyLocalGroup) {
+        lobbyLocalGroup.position.set(slotsX[0], 0, 0);
+        lobbyLocalGroup.rotation.y = Math.PI;
+    }
 }
 
 function showScreen(id: string) {
@@ -561,8 +572,10 @@ function initMultiplayerUI() {
         if (skinsContent) skinsContent.style.display = 'none';
         inLobby3D = true;
         // Wide view: show all players
-        lobbyCamera.position.set(0, 2.5, 5);
-        lobbyCamera.lookAt(0, 1.4, 0);
+        lobbyCamera.position.set(0, 2.5, 8);
+        lobbyCamera.lookAt(0, 1.2, 0);
+        // Show teammates again
+        remotePlayers.forEach(p => { p.group.visible = true; });
     });
 
     tabSkins?.addEventListener('click', () => {
@@ -571,20 +584,30 @@ function initMultiplayerUI() {
         if (lobbyContent) lobbyContent.style.display = 'none';
         if (skinsContent) skinsContent.style.display = 'flex';
         inLobby3D = true;
-        // Fortnite Locker view: zoom on local dummy at slot -1.5
-        lobbyCamera.position.set(-1.0, 2.0, 3.5);
-        lobbyCamera.lookAt(-1.5, 1.6, 0);
+        // Fortnite Locker: zoom directly on YOUR local dummy at X=-3
+        lobbyCamera.position.set(-3.0, 2.0, 3.5);
+        lobbyCamera.lookAt(-3.0, 1.4, 0);
+        // Hide teammates so only your skin is visible
+        remotePlayers.forEach(p => { p.group.visible = false; });
     });
 
-    // Skin Selection Logic
+    // Skin Selection Logic — with real-time broadcast
     document.querySelectorAll('.skin-card').forEach(card => {
         card.addEventListener('click', () => {
             document.querySelectorAll('.skin-card').forEach(c => c.classList.remove('active'));
             card.classList.add('active');
             const chosen = card.getAttribute('data-skin') || 'default';
             currentSkin = chosen;
+            // Broadcast skin change to all players in room
+            if (socket?.connected) {
+                socket.emit('skin-changed', { skin: chosen });
+            }
             if (inLobby3D) {
-                setup3DLobby(); // Re-creates model with new skin
+                setup3DLobby();
+                // Re-focus on local dummy after skin refresh
+                lobbyCamera.position.set(-3.0, 2.0, 3.5);
+                lobbyCamera.lookAt(-3.0, 1.4, 0);
+                remotePlayers.forEach(p => { p.group.visible = false; });
             }
         });
     });

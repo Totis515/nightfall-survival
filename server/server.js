@@ -118,6 +118,15 @@ io.on('connection', (socket) => {
         socket.to(code).emit('player-moved', { id: socket.id, x: data.x, y: data.y, z: data.z, rotY: data.rotY });
     });
 
+    // ── SKIN CHANGED ─────────────────────────────────────────────
+    socket.on('skin-changed', ({ skin }) => {
+        const code = socket.data.roomCode;
+        if (!code || !rooms[code]?.players[socket.id]) return;
+        rooms[code].players[socket.id].skin = skin;
+        // Relay to everyone else in the room so they update that player's model
+        socket.to(code).emit('skin-changed', { id: socket.id, skin });
+    });
+
     // ── ENEMY SPAWNED (host → server → all others) ───────────────
     socket.on('spawn-enemy', (data) => {
         const code = socket.data.roomCode;
