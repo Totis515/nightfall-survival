@@ -41,6 +41,11 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         clothHex = 0xc1a986; // Beige suit
         darkHex = 0x4a2c11; // Brown hair/suit details
         pantsHex = 0x333333; // Dark grey pants
+    } else if (skinId === 'gojo') {
+        skinHex = 0xffe0bd; // Pale skin
+        clothHex = 0x111116; // Black uniform
+        darkHex = 0xededed; // White hair
+        pantsHex = 0x111116; // Black pants
     }
 
     const skinMat = new THREE.MeshStandardMaterial({ color: skinHex, flatShading: true });
@@ -76,6 +81,14 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         const tie = new THREE.Mesh(new THREE.PlaneGeometry(0.08, 0.5), new THREE.MeshBasicMaterial({ color: 0xaa0000 }));
         tie.position.set(0, 0.05, 0.192);
         torso.add(tie);
+    } else if (skinId === 'gojo') {
+        const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.25, 0.55), darkMat);
+        hair.position.y = 0.24;
+        head.add(hair);
+        // Blindfold
+        const blindfold = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.15, 0.5), new THREE.MeshBasicMaterial({ color: 0x000000 }));
+        blindfold.position.set(0, 0.05, 0);
+        head.add(blindfold);
     }
 
     const eyeMat = new THREE.MeshBasicMaterial({ color: (skinId === 'light_yagami') ? 0x822f2f : 0x00ffcc });
@@ -91,36 +104,44 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
     return group;
 }
 
-function createNameLabel(username: string): THREE.Sprite {
+function createNameLabel(username: string, platform: string = 'PC', isReady: boolean = false): THREE.Sprite {
     const canvas = document.createElement('canvas');
-    canvas.width = 256; canvas.height = 80;
+    canvas.width = 256; canvas.height = 100;
     const ctx = canvas.getContext('2d')!;
-    ctx.clearRect(0, 0, 256, 80);
+    ctx.clearRect(0, 0, 256, 100);
 
     ctx.fillStyle = 'rgba(0,0,0,0.75)';
     ctx.beginPath();
-    ctx.roundRect(8, 8, 240, 64, 10);
+    ctx.roundRect(8, 8, 240, 84, 10);
     ctx.fill();
 
     ctx.font = 'bold 20px Impact, Arial Black, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillStyle = '#00ffcc';
-    ctx.fillText(username.toUpperCase().slice(0, 12), 128, 46);
+    ctx.fillText(`${username.toUpperCase().slice(0, 12)} [${platform.toUpperCase()}]`, 128, 40);
+
+    ctx.fillStyle = isReady ? '#00ffcc' : '#ff3333';
+    ctx.font = 'bold 16px Arial, sans-serif';
+    const readyText = isReady ? 'READY' : 'NOT READY';
+    ctx.fillText(readyText, 128, 70);
 
     const tex = new THREE.CanvasTexture(canvas);
     const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true });
     const sprite = new THREE.Sprite(mat);
-    sprite.scale.set(1.1, 0.45, 1); // compact size
-    sprite.position.y = 2.35;
+    sprite.scale.set(1.1, 0.55, 1); // taller size for extra line
+    sprite.position.y = 2.45;
     return sprite;
 }
 
-function spawnRemotePlayer(id: string, username: string, x: number, y: number, z: number, skinId: string = 'default', isLocalLobbyDummy: boolean = false) {
+function spawnRemotePlayer(id: string, username: string, x: number, y: number, z: number, skinId: string = 'default', isLocalLobbyDummy: boolean = false, platform: string = 'PC', isReady: boolean = false) {
     if (!isLocalLobbyDummy && remotePlayers.has(id)) return;
     const group = createRemotePlayerModel(skinId);
     group.position.set(x, y - 1.6, z);
     group.userData.username = username; // store for skin-changed lookup
-    const label = createNameLabel(username);
+    group.userData.platform = platform;
+    group.userData.isReady = isReady;
+    const label = createNameLabel(username, platform, isReady);
+    label.name = "name_label";
     group.add(label);
     
     // Add to the appropriate scene
@@ -158,14 +179,14 @@ function connectMultiplayer() {
         players.forEach(p => {
             if (p.id !== socket!.id) {
                 // Use lobbyScene if we're in the lobby, otherwise the game scene
-                spawnRemotePlayer(p.id, p.username, p.x, p.y, p.z, p.skin || 'default');
+                spawnRemotePlayer(p.id, p.username, p.x, p.y, p.z, p.skin || 'default', false, p.platform || 'pc', p.ready || false);
                 if (inLobby3D) rearrangeLobbySlots();
             }
         });
     });
     socket.on('player-joined', (p: any) => {
         // Another player joined — spawn their model
-        spawnRemotePlayer(p.id, p.username, p.x || 0, p.y || 1.6, p.z || 0, p.skin || 'default');
+        spawnRemotePlayer(p.id, p.username, p.x || 0, p.y || 1.6, p.z || 0, p.skin || 'default', false, p.platform || 'pc', p.ready || false);
         if (!gameStarted) {
             rearrangeLobbySlots();
         } else {
@@ -189,8 +210,10 @@ function connectMultiplayer() {
         lobbyScene.remove(existing.group);
         scene.remove(existing.group);
         remotePlayers.delete(data.id);
+        const platform = existing.group.userData.platform || 'pc';
+        const isReady = existing.group.userData.isReady || false;
         // Re-spawn with new skin
-        spawnRemotePlayer(data.id, username, 0, 1.6, 0, data.skin);
+        spawnRemotePlayer(data.id, username, 0, 1.6, 0, data.skin, false, platform, isReady);
         rearrangeLobbySlots();
     });
 
@@ -200,6 +223,16 @@ function connectMultiplayer() {
         if (el) {
             const readyEl = el.querySelector('.slot-ready') as HTMLElement;
             if (readyEl) readyEl.innerText = data.ready ? '✅' : '⬜';
+        }
+        // Update 3D label
+        const p = remotePlayers.get(data.id);
+        if (p) {
+            p.group.userData.isReady = data.ready;
+            const oldLabel = p.group.children.find(c => c.name === 'name_label');
+            if (oldLabel) p.group.remove(oldLabel);
+            const newLabel = createNameLabel(p.group.userData.username, p.group.userData.platform, data.ready);
+            newLabel.name = 'name_label';
+            p.group.add(newLabel);
         }
     });
     socket.on('game-start', (data: { hostId: string }) => {
@@ -337,7 +370,8 @@ function setup3DLobby() {
         lobbyScene.remove(lobbyLocalGroup);
         lobbyLocalGroup = null;
     }
-    spawnRemotePlayer('local_dummy', myUsername || 'YOU', -3, 1.6, 0, currentSkin, true);
+    const platStr = isMobile ? 'mobile' : 'pc';
+    spawnRemotePlayer('local_dummy', myUsername || 'YOU', 0, 1.6, 0, currentSkin, true, platStr, false);
 
     rearrangeLobbySlots();
 }
@@ -361,34 +395,35 @@ function cleanup3DLobby() {
 
 function rearrangeLobbySlots() {
     if (!inLobby3D) return;
-    // Massive spacing and scaling for the main lobby
-    const slotsX = [-4.5, -1.5, 1.5, 4.5];
-    let slotIndex = 1;
-    remotePlayers.forEach((p) => {
-        if (slotIndex < 4) {
-            if (!lobbyScene.children.includes(p.group)) {
-                lobbyScene.add(p.group);
-            }
-            p.group.position.set(slotsX[slotIndex], 0, 0);
-            p.group.rotation.y = Math.PI;
-            p.group.scale.set(1.4, 1.4, 1.4); // Make characters bigger in lobby
-            p.group.visible = !inSkinsTab; // Completely hide teammates if in Skins tab
-            slotIndex++;
-        }
-    });
-
+    
+    // Position local player dead center in foreground
     if (lobbyLocalGroup) {
         lobbyLocalGroup.scale.set(1.4, 1.4, 1.4);
         lobbyLocalGroup.rotation.y = Math.PI;
-        if (inSkinsTab) {
-            // Move completely to center, isolated locker view
-            lobbyLocalGroup.position.set(0, 0, 0);
-            lobbyLocalGroup.visible = true;
-        } else {
-            // Standard left slot in the lobby
-            lobbyLocalGroup.position.set(slotsX[0], 0, 0);
-        }
+        lobbyLocalGroup.position.set(0, 0, 0);
+        lobbyLocalGroup.visible = true;
     }
+
+    // Teammates scattered behind and slightly offset
+    const teammatePositions = [
+        new THREE.Vector3(-2.8, 0, -1), // Left behind
+        new THREE.Vector3(2.8, 0, -1),  // Right behind
+        new THREE.Vector3(-5.5, 0, -2)  // Far behind
+    ];
+
+    let slotIndex = 0;
+    remotePlayers.forEach((p) => {
+        if (!lobbyScene.children.includes(p.group)) {
+            lobbyScene.add(p.group);
+        }
+        if (slotIndex < teammatePositions.length) {
+            p.group.position.copy(teammatePositions[slotIndex]);
+        }
+        p.group.rotation.y = Math.PI;
+        p.group.scale.set(1.4, 1.4, 1.4);
+        p.group.visible = !inSkinsTab; // Hide if in Skins
+        slotIndex++;
+    });
 }
 
 function showScreen(id: string) {
@@ -535,7 +570,7 @@ function initMultiplayerUI() {
             // Show lobby FIRST (sets inLobby3D=true), THEN spawn players so they land in lobbyScene
             showScreen('lobby-screen');
             Object.values(res.players).forEach((p: any) => {
-                if (p.id !== socket!.id) spawnRemotePlayer(p.id, p.username, 0, 1.6, 0, p.skin || 'default');
+                if (p.id !== socket!.id) spawnRemotePlayer(p.id, p.username, 0, 1.6, 0, p.skin || 'default', false, p.platform || 'pc', p.ready || false);
             });
             rearrangeLobbySlots();
         });
@@ -562,6 +597,16 @@ function initMultiplayerUI() {
                         const readyEl = mySlot.querySelector('.slot-ready') as HTMLElement;
                         if (readyEl) readyEl.innerText = amReady ? '✅' : '⬜';
                     }
+                }
+                
+                // Update local 3D label
+                if (lobbyLocalGroup) {
+                    lobbyLocalGroup.userData.isReady = amReady;
+                    const oldLabel = lobbyLocalGroup.children.find(c => c.name === 'name_label');
+                    if (oldLabel) lobbyLocalGroup.remove(oldLabel);
+                    const newLabel = createNameLabel(lobbyLocalGroup.userData.username || myUsername, lobbyLocalGroup.userData.platform || (isMobile ? 'mobile' : 'pc'), amReady);
+                    newLabel.name = 'name_label';
+                    lobbyLocalGroup.add(newLabel);
                 }
                 // Update button style to reflect ready state
                 if (amReady) {
