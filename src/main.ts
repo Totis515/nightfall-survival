@@ -503,14 +503,17 @@ function createNameLabel(username: string, platform: string = 'PC', isReady: boo
     ctx.fillText(`${username.toUpperCase().slice(0, 12)} ${platSymbol}`, 128, 40);
 
     const readyText = isReady ? 'READY' : 'NOT READY';
-    if (isReady) {
-        ctx.font = 'bold 16px Arial, sans-serif';
-        ctx.fillStyle = '#00ffcc';
-    } else {
-        ctx.font = 'bold 12px Arial, sans-serif';
-        ctx.fillStyle = '#ff3333';
+    // Only show status during lobby (not during gameplay)
+    if (!gameStarted) {
+        if (isReady) {
+            ctx.font = 'bold 16px Arial, sans-serif';
+            ctx.fillStyle = '#00ffcc';
+        } else {
+            ctx.font = 'bold 12px Arial, sans-serif';
+            ctx.fillStyle = '#ff3333';
+        }
+        ctx.fillText(readyText, 128, 65);
     }
-    ctx.fillText(readyText, 128, 65);
 
     const tex = new THREE.CanvasTexture(canvas);
     const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true });
@@ -1205,10 +1208,10 @@ const _lobbyDir = new THREE.DirectionalLight(0xffffff, 2.5);
 _lobbyDir.position.set(2, 5, 6);
 lobbyScene.add(_lobbyDir);
 lobbyScene.add(new THREE.AmbientLight(0xffffff, 1.5));
-// fondo.png as background (no fog), dimmed via backgroundIntensity
+// fondo.png as background (no fog)
 new THREE.TextureLoader().load('fondo.png', (tex) => {
     lobbyScene.background = tex;
-    lobbyScene.backgroundIntensity = 0.45; // 0 = negro, 1 = brillo original
+    // lobbyScene.backgroundIntensity = 0.45; // Removed to restore original brightness
 });
 
 const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
@@ -3147,6 +3150,26 @@ const controls = new PointerLockControls(camera, document.body);
 // Función que extrae la lógica de carga para poder llamarla desde PC o Móvil
 function beginLoadingSequence() {
     if (gameStarted) return;
+    gameStarted = true; // Mark game as started to affect createNameLabel
+    
+    // Update all remote player labels to remove READY status
+    remotePlayers.forEach((p, id) => {
+        const oldLabel = p.group.children.find(c => c.name === 'name_label');
+        if (oldLabel) p.group.remove(oldLabel);
+        const newLabel = createNameLabel(p.group.userData.username, p.group.userData.platform, p.group.userData.isReady);
+        newLabel.name = 'name_label';
+        p.group.add(newLabel);
+    });
+
+    // Update local lobby dummy if exists
+    if (lobbyLocalGroup) {
+        const oldLabel = lobbyLocalGroup.children.find(c => c.name === 'name_label');
+        if (oldLabel) lobbyLocalGroup.remove(oldLabel);
+        const newLabel = createNameLabel(lobbyLocalGroup.userData.username || myUsername, lobbyLocalGroup.userData.platform || (isMobile ? 'mobile' : 'pc'), lobbyLocalGroup.userData.isReady);
+        newLabel.name = 'name_label';
+        lobbyLocalGroup.add(newLabel);
+    }
+
     const loadingScreenEl = document.getElementById('loading-screen');
     if (loadingScreenEl && loadingScreenEl.style.display === 'flex') return; // Prevent double load
 
@@ -3932,11 +3955,13 @@ class GenericParticleSystem {
                     this.lifetimes[i] = 0;
                     this.positions[i * 3 + 1] = -100; // Ocultar inmediatamente
                     this.velocities[i].set(0, 0, 0);  // Detener
+                    needsUpdate = true; // Force update when hitting floor
+                } else {
+                    needsUpdate = true; // Normal movement update
                 }
-                needsUpdate = true;
             }
         }
-        // Siempre actualizar el buffer para asegurar que las partículas muertas desaparezcan
+        // Siempre actualizar el buffer si algo cambió, incluso si es el frame en que mueren
         if (needsUpdate) this.geometry.attributes.position.needsUpdate = true;
     }
 
