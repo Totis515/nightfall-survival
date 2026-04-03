@@ -380,9 +380,15 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         // White gloves
         lArm.material = new THREE.MeshStandardMaterial({ color: 0xffffff });
         rArm.material = new THREE.MeshStandardMaterial({ color: 0xffffff });
+        // Brown shoes
+        lShoe.material = brownMat;
+        rShoe.material = brownMat;
     } else if (skinId === 'sonic') {
+        const gloveMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+        lArm.material = gloveMat;
+        rArm.material = gloveMat;
         // Blue spikes pointing back like Sonic's classic quills
-        const spikeGeo1 = new THREE.ConeGeometry(0.15, 0.5, 4);
+        const spikeGeo1 = new THREE.ConeGeometry(0.18, 0.45, 4);
         const spikeGeo2 = new THREE.ConeGeometry(0.12, 0.4, 4);
         const sTop = new THREE.Mesh(spikeGeo1, darkMat); sTop.rotation.x = -Math.PI / 2.5; sTop.position.set(0, 0.3, -0.2);
         const sMid = new THREE.Mesh(spikeGeo1, darkMat); sMid.rotation.x = -Math.PI / 2.2; sMid.position.set(0, 0.1, -0.25);
@@ -395,13 +401,14 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         const belly = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.35), peachMat);
         belly.position.set(0, 0, 0.26);
         torso.add(belly);
-        // Nose & Ears
+        // Nose & Ears (Moved out and forward slightly)
         const nose = new THREE.Mesh(new THREE.SphereGeometry(0.04), new THREE.MeshBasicMaterial({color: 0x000000}));
-        nose.position.set(0, 0, 0.05); // Relative to muzzle
+        nose.position.set(0, 0, 0.08); // Right on tip of muzzle
         muzzle.add(nose);
-        const earGeo = new THREE.ConeGeometry(0.1, 0.25, 4);
-        const lEar = new THREE.Mesh(earGeo, darkMat); lEar.position.set(-0.15, 0.35, 0); lEar.rotation.z = Math.PI/6;
-        const rEar = new THREE.Mesh(earGeo, darkMat); rEar.position.set(0.15, 0.35, 0); rEar.rotation.z = -Math.PI/6;
+        const earMat = new THREE.MeshStandardMaterial({color: 0x0000ff});
+        const earGeo = new THREE.ConeGeometry(0.12, 0.2, 4);
+        const lEar = new THREE.Mesh(earGeo, earMat); lEar.position.set(-0.16, 0.28, 0.05); lEar.rotation.z = Math.PI/4; lEar.rotation.x = Math.PI/8;
+        const rEar = new THREE.Mesh(earGeo, earMat); rEar.position.set(0.16, 0.28, 0.05); rEar.rotation.z = -Math.PI/4; rEar.rotation.x = Math.PI/8;
         head.add(muzzle, lEar, rEar);
         // Red shoes with white stripe
         const rShoesMat = new THREE.MeshStandardMaterial({ color: 0xdd0000 });
@@ -430,7 +437,7 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         watchFace.position.set(0, 0, 0.026);
         watchDial.add(watchFace);
         watchBand.add(watchDial);
-        lArm.add(watchBand);
+        rArm.add(watchBand); // Put on right arm instead of left
         // Shoe details (white stripes)
         const shoeStripeMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
         const lst = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.04, 0.26), shoeStripeMat); lst.position.y = 0.05; lShoe.add(lst);
@@ -465,7 +472,8 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         rShoe.material = raincoatMat;
     }
 
-    const eyeMat = new THREE.MeshBasicMaterial({ color: (skinId === 'light_yagami' || skinId === 'pomni') ? 0x822f2f : (skinId === 'lawliet' || skinId === 'cuphead' || skinId === 'geto') ? 0x111111 : 0x00ffcc });
+    // Default to cyan, but custom colours for certain skins
+    const eyeMat = new THREE.MeshBasicMaterial({ color: (skinId === 'light_yagami' || skinId === 'pomni') ? 0x822f2f : (skinId === 'lawliet' || skinId === 'cuphead' || skinId === 'geto') ? 0x111111 : (skinId === 'sonic') ? 0x00cc00 : 0x00ffcc });
     const eyeGeo = new THREE.PlaneGeometry(0.12, 0.09);
     const lEye = new THREE.Mesh(eyeGeo, eyeMat); lEye.position.set(-0.12, 0.05, 0.245);
     const rEye = new THREE.Mesh(eyeGeo, eyeMat); rEye.position.set(0.12, 0.05, 0.245);
