@@ -626,8 +626,15 @@ function connectMultiplayer() {
         isHost = (socket!.id === data.hostId);
         if (!isHost) waveManager.isNetworkClient = true;
         hideAllMpScreens();
-        if (!isMobile) controls.lock();
-        else beginLoadingSequence();
+        
+        // Fix: Call beginLoadingSequence immediately instead of waiting for controls.lock() 
+        // to succeed, since browsers block pointer lock from WebSocket events.
+        beginLoadingSequence();
+        
+        if (!isMobile) {
+            // Attempt to lock pointer, but if blocked, user will just have to click later.
+            try { controls.lock(); } catch(e) {}
+        }
     });
 
     // ── Enemy sync ───────────────────────────────────────────────
@@ -712,6 +719,7 @@ function connectMultiplayer() {
             if (pauseTitle) pauseTitle.innerText = "PAUSED";
             if (pauseSub) pauseSub.innerText = "Press ESC or click the button to resume";
             if (btnResume) btnResume.style.display = 'block';
+            if (!isMobile) controls.lock();
         }
     });
 
@@ -1122,6 +1130,7 @@ const loadingText = document.querySelector('.loading-text') as HTMLElement;
 let playerHealth = 100;
 let playerStamina = 100;
 let playerJetpackFuel = 0;
+let playerFireDebuff = 0; // 🔥 Debuff de fuego progresivo
 let hasJetpack = false;
 let playerCoins = 0;
 const MAX_STAMINA = 100;
@@ -2226,6 +2235,7 @@ enum EnemyType {
     TANK,
     FAST,
     HUMANOID,   // New: Pale skin, blue shirt
+    ZOMBIE_ON_FIRE, // New: Phase 14
     ROBOT,
     BOSS_GOLIATH,
     BOSS_SENTINEL,
@@ -2254,6 +2264,8 @@ const ENEMY_DATA: Record<EnemyType, EnemyStats> = {
     [EnemyType.FAST]: { health: 40, speed: 3.8, damage: 5, shirtColor: 0xb71c1c, skinColor: 0x827717, size: 0.85, attackRange: 1.2, attackCooldown: 500, reward: 30, name: "FAST ZOMBIE" },
     // Humanoid: Pale skin, blue shirt (From video!)
     [EnemyType.HUMANOID]: { health: 60, speed: 2.5, damage: 12, shirtColor: 0x2196f3, skinColor: 0xd1d1d1, size: 1.0, attackRange: 1.5, attackCooldown: 900, reward: 20, name: "HUMAN ZOMBIE" },
+    // Zombie on Fire: Naranja, daño progresivo
+    [EnemyType.ZOMBIE_ON_FIRE]: { health: 90, speed: 2.5, damage: 5, shirtColor: 0xdd4400, skinColor: 0xffaa00, size: 1.0, attackRange: 1.5, attackCooldown: 900, reward: 40, name: "ZOMBIE ON FIRE" },
     // Robot: Grey metal, cyan glow (Wave 3+)
     [EnemyType.ROBOT]: { health: 250, speed: 2.5, damage: 15, shirtColor: 0x444444, skinColor: 0x888888, size: 1.1, attackRange: 15.0, attackCooldown: 2000, reward: 100, name: "ROBOT" },
     // Boss Goliath: Massive, slow zombie (Wave 5)
@@ -2442,6 +2454,13 @@ class Enemy {
 
             (this as any)._torso = torso;
             collidables.push(torso);
+        }
+
+        // Si es ZOMBIE_ON_FIRE agregar una luz tenue
+        if (this.type === EnemyType.ZOMBIE_ON_FIRE) {
+            const fireLight = new THREE.PointLight(0xff4400, 2, 5);
+            fireLight.position.set(0, 1.0 * s, 0);
+            this.mesh.add(fireLight);
         }
 
         // Place zombie at spawn position, feet below ground for rising effect
@@ -2635,6 +2654,17 @@ class Enemy {
             const bossScale = ENEMY_DATA[this.type].size + Math.sin(time * 0.002) * 0.05;
             this.mesh.scale.setScalar(bossScale);
         }
+        
+        // Efecto visual de fuego para ZOMBIE_ON_FIRE
+        if (this.type === EnemyType.ZOMBIE_ON_FIRE) {
+            if (this.isAlive && Math.random() > 0.5) {
+                const firePos = this.mesh.position.clone();
+                firePos.y += Math.random() * 1.5;
+                firePos.x += (Math.random() - 0.5) * 0.5;
+                firePos.z += (Math.random() - 0.5) * 0.5;
+                flameParticles.spawn(firePos, 1);
+            }
+        }
     }
 
     attackPlayer(playerPos: THREE.Vector3) {
@@ -2653,6 +2683,11 @@ class Enemy {
         } else {
             // LÓGICA DE ATAQUE CUERPO A CUERPO
             lastAttackerName = ENEMY_DATA[this.type].name; // Establecer nombre del atacante
+            
+            if (this.type === EnemyType.ZOMBIE_ON_FIRE) {
+                playerFireDebuff = 3.0; // Aplica debuff de quemadura de 3 segundos
+            }
+            
             takeDamage(this.damage); // Usar función global de daño
             soundManager.playGroan();
 
@@ -2861,20 +2896,18 @@ class WaveManager {
     }
 
     spawnWeaponDrop(wave: number) {
-        // Un drop al frente del spawn inicial para que sea obvio
-        const pos = new THREE.Vector3(0, 0, 10);
         if (wave === 1) {
             // Wave 1: Laser Gun (Index 1) celeste (eliminado jetpack duplicado verde)
-            activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(0, 0, 10), 1, 'weapon', 0x00ffff));
+            activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(-15, 0, -10), 1, 'weapon', 0x00ffff));
         } else if (wave === 2) {
             // Wave 2: Rocket Launcher (Index 2) rojo
-            activeWeaponDrops.push(new WeaponDrop(pos, 2, 'weapon', 0xff0000));
+            activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(20, 0, -25), 2, 'weapon', 0xff0000));
         } else if (wave === 3) {
             // Wave 3: Mini Gun (Index 3) amarillo
-            activeWeaponDrops.push(new WeaponDrop(pos, 3, 'weapon', 0xffff00));
+            activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(-5, 0, -35), 3, 'weapon', 0xffff00));
         } else if (wave === 4) {
             // Wave 4: Fire Gun (Index 4) naranja
-            activeWeaponDrops.push(new WeaponDrop(pos, 4, 'weapon', 0xffaa00));
+            activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(-20, 0, -45), 4, 'weapon', 0xffaa00));
         } else if (wave >= 5) {
             // Higher waves: drop ammo & fuel refills
             activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(-5, 0, 10), 0, 'ammo', 0x99ccff));
@@ -3043,6 +3076,11 @@ class WaveManager {
             else if (r > 0.6) type = EnemyType.ROBOT;
             else if (r > 0.3) type = EnemyType.TANK;
             else type = EnemyType.HUMANOID;
+        } else if (this.currentWave >= 8) {
+            // Stage 8 introduces Zombie on Fire
+            if (r > 0.7) type = EnemyType.ROBOT;
+            else if (r > 0.4) type = EnemyType.ZOMBIE_ON_FIRE;
+            else type = EnemyType.FAST;
         } else if (this.currentWave >= 7) {
             if (r > 0.6) type = EnemyType.ROBOT;
             else if (r > 0.35) type = EnemyType.FAST;
@@ -3093,6 +3131,8 @@ const controls = new PointerLockControls(camera, document.body);
 // Función que extrae la lógica de carga para poder llamarla desde PC o Móvil
 function beginLoadingSequence() {
     if (gameStarted) return;
+    const loadingScreenEl = document.getElementById('loading-screen');
+    if (loadingScreenEl && loadingScreenEl.style.display === 'flex') return; // Prevent double load
 
     document.getElementById('main-menu')!.style.display = 'none';
     loadingScreen.style.display = 'flex';
@@ -3363,6 +3403,12 @@ function resumeGame() {
 
 // El botón "RESUME" en la pantalla de pausa llama a resumeGame
 document.getElementById('btn-resume')?.addEventListener('click', resumeGame);
+
+// Botón EXIT GAME
+document.getElementById('btn-quit-game')?.addEventListener('click', () => {
+    socket?.disconnect();
+    location.reload();
+});
 
 // ---- FUNCIÓN DE INICIO DE JUEGO ----
 // Esta función esconde la pantalla de carga y muestra la interfaz de juego real
@@ -3863,12 +3909,9 @@ class GenericParticleSystem {
                 this.positions[i * 3 + 2] += this.velocities[i].z * delta;
                 this.velocities[i].y -= this.config.gravity * delta;
 
-                // Efecto de rebote en el suelo (sangre, físicas)
-                if (this.positions[i * 3 + 1] < 0.1 && this.velocities[i].y < 0) {
-                    this.positions[i * 3 + 1] = 0.1;
-                    this.velocities[i].y *= -0.5; // Rebote 
-                    this.velocities[i].x *= 0.8;  // Fricción
-                    this.velocities[i].z *= 0.8;
+                // Efecto de rebote en el suelo eliminado, mueren de impacto
+                if (this.positions[i * 3 + 1] <= 0.05) {
+                    this.lifetimes[i] = 0;
                 }
 
                 this.lifetimes[i] -= delta;
@@ -4137,15 +4180,6 @@ document.getElementById('shop-close-mobile')?.addEventListener('click', toggleSh
 // ---- SPECTATOR GLOBALS ----
 let isSpectator = false;
 let spectatingPlayerId: string | null = null;
-
-document.getElementById('btn-spectate')?.addEventListener('click', () => {
-    isSpectator = true;
-    document.getElementById('game-over')!.style.display = 'none';
-    if (!isMobile) controls.lock();
-    // Choose first available living player
-    const pids = Array.from(remotePlayers.keys());
-    if (pids.length > 0) spectatingPlayerId = pids[0];
-});
 // ---- CICLO DE ANIMACIÓN (RENDER LOOP) ----
 // Ciclo principal que corre en cada frame: dibuja la escena y actualiza todas las físicas
 let bobAngle = 0;
@@ -4189,6 +4223,21 @@ function animate() {
             else spectatingPlayerId = null;
         }
     } else if ((controls.isLocked === true || isMobile) && gameStarted && playerHealth > 0) {
+        // 🔥 Aplicar debuff de fuego progresivo
+        if (playerFireDebuff > 0) {
+            playerFireDebuff -= delta;
+            takeDamage(5 * delta); // 5 de daño por segundo
+            
+            // Partículas de fuego sobre la cámara
+            if (Math.random() > 0.5) {
+                const firePos = camera.position.clone();
+                firePos.y -= 0.5;
+                firePos.x += (Math.random() - 0.5) * 0.5;
+                firePos.z += (Math.random() - 0.5) * 0.5;
+                flameParticles.spawn(firePos, 1);
+            }
+        }
+
         handleShooting(time);
 
         // Lógica de resistencia (Stamina)

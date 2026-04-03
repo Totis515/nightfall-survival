@@ -5,7 +5,7 @@
     <!-- Aquí inicia la configuración del documento y los estilos visuales -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Nightfall Survival - Phase 13: Skins and Options</title>
+    <title>Nightfall Survival - Phase 14: Grand Fix</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     <style>
         /* Todo este bloque define la apariencia visual del juego y de la interfaz de usuario (CSS) */
@@ -981,7 +981,8 @@
             display: none;
             position: absolute;
             inset: 0;
-            background: linear-gradient(rgba(5, 3, 15, 0.3), rgba(5, 3, 15, 0.5)), url('phase13_official.png') center/cover no-repeat;
+            background: linear-gradient(rgba(5, 3, 15, 0.3), rgba(5, 3, 15, 0.5)), url('phase14_official.png') center/cover no-repeat;
+            background-size: cover;
             backdrop-filter: blur(8px);
             z-index: 80;
             flex-direction: column;
@@ -1300,12 +1301,12 @@
         <button id="btn-options-back" style="margin-top:35px; background:transparent; border:2px solid #ff3333; color:#ff3333; padding:12px 50px; font-size:20px; font-family:'Impact',sans-serif; letter-spacing:4px; cursor:pointer; border-radius:6px; transition:all 0.2s; text-transform:uppercase;">← BACK</button>
     </div>
 
-    <!-- ──────────────── PHASE 13: MULTIPLAYER ──────────────── -->
+    <!-- ──────────────── PHASE 14: GRAND FIX ──────────────── -->
 
     <!-- USERNAME SCREEN: shown after picking platform -->
     <div id="username-screen" class="mp-screen">
         <div class="mp-title">👤 USERNAME</div>
-        <div class="mp-sub">PHASE 13: SKINS AND OPTIONS</div>
+        <div class="mp-sub">PHASE 14: GRAND FIX</div>
         <input id="username-input" class="mp-input" type="text" maxlength="16" placeholder="Enter your name..."
             autocomplete="off" />
         <div id="username-error" class="mp-error"></div>
@@ -1330,7 +1331,7 @@
     <div id="lobby-screen" class="mp-screen">
         <!-- TOP NAVIGATION -->
         <div style="width: 100%; display: flex; justify-content: space-between; padding: 30px; box-sizing: border-box; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);">
-            <div style="color: white; font-size: 32px; font-weight: bold; text-shadow: 0 0 10px #000; font-family: 'Impact', sans-serif;">PHASE <span style="color: #ffcc00">13</span></div>
+            <div style="color: white; font-size: 32px; font-weight: bold; text-shadow: 0 0 10px #000; font-family: 'Impact', sans-serif;">PHASE <span style="color: #ffcc00">14</span></div>
             <div style="display: flex; gap: 40px;">
                 <button id="tab-lobby" class="lobby-tab active">LOBBY</button>
                 <button id="tab-skins" class="lobby-tab">SKINS</button>
@@ -1495,7 +1496,6 @@
         
         <!-- Multiplayer Death Buttons -->
         <div id="mp-death-btns" style="display:none; flex-direction:column; gap:15px;">
-            <button class="mp-btn primary" id="btn-spectate" style="width:250px;">👀 SPECTATE</button>
             <button class="mp-btn danger" onclick="location.reload()" style="width:250px;">✕ LEAVE ROOM</button>
         </div>
     </div>
@@ -1515,6 +1515,7 @@
         <h1 id="pause-title">PAUSED</h1>
         <p id="pause-subtitle">Press ESC or click the button to resume</p>
         <button id="btn-resume">▶ RESUME</button>
+        <button id="btn-quit-game" style="margin-top: 10px; background: transparent; border: 2px solid #ff3333; color: #ff3333; padding: 12px 40px; font-size: 18px; font-family: 'Impact', sans-serif; letter-spacing: 3px; cursor: pointer; border-radius: 6px; transition: all 0.2s;">🚪 EXIT GAME</button>
     </div>
 
     <!-- Interact Prompt -->
