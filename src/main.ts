@@ -149,10 +149,10 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
     } else if (skinId === 'gojo') {
         const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.25, 0.55), darkMat);
         hair.position.y = 0.24;
-        // White hair spikes
-        const s1 = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.35, 4), darkMat); s1.position.set(-0.2, 0.45, 0.1);
-        const s2 = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.3, 4), darkMat); s2.position.set(0.2, 0.4, -0.1);
-        const s3 = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.4, 4), darkMat); s3.position.set(0, 0.5, 0);
+        // White hair spikes (smaller and centered)
+        const s1 = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.25, 4), darkMat); s1.position.set(-0.1, 0.4, 0.05);
+        const s2 = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.2, 4), darkMat); s2.position.set(0.1, 0.38, -0.05);
+        const s3 = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.3, 4), darkMat); s3.position.set(0, 0.45, 0);
         head.add(hair, s1, s2, s3);
         // Blindfold
         const blindfold = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.15, 0.5), new THREE.MeshBasicMaterial({ color: 0x000000 }));
@@ -360,8 +360,9 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         hat.position.y = 0.28;
         const brim = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.08, 0.2), clothMat);
         brim.position.set(0, 0.2, 0.3);
-        // Mustache & Nose
-        const mustache = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.05, 0.06), darkMat);
+        // Mustache (Brown) & Nose
+        const brownMat = new THREE.MeshStandardMaterial({ color: 0x3d2314 });
+        const mustache = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.05, 0.06), brownMat);
         mustache.position.set(0, -0.05, 0.26);
         const nose = new THREE.Mesh(new THREE.SphereGeometry(0.08), skinMat);
         nose.position.set(0, 0, 0.27);
@@ -380,15 +381,13 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         lArm.material = new THREE.MeshStandardMaterial({ color: 0xffffff });
         rArm.material = new THREE.MeshStandardMaterial({ color: 0xffffff });
     } else if (skinId === 'sonic') {
-        // Blue spikes
-        const spikeGeo = new THREE.ConeGeometry(0.12, 0.45, 4);
-        for(let i=0; i<6; i++) {
-            const s = new THREE.Mesh(spikeGeo, darkMat);
-            s.rotation.x = -Math.PI / 3;
-            // Placed further back and slightly wider
-            s.position.set((i%2?0.2:-0.2), 0.2 - (i*0.08), -0.25 - (i*0.05));
-            head.add(s);
-        }
+        // Blue spikes pointing back like Sonic's classic quills
+        const spikeGeo1 = new THREE.ConeGeometry(0.15, 0.5, 4);
+        const spikeGeo2 = new THREE.ConeGeometry(0.12, 0.4, 4);
+        const sTop = new THREE.Mesh(spikeGeo1, darkMat); sTop.rotation.x = -Math.PI / 2.5; sTop.position.set(0, 0.3, -0.2);
+        const sMid = new THREE.Mesh(spikeGeo1, darkMat); sMid.rotation.x = -Math.PI / 2.2; sMid.position.set(0, 0.1, -0.25);
+        const sBot = new THREE.Mesh(spikeGeo2, darkMat); sBot.rotation.x = -Math.PI / 1.8; sBot.position.set(0, -0.1, -0.25);
+        head.add(sTop, sMid, sBot);
         // Muzzle and Belly
         const peachMat = new THREE.MeshStandardMaterial({color: 0xffdab9});
         const muzzle = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.15, 0.1), peachMat);
@@ -413,8 +412,8 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         const lStripe = new THREE.Mesh(stripeGeo, stripeMat); lStripe.position.set(0, 0.05, 0.1); lShoe.add(lStripe);
         const rStripe = new THREE.Mesh(stripeGeo, stripeMat); rStripe.position.set(0, 0.05, 0.1); rShoe.add(rStripe);
     } else if (skinId === 'ben10') {
-        // 10 shirt logo (green stripe)
-        const stripe = new THREE.Mesh(new THREE.PlaneGeometry(0.15, 0.7), new THREE.MeshBasicMaterial({ color: 0x00aa00 }));
+        // 10 shirt logo (black stripe)
+        const stripe = new THREE.Mesh(new THREE.PlaneGeometry(0.15, 0.7), new THREE.MeshBasicMaterial({ color: 0x111111 }));
         stripe.position.set(0, 0, 0.191);
         torso.add(stripe);
         // Messy hair

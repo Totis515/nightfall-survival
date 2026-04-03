@@ -1356,17 +1356,17 @@
         <!-- SKINS CONTENT (Hidden by default) -->
         <div id="skins-content" style="display: none; width: 100%; flex: 1; padding: 40px; box-sizing: border-box; flex-direction: row; background: radial-gradient(circle at left, rgba(0,0,0,0.8) 0%, transparent 60%);">
             <!-- Left Side: Selection Grid -->
-            <div style="width: 45%; max-width: 600px; display: flex; flex-direction: column; align-items: flex-start; padding-left: 20px;">
+            <div style="width: 45%; max-width: 600px; height: 100%; display: flex; flex-direction: column; padding-left: 20px;">
                 <h2 style="color: white; font-size: 48px; text-shadow: 0 0 10px #000; margin-bottom: 20px; font-family: 'Impact', sans-serif; font-style: italic;">LOCKER</h2>
                 
                 <style>
                     #skin-grid::-webkit-scrollbar { width: 8px; }
                     #skin-grid::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
                     #skin-grid::-webkit-scrollbar-thumb { background: #00ffcc; border-radius: 4px; }
-                    .skin-card { flex-shrink: 0 !important; min-height: 110px !important; min-width: 110px !important; }
+                    .skin-card { flex-shrink: 0 !important; height: 110px !important; width: 110px !important; box-sizing: border-box; }
                 </style>
-                <div id="skin-grid" style="display: flex; gap: 15px; flex-wrap: wrap; font-family: 'Impact', sans-serif; align-content: flex-start; max-height: calc(100vh - 250px); overflow-y: auto; padding-right: 15px;">
-                    <div class="skin-card active" data-skin="default" style="width: 110px; height: 110px; background-image: url('deffault.png'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid #00ffcc; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                <div id="skin-grid" style="flex: 1; min-height: 0; width: 100%; display: flex; gap: 15px; flex-wrap: wrap; font-family: 'Impact', sans-serif; align-content: flex-start; overflow-y: auto; padding-right: 15px; padding-bottom: 20px;">
+                    <div class="skin-card active" data-skin="default" style="background-image: url('deffault.png'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid #00ffcc; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
                         <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">DEFFAULT</div>
                     </div>
                     <!-- Light Yagami Skin -->
