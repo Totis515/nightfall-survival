@@ -387,20 +387,12 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         const gloveMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
         lArm.material = gloveMat;
         rArm.material = gloveMat;
-        // Blue spikes (5 distinctly spreading quills)
-        const spikeGeoLong = new THREE.ConeGeometry(0.12, 0.6, 4);
-        const spikeGeoShort = new THREE.ConeGeometry(0.12, 0.5, 4);
-        
-        // 1. Top central (vertical and high)
-        const s1 = new THREE.Mesh(spikeGeoLong, darkMat); s1.rotation.x = -Math.PI/2.5; s1.position.set(0, 0.45, -0.2);
-        // 2 & 3. Upper left & right (angled wide and slightly back)
-        const s2 = new THREE.Mesh(spikeGeoLong, darkMat); s2.rotation.x = -Math.PI/2.2; s2.rotation.y = 0.8; s2.position.set(-0.35, 0.25, -0.2);
-        const s3 = new THREE.Mesh(spikeGeoLong, darkMat); s3.rotation.x = -Math.PI/2.2; s3.rotation.y = -0.8; s3.position.set(0.35, 0.25, -0.2);
-        // 4 & 5. Lower left & right (smaller, angled very wide)
-        const s4 = new THREE.Mesh(spikeGeoShort, darkMat); s4.rotation.x = -Math.PI/1.5; s4.rotation.y = 0.6; s4.position.set(-0.3, -0.05, -0.25);
-        const s5 = new THREE.Mesh(spikeGeoShort, darkMat); s5.rotation.x = -Math.PI/1.5; s5.rotation.y = -0.6; s5.position.set(0.3, -0.05, -0.25);
-        
-        head.add(s1, s2, s3, s4, s5);
+        // Blue spikes (Simplified: only 3 on top)
+        const spikeGeo = new THREE.ConeGeometry(0.12, 0.45, 4);
+        const sTop = new THREE.Mesh(spikeGeo, darkMat); sTop.rotation.x = -Math.PI / 2.5; sTop.position.set(0, 0.35, -0.2);
+        const sMidL = new THREE.Mesh(spikeGeo, darkMat); sMidL.rotation.x = -Math.PI / 2.2; sMidL.rotation.y = 0.4; sMidL.position.set(-0.2, 0.2, -0.25);
+        const sMidR = new THREE.Mesh(spikeGeo, darkMat); sMidR.rotation.x = -Math.PI / 2.2; sMidR.rotation.y = -0.4; sMidR.position.set(0.2, 0.2, -0.25);
+        head.add(sTop, sMidL, sMidR);
         // Muzzle and Belly
         const peachMat = new THREE.MeshStandardMaterial({color: 0xffdab9});
         const muzzle = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.15, 0.1), peachMat);
@@ -414,8 +406,8 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         muzzle.add(nose);
         const earMat = new THREE.MeshStandardMaterial({color: 0x0000ff});
         const earGeo = new THREE.ConeGeometry(0.12, 0.2, 4);
-        const lEar = new THREE.Mesh(earGeo, earMat); lEar.position.set(-0.16, 0.28, 0.05); lEar.rotation.z = Math.PI/4; lEar.rotation.x = Math.PI/8;
-        const rEar = new THREE.Mesh(earGeo, earMat); rEar.position.set(0.16, 0.28, 0.05); rEar.rotation.z = -Math.PI/4; rEar.rotation.x = Math.PI/8;
+        const lEar = new THREE.Mesh(earGeo, earMat); lEar.position.set(-0.25, 0.2, 0.05); lEar.rotation.z = Math.PI/3; lEar.rotation.x = Math.PI/8;
+        const rEar = new THREE.Mesh(earGeo, earMat); rEar.position.set(0.25, 0.2, 0.05); rEar.rotation.z = -Math.PI/3; rEar.rotation.x = Math.PI/8;
         head.add(muzzle, lEar, rEar);
         // Red shoes with white stripe
         const rShoesMat = new THREE.MeshStandardMaterial({ color: 0xdd0000 });
