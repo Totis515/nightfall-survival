@@ -387,14 +387,20 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         const gloveMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
         lArm.material = gloveMat;
         rArm.material = gloveMat;
-        // Blue spikes (5 distinctly separated quills)
-        const spikeGeo = new THREE.ConeGeometry(0.12, 0.5, 4);
-        const sTop = new THREE.Mesh(spikeGeo, darkMat); sTop.rotation.x = -Math.PI / 2.5; sTop.position.set(0, 0.35, -0.25);
-        const sMidL = new THREE.Mesh(spikeGeo, darkMat); sMidL.rotation.x = -Math.PI / 2.2; sMidL.rotation.y = Math.PI/6; sMidL.position.set(-0.25, 0.15, -0.25);
-        const sMidR = new THREE.Mesh(spikeGeo, darkMat); sMidR.rotation.x = -Math.PI / 2.2; sMidR.rotation.y = -Math.PI/6; sMidR.position.set(0.25, 0.15, -0.25);
-        const sBotL = new THREE.Mesh(spikeGeo, darkMat); sBotL.rotation.x = -Math.PI / 1.8; sBotL.rotation.y = Math.PI/8; sBotL.position.set(-0.2, -0.05, -0.25);
-        const sBotR = new THREE.Mesh(spikeGeo, darkMat); sBotR.rotation.x = -Math.PI / 1.8; sBotR.rotation.y = -Math.PI/8; sBotR.position.set(0.2, -0.05, -0.25);
-        head.add(sTop, sMidL, sMidR, sBotL, sBotR);
+        // Blue spikes (5 distinctly spreading quills)
+        const spikeGeoLong = new THREE.ConeGeometry(0.12, 0.6, 4);
+        const spikeGeoShort = new THREE.ConeGeometry(0.12, 0.5, 4);
+        
+        // 1. Top central (vertical and high)
+        const s1 = new THREE.Mesh(spikeGeoLong, darkMat); s1.rotation.x = -Math.PI/2.5; s1.position.set(0, 0.45, -0.2);
+        // 2 & 3. Upper left & right (angled wide and slightly back)
+        const s2 = new THREE.Mesh(spikeGeoLong, darkMat); s2.rotation.x = -Math.PI/2.2; s2.rotation.y = 0.8; s2.position.set(-0.35, 0.25, -0.2);
+        const s3 = new THREE.Mesh(spikeGeoLong, darkMat); s3.rotation.x = -Math.PI/2.2; s3.rotation.y = -0.8; s3.position.set(0.35, 0.25, -0.2);
+        // 4 & 5. Lower left & right (smaller, angled very wide)
+        const s4 = new THREE.Mesh(spikeGeoShort, darkMat); s4.rotation.x = -Math.PI/1.5; s4.rotation.y = 0.6; s4.position.set(-0.3, -0.05, -0.25);
+        const s5 = new THREE.Mesh(spikeGeoShort, darkMat); s5.rotation.x = -Math.PI/1.5; s5.rotation.y = -0.6; s5.position.set(0.3, -0.05, -0.25);
+        
+        head.add(s1, s2, s3, s4, s5);
         // Muzzle and Belly
         const peachMat = new THREE.MeshStandardMaterial({color: 0xffdab9});
         const muzzle = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.15, 0.1), peachMat);
