@@ -977,11 +977,12 @@
         }
 
         /* ──────────────── PHASE 12: MULTIPLAYER SCREENS ──────────────── */
+        /* Username & room screens: phase14_official.png con overlay oscuro */
         .mp-screen {
             display: none;
             position: absolute;
             inset: 0;
-            background: url('/fondo.png') center/cover no-repeat;
+            background: linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.55)), url('/phase14_official.png') center/cover no-repeat;
             z-index: 80;
             flex-direction: column;
             align-items: center;
@@ -992,6 +993,14 @@
 
         .mp-screen.active {
             display: flex;
+        }
+
+        /* Lobby & Skins screen: fondo.png limpio sin overlay */
+        #lobby-screen {
+            background: url('/fondo.png') center/cover no-repeat !important;
+            backdrop-filter: none !important;
+            justify-content: flex-start !important;
+            padding: 0 !important;
         }
 
         .mp-title {
@@ -1161,7 +1170,6 @@
 
         /* ──────────────── 3D LOBBY UI ──────────────── */
         #lobby-screen {
-            background: transparent !important;
             backdrop-filter: none !important;
             justify-content: flex-start !important;
             padding: 0 !important;
