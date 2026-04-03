@@ -356,7 +356,12 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         hat.position.y = 0.28;
         const brim = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.08, 0.2), clothMat);
         brim.position.set(0, 0.2, 0.3);
-        head.add(hat, brim);
+        // Mustache & Nose
+        const mustache = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.05, 0.06), darkMat);
+        mustache.position.set(0, -0.05, 0.26);
+        const nose = new THREE.Mesh(new THREE.SphereGeometry(0.08), skinMat);
+        nose.position.set(0, 0, 0.27);
+        head.add(hat, brim, mustache, nose);
         // Overalls
         const overalls = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.5), pantsMat);
         overalls.position.set(0, 0, 0.191);
@@ -379,14 +384,21 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
             s.position.set((i%2?0.15:-0.15), 0.25 - (i*0.1), -0.2 - (i*0.05));
             head.add(s);
         }
+        // Nose & Ears
+        const nose = new THREE.Mesh(new THREE.SphereGeometry(0.04), new THREE.MeshBasicMaterial({color: 0x000000}));
+        nose.position.set(0, 0.05, 0.27);
+        const earGeo = new THREE.ConeGeometry(0.08, 0.2, 4);
+        const lEar = new THREE.Mesh(earGeo, darkMat); lEar.position.set(-0.15, 0.35, 0); lEar.rotation.z = Math.PI/8;
+        const rEar = new THREE.Mesh(earGeo, darkMat); rEar.position.set(0.15, 0.35, 0); rEar.rotation.z = -Math.PI/8;
+        head.add(nose, lEar, rEar);
         // Red shoes with white stripe
         const rShoesMat = new THREE.MeshStandardMaterial({ color: 0xdd0000 });
         lShoe.material = rShoesMat;
         rShoe.material = rShoesMat;
-        const lStripe = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.05, 0.1), new THREE.MeshStandardMaterial({ color: 0xffffff }));
-        lStripe.position.set(0, 0.05, 0.1); lShoe.add(lStripe);
-        const rStripe = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.05, 0.1), new THREE.MeshStandardMaterial({ color: 0xffffff }));
-        rStripe.position.set(0, 0.05, 0.1); rShoe.add(rStripe);
+        const stripeGeo = new THREE.BoxGeometry(0.24, 0.05, 0.1);
+        const stripeMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+        const lStripe = new THREE.Mesh(stripeGeo, stripeMat); lStripe.position.set(0, 0.05, 0.1); lShoe.add(lStripe);
+        const rStripe = new THREE.Mesh(stripeGeo, stripeMat); rStripe.position.set(0, 0.05, 0.1); rShoe.add(rStripe);
     } else if (skinId === 'ben10') {
         // 10 shirt logo (green stripe)
         const stripe = new THREE.Mesh(new THREE.PlaneGeometry(0.15, 0.7), new THREE.MeshBasicMaterial({ color: 0x00aa00 }));
@@ -396,20 +408,39 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.25, 0.55), darkMat);
         hair.position.y = 0.24;
         head.add(hair);
-        // Omnitrix
-        const watch = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 0.15), new THREE.MeshStandardMaterial({ color: 0x666666 }));
-        watch.position.set(0, -0.3, 0);
-        const face = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 0.1), new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
-        face.position.set(0, 0, 0.08); watch.add(face);
-        lArm.add(watch);
+        // Omnitrix (detailed)
+        const watchBand = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.1, 0.18), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+        watchBand.position.set(0, -0.3, 0);
+        const watchDial = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.05, 8), new THREE.MeshStandardMaterial({ color: 0x666666 }));
+        watchDial.rotation.x = Math.PI/2;
+        watchDial.position.set(0, 0, 0.1); 
+        const watchFace = new THREE.Mesh(new THREE.PlaneGeometry(0.08, 0.08), new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
+        watchFace.position.set(0, 0, 0.026);
+        watchDial.add(watchFace);
+        watchBand.add(watchDial);
+        lArm.add(watchBand);
+        // Shoe details (white stripes)
+        const shoeStripeMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+        const lst = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.04, 0.26), shoeStripeMat); lst.position.y = 0.05; lShoe.add(lst);
+        const rst = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.04, 0.26), shoeStripeMat); rst.position.y = 0.05; rShoe.add(rst);
     } else if (skinId === 'coraline') {
         const raincoatMat = new THREE.MeshStandardMaterial({ color: 0xffcc00 });
         lArm.material = raincoatMat;
         rArm.material = raincoatMat;
-        // Blue hair (similar to L but blue)
+        // Coat Buttons
+        const cBtnMat = new THREE.MeshStandardMaterial({color: 0xaa8800});
+        const c1 = new THREE.Mesh(new THREE.SphereGeometry(0.04), cBtnMat); c1.position.set(0, 0.15, 0.2);
+        const c2 = new THREE.Mesh(new THREE.SphereGeometry(0.04), cBtnMat); c2.position.set(0, 0, 0.2);
+        const c3 = new THREE.Mesh(new THREE.SphereGeometry(0.04), cBtnMat); c3.position.set(0, -0.15, 0.2);
+        torso.add(c1, c2, c3);
+        // Blue hair
         const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.35, 0.55), darkMat);
         hair.position.y = 0.28;
-        head.add(hair);
+        // Dragonfly Hair Clip
+        const clip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.04, 0.04), new THREE.MeshBasicMaterial({color: 0xffaaaa}));
+        clip.position.set(0.25, 0.15, 0.25);
+        clip.rotation.z = Math.PI/4;
+        head.add(hair, clip);
         // Boots
         lShoe.material = raincoatMat;
         rShoe.material = raincoatMat;
@@ -1123,8 +1154,8 @@ const weapons: Weapon[] = [
 // ---- CONFIGURACIÓN DE LA ESCENA ----
 // Configuración principal del mundo 3D (escena, cámara y renderizador)
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0a0a1a); // Darker, more ominous background
-scene.fog = new THREE.FogExp2(0x1a0b2e, 0.025);
+scene.background = new THREE.Color(0x1a0a25); // Lighter purple tinted night sky
+scene.fog = new THREE.FogExp2(0x3a105a, 0.006); // Lighter purple fog
 
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.set(0, 1.6, 0);
@@ -1683,11 +1714,11 @@ function createClouds() {
 
 
 // ---- ILUMINACIÓN ----
-const ambientLight = new THREE.HemisphereLight(0x2d1b4e, 0x1a1a2a, 0.4); // Luz ambiental más clara
+const ambientLight = new THREE.HemisphereLight(0x5a308e, 0x2a1a4a, 0.7); // Bright, clearer purple ambient
 scene.add(ambientLight);
 
 // Dense exponential fog like the video
-scene.fog = new THREE.FogExp2(0x1a0b3e, 0.008); // Niebla un poco más suave
+scene.fog = new THREE.FogExp2(0x3a155a, 0.005); // Lighter, purple fog, longer visibility
 
 // Luz puntal naranja espeluznante cerca del Black Market para añadir variedad de color
 const bmLight = new THREE.PointLight(0xff6600, 3, 25);
