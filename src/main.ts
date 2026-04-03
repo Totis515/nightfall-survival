@@ -97,7 +97,7 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         darkHex = 0xdd0000; // Red hat
         pantsHex = 0x0000dd; // Blue overalls
     } else if (skinId === 'sonic') {
-        skinHex = 0xffdab9; // Muzzle color
+        skinHex = 0x0000ff; // Blue head and arms
         clothHex = 0x0000ff; // Blue body
         darkHex = 0x0000ff; // Blue spikes
         pantsHex = 0x0000ff;
@@ -350,6 +350,10 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         const bigShoeMat = new THREE.MeshStandardMaterial({ color: 0x5c3a21 });
         lShoe.material = bigShoeMat;
         rShoe.material = bigShoeMat;
+        // Red nose
+        const nose = new THREE.Mesh(new THREE.SphereGeometry(0.06), new THREE.MeshBasicMaterial({color: 0xff0000}));
+        nose.position.set(0, 0, 0.26);
+        head.add(nose);
     } else if (skinId === 'mario') {
         // Red hat
         const hat = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.15, 0.52), clothMat);
@@ -377,20 +381,29 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         rArm.material = new THREE.MeshStandardMaterial({ color: 0xffffff });
     } else if (skinId === 'sonic') {
         // Blue spikes
-        const spikeGeo = new THREE.ConeGeometry(0.1, 0.4, 4);
+        const spikeGeo = new THREE.ConeGeometry(0.12, 0.45, 4);
         for(let i=0; i<6; i++) {
             const s = new THREE.Mesh(spikeGeo, darkMat);
-            s.rotation.x = -Math.PI / 4;
-            s.position.set((i%2?0.15:-0.15), 0.25 - (i*0.1), -0.2 - (i*0.05));
+            s.rotation.x = -Math.PI / 3;
+            // Placed further back and slightly wider
+            s.position.set((i%2?0.2:-0.2), 0.2 - (i*0.08), -0.25 - (i*0.05));
             head.add(s);
         }
+        // Muzzle and Belly
+        const peachMat = new THREE.MeshStandardMaterial({color: 0xffdab9});
+        const muzzle = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.15, 0.1), peachMat);
+        muzzle.position.set(0, -0.05, 0.25);
+        const belly = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.35), peachMat);
+        belly.position.set(0, 0, 0.26);
+        torso.add(belly);
         // Nose & Ears
         const nose = new THREE.Mesh(new THREE.SphereGeometry(0.04), new THREE.MeshBasicMaterial({color: 0x000000}));
-        nose.position.set(0, 0.05, 0.27);
-        const earGeo = new THREE.ConeGeometry(0.08, 0.2, 4);
-        const lEar = new THREE.Mesh(earGeo, darkMat); lEar.position.set(-0.15, 0.35, 0); lEar.rotation.z = Math.PI/8;
-        const rEar = new THREE.Mesh(earGeo, darkMat); rEar.position.set(0.15, 0.35, 0); rEar.rotation.z = -Math.PI/8;
-        head.add(nose, lEar, rEar);
+        nose.position.set(0, 0, 0.05); // Relative to muzzle
+        muzzle.add(nose);
+        const earGeo = new THREE.ConeGeometry(0.1, 0.25, 4);
+        const lEar = new THREE.Mesh(earGeo, darkMat); lEar.position.set(-0.15, 0.35, 0); lEar.rotation.z = Math.PI/6;
+        const rEar = new THREE.Mesh(earGeo, darkMat); rEar.position.set(0.15, 0.35, 0); rEar.rotation.z = -Math.PI/6;
+        head.add(muzzle, lEar, rEar);
         // Red shoes with white stripe
         const rShoesMat = new THREE.MeshStandardMaterial({ color: 0xdd0000 });
         lShoe.material = rShoesMat;
@@ -433,14 +446,21 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         const c2 = new THREE.Mesh(new THREE.SphereGeometry(0.04), cBtnMat); c2.position.set(0, 0, 0.2);
         const c3 = new THREE.Mesh(new THREE.SphereGeometry(0.04), cBtnMat); c3.position.set(0, -0.15, 0.2);
         torso.add(c1, c2, c3);
-        // Blue hair
-        const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.35, 0.55), darkMat);
-        hair.position.y = 0.28;
+        // Improved Blue bob cut hair
+        const topHair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.15, 0.55), darkMat);
+        topHair.position.y = 0.32;
+        const leftHair = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.4, 0.55), darkMat);
+        leftHair.position.set(-0.25, 0.05, 0);
+        const rightHair = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.4, 0.55), darkMat);
+        rightHair.position.set(0.25, 0.05, 0);
+        const backHair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.4, 0.15), darkMat);
+        backHair.position.set(0, 0.05, -0.25);
+
         // Dragonfly Hair Clip
         const clip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.04, 0.04), new THREE.MeshBasicMaterial({color: 0xffaaaa}));
-        clip.position.set(0.25, 0.15, 0.25);
+        clip.position.set(0.26, 0.15, 0.20);
         clip.rotation.z = Math.PI/4;
-        head.add(hair, clip);
+        head.add(topHair, leftHair, rightHair, backHair, clip);
         // Boots
         lShoe.material = raincoatMat;
         rShoe.material = raincoatMat;
