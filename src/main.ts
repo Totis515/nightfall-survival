@@ -1208,10 +1208,10 @@ const _lobbyDir = new THREE.DirectionalLight(0xffffff, 2.5);
 _lobbyDir.position.set(2, 5, 6);
 lobbyScene.add(_lobbyDir);
 lobbyScene.add(new THREE.AmbientLight(0xffffff, 1.5));
-// fondo.png as background (no fog)
+// fondo.png as background (no fog), darkened for moody atmosphere
 new THREE.TextureLoader().load('fondo.png', (tex) => {
     lobbyScene.background = tex;
-    // lobbyScene.backgroundIntensity = 0.45; // Removed to restore original brightness
+    lobbyScene.backgroundIntensity = 0.3; // 0 = black, 1 = full brightness. Set to 0.3 for requested darkness.
 });
 
 const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
@@ -3959,9 +3959,13 @@ class GenericParticleSystem {
                 } else {
                     needsUpdate = true; // Normal movement update
                 }
+            } else if (this.positions[i * 3 + 1] > -100) {
+                // EXTREME CLEANUP: If particle is dead but still above 'hidden' Y, force it down
+                this.positions[i * 3 + 1] = -100;
+                needsUpdate = true;
             }
         }
-        // Siempre actualizar el buffer si algo cambió, incluso si es el frame en que mueren
+        // Siempre actualizar el buffer si algo cambió
         if (needsUpdate) this.geometry.attributes.position.needsUpdate = true;
     }
 
