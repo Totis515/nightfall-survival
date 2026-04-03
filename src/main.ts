@@ -2456,11 +2456,21 @@ class Enemy {
             collidables.push(torso);
         }
 
-        // Si es ZOMBIE_ON_FIRE agregar una luz tenue
+        // Si es ZOMBIE_ON_FIRE, usar material emisivo naranja en lugar de PointLight (mejor rendimiento)
         if (this.type === EnemyType.ZOMBIE_ON_FIRE) {
-            const fireLight = new THREE.PointLight(0xff4400, 2, 5);
-            fireLight.position.set(0, 1.0 * s, 0);
-            this.mesh.add(fireLight);
+            const glowMat = new THREE.MeshStandardMaterial({
+                color: 0xff4400, emissive: 0xff2200, emissiveIntensity: 1.5, roughness: 0.4
+            });
+            // Aplicar el material emisivo al torso del zombie
+            this.mesh.traverse(child => {
+                if ((child as THREE.Mesh).isMesh) {
+                    const m = child as THREE.Mesh;
+                    if (m.material && (m.material as THREE.MeshStandardMaterial).color) {
+                        (m.material as THREE.MeshStandardMaterial).emissive?.setHex(0xff1100);
+                        (m.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.8;
+                    }
+                }
+            });
         }
 
         // Place zombie at spawn position, feet below ground for rising effect
@@ -2816,6 +2826,7 @@ class WeaponDrop {
             playerJetpackFuel = MAX_FUEL;
             const ui = document.getElementById('jetpack-ui');
             if (ui) ui.style.display = 'block';
+            updateStatsHUD(); // Actualizar HUD al instante
             showPickupNotice("FUEL REFILLED");
         } else if (this.dropType === 'ammo') {
             for (let i = 1; i < weapons.length; i++) {
@@ -3086,8 +3097,10 @@ class WaveManager {
             else if (r > 0.35) type = EnemyType.FAST;
             else type = EnemyType.STANDARD;
         } else if (this.currentWave >= 5) {
-            if (r > 0.8) type = EnemyType.BOSS_GOLIATH;
-            else if (r > 0.5) type = EnemyType.TANK;
+            // Wave 5-6: incluir robots, goliath boss y mixto
+            if (r > 0.75) type = EnemyType.BOSS_GOLIATH;
+            else if (r > 0.50) type = EnemyType.ROBOT;
+            else if (r > 0.25) type = EnemyType.TANK;
             else type = EnemyType.STANDARD;
         } else if (this.currentWave >= 3) {
             // Wave 3+: Introduce robots y zombies grandes
@@ -3901,7 +3914,7 @@ class GenericParticleSystem {
     }
 
     update(delta: number) {
-        let active = false;
+        let needsUpdate = false;
         for (let i = 0; i < this.maxParticles; i++) {
             if (this.lifetimes[i] > 0) {
                 this.positions[i * 3] += this.velocities[i].x * delta;
@@ -3909,17 +3922,19 @@ class GenericParticleSystem {
                 this.positions[i * 3 + 2] += this.velocities[i].z * delta;
                 this.velocities[i].y -= this.config.gravity * delta;
 
-                // Efecto de rebote en el suelo eliminado, mueren de impacto
-                if (this.positions[i * 3 + 1] <= 0.05) {
-                    this.lifetimes[i] = 0;
-                }
-
                 this.lifetimes[i] -= delta;
-                if (this.lifetimes[i] <= 0) this.positions[i * 3 + 1] = -100;
-                active = true;
+
+                // Muere si toca el suelo O si se le acaba el tiempo
+                if (this.positions[i * 3 + 1] <= 0.05 || this.lifetimes[i] <= 0) {
+                    this.lifetimes[i] = 0;
+                    this.positions[i * 3 + 1] = -100; // Ocultar inmediatamente
+                    this.velocities[i].set(0, 0, 0);  // Detener
+                }
+                needsUpdate = true;
             }
         }
-        if (active) this.geometry.attributes.position.needsUpdate = true;
+        // Siempre actualizar el buffer para asegurar que las partículas muertas desaparezcan
+        if (needsUpdate) this.geometry.attributes.position.needsUpdate = true;
     }
 
     warmUp() {
