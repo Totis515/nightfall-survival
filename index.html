@@ -995,9 +995,10 @@
             display: flex;
         }
 
-        /* Lobby & Skins screen: fondo.png limpio sin overlay */
+        /* Lobby & Skins screen: fondo.png es el fondo de la escena 3D en Three.js
+           Este div debe ser TRANSPARENTE para que el canvas se vea debajo */
         #lobby-screen {
-            background: url('/fondo.png') center/cover no-repeat !important;
+            background: transparent !important;
             backdrop-filter: none !important;
             justify-content: flex-start !important;
             padding: 0 !important;
