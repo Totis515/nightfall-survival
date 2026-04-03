@@ -1205,8 +1205,11 @@ const _lobbyDir = new THREE.DirectionalLight(0xffffff, 2.5);
 _lobbyDir.position.set(2, 5, 6);
 lobbyScene.add(_lobbyDir);
 lobbyScene.add(new THREE.AmbientLight(0xffffff, 1.5));
-// fondo.png as background (no fog)
-new THREE.TextureLoader().load('fondo.png', (tex) => { lobbyScene.background = tex; });
+// fondo.png as background (no fog), dimmed via backgroundIntensity
+new THREE.TextureLoader().load('fondo.png', (tex) => {
+    lobbyScene.background = tex;
+    lobbyScene.backgroundIntensity = 0.45; // 0 = negro, 1 = brillo original
+});
 
 const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
 renderer.setSize(window.innerWidth, window.innerHeight);
