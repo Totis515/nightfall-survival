@@ -387,13 +387,14 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         const gloveMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
         lArm.material = gloveMat;
         rArm.material = gloveMat;
-        // Blue spikes pointing back like Sonic's classic quills
-        const spikeGeo1 = new THREE.ConeGeometry(0.18, 0.45, 4);
-        const spikeGeo2 = new THREE.ConeGeometry(0.12, 0.4, 4);
-        const sTop = new THREE.Mesh(spikeGeo1, darkMat); sTop.rotation.x = -Math.PI / 2.5; sTop.position.set(0, 0.3, -0.2);
-        const sMid = new THREE.Mesh(spikeGeo1, darkMat); sMid.rotation.x = -Math.PI / 2.2; sMid.position.set(0, 0.1, -0.25);
-        const sBot = new THREE.Mesh(spikeGeo2, darkMat); sBot.rotation.x = -Math.PI / 1.8; sBot.position.set(0, -0.1, -0.25);
-        head.add(sTop, sMid, sBot);
+        // Blue spikes (5 distinctly separated quills)
+        const spikeGeo = new THREE.ConeGeometry(0.12, 0.5, 4);
+        const sTop = new THREE.Mesh(spikeGeo, darkMat); sTop.rotation.x = -Math.PI / 2.5; sTop.position.set(0, 0.35, -0.25);
+        const sMidL = new THREE.Mesh(spikeGeo, darkMat); sMidL.rotation.x = -Math.PI / 2.2; sMidL.rotation.y = Math.PI/6; sMidL.position.set(-0.25, 0.15, -0.25);
+        const sMidR = new THREE.Mesh(spikeGeo, darkMat); sMidR.rotation.x = -Math.PI / 2.2; sMidR.rotation.y = -Math.PI/6; sMidR.position.set(0.25, 0.15, -0.25);
+        const sBotL = new THREE.Mesh(spikeGeo, darkMat); sBotL.rotation.x = -Math.PI / 1.8; sBotL.rotation.y = Math.PI/8; sBotL.position.set(-0.2, -0.05, -0.25);
+        const sBotR = new THREE.Mesh(spikeGeo, darkMat); sBotR.rotation.x = -Math.PI / 1.8; sBotR.rotation.y = -Math.PI/8; sBotR.position.set(0.2, -0.05, -0.25);
+        head.add(sTop, sMidL, sMidR, sBotL, sBotR);
         // Muzzle and Belly
         const peachMat = new THREE.MeshStandardMaterial({color: 0xffdab9});
         const muzzle = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.15, 0.1), peachMat);
