@@ -125,7 +125,6 @@
             background: rgba(0, 0, 0, 0.5);
             border: 2px solid #555;
             border-radius: 2px;
-            overflow: hidden;
             position: relative;
         }
 
@@ -1321,6 +1320,17 @@
                         style="position:absolute; left:24px; top:3px; width:20px; height:20px; background:#00ffcc; border-radius:50%; transition:0.3s; box-shadow:0 0 8px #00ffcc;"></span>
                 </label>
             </div>
+            <!-- Show HP Digit -->
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+                <span style="color:#ccc; font-size:18px; letter-spacing:2px;">❤ SHOW HP</span>
+                <label style="position:relative; display:inline-block; width:50px; height:26px; cursor:pointer;">
+                    <input type="checkbox" id="opt-show-hp" style="opacity:0; width:0; height:0;">
+                    <span
+                        style="position:absolute; inset:0; background:#333; border-radius:13px; transition:0.3s;"></span>
+                    <span id="opt-hp-knob"
+                        style="position:absolute; left:4px; top:3px; width:20px; height:20px; background:#555; border-radius:50%; transition:0.3s;"></span>
+                </label>
+            </div>
         </div>
 
         <button id="btn-options-back"
@@ -1381,6 +1391,12 @@
                     ------</div>
                 <button id="btn-lobby-leave" class="mp-btn danger"
                     style="padding: 8px 16px; font-size: 14px; margin-top: 15px; width: 100%;">LEAVE ROOM</button>
+            </div>
+
+            <!-- Player List with Kick Buttons (Host only) -->
+            <div id="lobby-player-list" style="position:absolute; top:30px; right:30px; background:rgba(0,0,0,0.7); border:1px solid #333; border-radius:8px; padding:15px; min-width:200px; backdrop-filter:blur(4px); display:none;">
+                <div style="color:#00ffcc; font-size:14px; font-family:'Impact',sans-serif; letter-spacing:2px; margin-bottom:10px; border-bottom:1px solid #333; padding-bottom:6px;">PLAYERS</div>
+                <div id="lobby-kick-list" style="display:flex; flex-direction:column; gap:6px;"></div>
             </div>
 
             <!-- Play Button Area -->
@@ -1577,6 +1593,7 @@
         <div class="bottom-left">
             <div class="health-bar-container">
                 <div class="health-bar" id="health-bar"></div>
+                <span id="health-digit" style="display:none; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); color:#fff; font-size:11px; font-family:'Impact',sans-serif; letter-spacing:1px; text-shadow:0 0 4px #000, 0 0 2px #000; pointer-events:none;">100</span>
             </div>
             <div class="stamina-bar" id="stamina-bar"></div>
             <div class="fuel-bar" id="fuel-bar"></div>

@@ -849,6 +849,12 @@ function connectMultiplayer() {
         if (waveManager) waveManager.victory();
     });
 
+    // Kicked from room by host
+    socket.on('kicked-from-room', () => {
+        alert('You have been kicked from the room by the host.');
+        location.reload();
+    });
+
     socket.on('disconnect', () => {
         remotePlayers.forEach((_, id) => removeRemotePlayer(id));
     });
@@ -915,7 +921,12 @@ function rearrangeLobbySlots() {
     ];
 
     let slotIndex = 0;
-    remotePlayers.forEach((p) => {
+    // Populate kick panel for host
+    const kickListEl = document.getElementById('lobby-kick-list');
+    const kickPanelEl = document.getElementById('lobby-player-list');
+    if (kickListEl) kickListEl.innerHTML = '';
+    
+    remotePlayers.forEach((p, id) => {
         if (!lobbyScene.children.includes(p.group)) {
             lobbyScene.add(p.group);
         }
@@ -925,8 +936,38 @@ function rearrangeLobbySlots() {
         p.group.rotation.y = Math.PI;
         p.group.scale.set(1.8, 1.8, 1.8);
         p.group.visible = !inSkinsTab; // Hide if in Skins
+
+        // Build kick list entry for the HTML panel
+        if (kickListEl) {
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:10px;';
+            const nameSpan = document.createElement('span');
+            nameSpan.style.cssText = 'color:#ccc; font-size:14px; font-family:monospace; letter-spacing:1px;';
+            nameSpan.innerText = p.group.userData.username || 'PLAYER';
+            row.appendChild(nameSpan);
+            if (isHost) {
+                const kickBtn = document.createElement('button');
+                kickBtn.innerText = 'KICK';
+                kickBtn.style.cssText = 'background:transparent; border:1px solid #ff3333; color:#ff3333; padding:3px 10px; font-size:11px; font-family:Impact,sans-serif; letter-spacing:1px; cursor:pointer; border-radius:4px; transition:all 0.2s;';
+                kickBtn.addEventListener('mouseover', () => { kickBtn.style.background = '#ff3333'; kickBtn.style.color = '#000'; });
+                kickBtn.addEventListener('mouseout', () => { kickBtn.style.background = 'transparent'; kickBtn.style.color = '#ff3333'; });
+                kickBtn.addEventListener('click', () => {
+                    if (confirm(`Kick ${nameSpan.innerText}?`)) {
+                        socket?.emit('kick-player', { id });
+                    }
+                });
+                row.appendChild(kickBtn);
+            }
+            kickListEl.appendChild(row);
+        }
+
         slotIndex++;
     });
+
+    // Show the panel only if there are remote players and we are in lobby tab
+    if (kickPanelEl) {
+        kickPanelEl.style.display = (remotePlayers.size > 0 && !inSkinsTab) ? 'block' : 'none';
+    }
 }
 
 function showScreen(id: string) {
@@ -1783,6 +1824,11 @@ function updateStatsHUD() {
         fuelBar.style.width = `${Math.max(0, (playerJetpackFuel / MAX_FUEL) * 100)}%`;
     }
     if (coinsEl) coinsEl.innerText = playerCoins.toString();
+    // Update HP digit if visible
+    const hpDigit = document.getElementById('health-digit');
+    if (hpDigit && hpDigit.style.display !== 'none') {
+        hpDigit.innerText = `${Math.max(0, Math.round(playerHealth))} / ${maxPlayerHealth}`;
+    }
     const v = document.getElementById('damage-vignette');
     if (v) {
         if (playerHealth < 30) {
@@ -3592,6 +3638,7 @@ linkSliderAndInput('opt-sensitivity', 'opt-sensitivity-val', (v) => {
 });
 
 // --- Graphics Quality ---
+let currentGraphicsQuality = 'medium';
 document.querySelectorAll('.opt-q-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.opt-q-btn').forEach(b => {
@@ -3603,27 +3650,79 @@ document.querySelectorAll('.opt-q-btn').forEach(btn => {
         (btn as HTMLElement).style.borderColor = '#ff6644';
         (btn as HTMLElement).style.color = '#000';
         const quality = (btn as HTMLElement).dataset.quality;
-        if (quality === 'low') {
-            renderer.setPixelRatio(0.75);
-        } else if (quality === 'medium') {
-            renderer.setPixelRatio(1.0);
-        } else {
-            renderer.setPixelRatio(window.devicePixelRatio);
-        }
+        currentGraphicsQuality = quality || 'medium';
+        applyGraphicsQuality(currentGraphicsQuality);
     });
 });
+
+function applyGraphicsQuality(quality: string) {
+    if (quality === 'low') {
+        // LOW: Maximum performance
+        renderer.setPixelRatio(0.6);
+        renderer.shadowMap.enabled = false;
+        scene.fog = new THREE.FogExp2(0x3a155a, 0.008); // Thicker fog = less to render
+        grassInstanced.visible = false; // Hide grass for performance
+        moonLight.castShadow = false;
+        moonLight.shadow.mapSize.width = 256;
+        moonLight.shadow.mapSize.height = 256;
+        ambientLight.intensity = 0.9; // Brighter to compensate for no shadows
+        fillLight.intensity = 1;
+    } else if (quality === 'medium') {
+        // MEDIUM: Balanced (default)
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.0));
+        renderer.shadowMap.enabled = false;
+        scene.fog = new THREE.FogExp2(0x3a155a, 0.005);
+        grassInstanced.visible = true;
+        moonLight.castShadow = false;
+        moonLight.shadow.mapSize.width = 512;
+        moonLight.shadow.mapSize.height = 512;
+        ambientLight.intensity = 0.7;
+        fillLight.intensity = 2;
+    } else {
+        // HIGH: Best visuals
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        scene.fog = new THREE.FogExp2(0x3a155a, 0.003); // Thinner fog = see further
+        grassInstanced.visible = true;
+        moonLight.castShadow = true;
+        moonLight.shadow.mapSize.width = 1024;
+        moonLight.shadow.mapSize.height = 1024;
+        moonLight.shadow.needsUpdate = true;
+        ambientLight.intensity = 0.5; // Darker ambient = more dramatic shadows
+        fillLight.intensity = 2.5;
+        // Activate shadow receivers on key meshes
+        floor.receiveShadow = true;
+    }
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
 
 // --- Show FPS Toggle ---
 document.getElementById('opt-show-fps')?.addEventListener('change', (e) => {
     const checked = (e.target as HTMLInputElement).checked;
     const knob = document.getElementById('opt-fps-knob');
     if (knob) {
-        knob.style.left = '24px';
+        knob.style.left = checked ? '24px' : '4px';
         knob.style.background = checked ? '#00ffcc' : '#555';
         knob.style.boxShadow = checked ? '0 0 8px #00ffcc' : 'none';
     }
     const fpsBox = document.querySelector('.stat-box:nth-child(2)') as HTMLElement;
     if (fpsBox) fpsBox.style.display = checked ? 'block' : 'none';
+});
+
+// --- Show HP Toggle ---
+let showHPDigit = false;
+document.getElementById('opt-show-hp')?.addEventListener('change', (e) => {
+    const checked = (e.target as HTMLInputElement).checked;
+    showHPDigit = checked;
+    const knob = document.getElementById('opt-hp-knob');
+    if (knob) {
+        knob.style.left = checked ? '24px' : '4px';
+        knob.style.background = checked ? '#ff4444' : '#555';
+        knob.style.boxShadow = checked ? '0 0 8px #ff4444' : 'none';
+    }
+    const hpDigit = document.getElementById('health-digit');
+    if (hpDigit) hpDigit.style.display = checked ? 'block' : 'none';
 });
 
 document.getElementById('btn-exit')?.addEventListener('click', () => {

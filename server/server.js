@@ -274,6 +274,31 @@ io.on('connection', (socket) => {
         }
     });
 
+    // ── GAME VICTORY (host → server → ALL players) ───────────────
+    socket.on('game-victory', () => {
+        const code = socket.data.roomCode;
+        if (!code || !rooms[code]) return;
+        socket.to(code).emit('game-victory');
+        console.log(`[VICTORY] Room ${code} won!`);
+    });
+
+    // ── KICK PLAYER (host only) ──────────────────────────────────
+    socket.on('kick-player', (data) => {
+        const code = socket.data.roomCode;
+        if (!code || !rooms[code]) return;
+        // Only the host can kick
+        if (rooms[code].hostId !== socket.id) return;
+        const targetId = data.id;
+        const targetSocket = io.sockets.sockets.get(targetId);
+        if (targetSocket) {
+            targetSocket.emit('kicked-from-room');
+            targetSocket.leave(code);
+            delete rooms[code].players[targetId];
+            io.to(code).emit('player-left', { id: targetId });
+            console.log(`[KICK] ${targetId} kicked from room ${code} by host ${socket.id}`);
+        }
+    });
+
     // ── DISCONNECT ────────────────────────────────────────────────
     socket.on('disconnect', (reason) => {
         const code = socket.data.roomCode;
