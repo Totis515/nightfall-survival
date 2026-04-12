@@ -405,12 +405,15 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         const gloveMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
         lArm.material = gloveMat;
         rArm.material = gloveMat;
-        // Blue spikes (Simplified: only 3 on top)
-        const spikeGeo = new THREE.ConeGeometry(0.12, 0.45, 4);
-        const sTop = new THREE.Mesh(spikeGeo, darkMat); sTop.rotation.x = -Math.PI / 2.5; sTop.position.set(0, 0.35, -0.2);
-        const sMidL = new THREE.Mesh(spikeGeo, darkMat); sMidL.rotation.x = -Math.PI / 2.2; sMidL.rotation.y = 0.4; sMidL.position.set(-0.2, 0.2, -0.25);
-        const sMidR = new THREE.Mesh(spikeGeo, darkMat); sMidR.rotation.x = -Math.PI / 2.2; sMidR.rotation.y = -0.4; sMidR.position.set(0.2, 0.2, -0.25);
-        head.add(sTop, sMidL, sMidR);
+        // Blue spikes (Prominent Sonic back quills)
+        const spikeGeo = new THREE.ConeGeometry(0.18, 0.5, 4);
+        const sTop = new THREE.Mesh(spikeGeo, darkMat); sTop.rotation.x = -Math.PI / 1.5; sTop.position.set(0, 0.25, -0.3);
+        const sMid = new THREE.Mesh(spikeGeo, darkMat); sMid.rotation.x = -Math.PI / 1.8; sMid.position.set(0, 0.05, -0.35);
+        const sBot = new THREE.Mesh(spikeGeo, darkMat); sBot.rotation.x = -Math.PI / 2.2; sBot.position.set(0, -0.15, -0.3);
+        // Side spikes to widen hair
+        const sSideL = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.4, 4), darkMat); sSideL.rotation.x = -Math.PI / 1.8; sSideL.rotation.y = 0.5; sSideL.position.set(-0.25, 0.1, -0.2);
+        const sSideR = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.4, 4), darkMat); sSideR.rotation.x = -Math.PI / 1.8; sSideR.rotation.y = -0.5; sSideR.position.set(0.25, 0.1, -0.2);
+        head.add(sTop, sMid, sBot, sSideL, sSideR);
         // Muzzle and Belly
         const peachMat = new THREE.MeshStandardMaterial({color: 0xffdab9});
         const muzzle = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.15, 0.1), peachMat);
@@ -529,11 +532,18 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         const hair = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.28, 0.52), darkMat);
         hair.position.y = 0.28;
         head.add(hair);
-        // Small orange triangles on top (using standard mesh so it's independent of darkHex now)
-        const tr1 = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.15, 4), new THREE.MeshStandardMaterial({ color: 0xff6600 })); tr1.position.set(-0.15, 0.45, -0.15);
-        const tr2 = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.15, 4), new THREE.MeshStandardMaterial({ color: 0xff6600 })); tr2.position.set(0.15, 0.45, -0.15);
-        const tr3 = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.15, 4), new THREE.MeshStandardMaterial({ color: 0xff6600 })); tr3.position.set(0, 0.45, 0.1);
-        head.add(tr1, tr2, tr3);
+        // More orange spikes around top
+        const orangeMat = new THREE.MeshStandardMaterial({ color: 0xff6600 });
+        for (let i = 0; i < 6; i++) {
+            const angle = (i / 6) * Math.PI * 2;
+            const sx = Math.cos(angle) * 0.18;
+            const sz = Math.sin(angle) * 0.18;
+            const tr = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.25, 4), orangeMat);
+            tr.position.set(sx, 0.45, sz);
+            tr.rotation.x = sz;
+            tr.rotation.z = -sx;
+            head.add(tr);
+        }
         // Jersey stripe
         const stripe = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.6), new THREE.MeshBasicMaterial({ color: 0x111111 }));
         stripe.position.set(0, 0, 0.191);
