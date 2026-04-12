@@ -2241,7 +2241,7 @@ enum EnemyType {
     TANK,
     FAST,
     HUMANOID,   // New: Pale skin, blue shirt
-    ZOMBIE_ON_FIRE, // New: Phase 14
+    ZOMBIE_ON_FIRE, // New: Phase 15
     ROBOT,
     BOSS_GOLIATH,
     BOSS_SENTINEL,
@@ -2397,7 +2397,9 @@ class Enemy {
             this.mesh.add(lArm, rArm);
 
             (this as any)._torso = core;
+            (this as any)._head = head;
             collidables.push(core);
+            collidables.push(head);
         } else {
             // ZOMBIE VISUALS
             // FEET / SHOES
@@ -2459,7 +2461,9 @@ class Enemy {
             head.add(lE, rE);
 
             (this as any)._torso = torso;
+            (this as any)._head = head;
             collidables.push(torso);
+            collidables.push(head);
         }
 
         // Si es ZOMBIE_ON_FIRE, usar material emisivo naranja en lugar de PointLight (mejor rendimiento)
@@ -3842,7 +3846,13 @@ function shoot(w: Weapon) {
     if (w.name !== "ROCKET LAUNCHER") {
         // Detección de impacto instantánea (Hitscan para Pistolas y Láser)
         raycaster.setFromCamera(screenCenter, camera);
-        const enemyMeshes = waveManager.activeEnemies.map(en => (en as any)._torso).filter(m => m);
+        const enemyMeshes: THREE.Object3D[] = [];
+        waveManager.activeEnemies.forEach(en => {
+            if (!en.isDead) { // Solo añadir si no está muerto
+                if ((en as any)._torso) enemyMeshes.push((en as any)._torso as THREE.Object3D);
+                if ((en as any)._head) enemyMeshes.push((en as any)._head as THREE.Object3D);
+            }
+        });
 
         for (let p = 0; p < w.pellets; p++) {
             const dir = raycaster.ray.direction.clone();
@@ -3859,19 +3869,23 @@ function shoot(w: Weapon) {
                     const hitEnemies = new Set<any>();
                     for (const hit of intersects) {
                         const hitMesh = hit.object as THREE.Mesh;
-                        const enemy = waveManager.activeEnemies.find(en => (en as any)._torso === hitMesh);
+                        const enemy = waveManager.activeEnemies.find(en => (en as any)._torso === hitMesh || (en as any)._head === hitMesh);
                         if (enemy && !hitEnemies.has(enemy)) {
                             hitEnemies.add(enemy);
-                            enemy.takeDamage(w.damage * damageMultiplier, dir.clone().multiplyScalar(0.5));
-                            showHitMarker();
+                            const isHeadshot = (enemy as any)._head === hitMesh;
+                            const finalDamage = w.damage * damageMultiplier * (isHeadshot ? 2 : 1);
+                            enemy.takeDamage(finalDamage, dir.clone().multiplyScalar(0.5));
+                            showHitMarker(isHeadshot);
                         }
                     }
                 } else {
                     const hitMesh = intersects[0].object as THREE.Mesh;
-                    const enemy = waveManager.activeEnemies.find(en => (en as any)._torso === hitMesh);
+                    const enemy = waveManager.activeEnemies.find(en => (en as any)._torso === hitMesh || (en as any)._head === hitMesh);
                     if (enemy) {
-                        enemy.takeDamage(w.damage * damageMultiplier, dir.clone().multiplyScalar(0.5));
-                        showHitMarker();
+                        const isHeadshot = (enemy as any)._head === hitMesh;
+                        const finalDamage = w.damage * damageMultiplier * (isHeadshot ? 2 : 1);
+                        enemy.takeDamage(finalDamage, dir.clone().multiplyScalar(0.5));
+                        showHitMarker(isHeadshot);
                     }
                 }
             }
@@ -3986,12 +4000,14 @@ const flameParticles = new GenericParticleSystem(500, { color: 0xffaa00, size: 0
 const jetpackParticles = new GenericParticleSystem(300, { color: 0xff6600, size: 0.5, gravity: 15, lifeBase: 0.2, spread: 0.5, blending: THREE.AdditiveBlending });
 
 // ---- HIT MARKER ----
-function showHitMarker() {
+function showHitMarker(isHeadshot: boolean = false) {
     if (!crosshair) return;
-    crosshair.style.borderColor = 'red';
-    crosshair.style.transform = 'translate(-50%, -50%) scale(1.5)';
+    crosshair.style.borderColor = isHeadshot ? '#ffaa00' : 'red';
+    if (isHeadshot) crosshair.style.borderWidth = '4px';
+    crosshair.style.transform = isHeadshot ? 'translate(-50%, -50%) scale(2.0)' : 'translate(-50%, -50%) scale(1.5)';
     setTimeout(() => {
         crosshair.style.borderColor = 'white';
+        crosshair.style.borderWidth = '2px';
         crosshair.style.transform = 'translate(-50%, -50%) scale(1)';
     }, 100);
 }
