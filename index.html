@@ -982,7 +982,7 @@
             display: none;
             position: absolute;
             inset: 0;
-            background: linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.55)), url('/phase14_official.png') center/cover no-repeat;
+            background: linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.55)), url('/phase14_official.png') center/cover no-repeat;
             z-index: 80;
             flex-direction: column;
             align-items: center;
@@ -1203,7 +1203,7 @@
             transition: transform 0.2s, border-color 0.2s;
             border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
         }
 
         .skin-card:hover {
@@ -1244,17 +1244,24 @@
     </div>
 
     <!-- ──────────────── OPTIONS SCREEN ──────────────── -->
-    <div id="options-screen" style="display:none; position:absolute; inset:0; background: linear-gradient(rgba(5,3,15,0.2), rgba(5,3,15,0.4)), url('options_bg.png') center/cover no-repeat; z-index:25; flex-direction:column; align-items:center; justify-content:center; font-family:'Impact',sans-serif;">
-        <h1 style="text-shadow:0 0 10px #000; color:#ff6644; font-size:48px; letter-spacing:6px; margin-bottom:8px;">⚙ OPTIONS</h1>
-        <p style="text-shadow:0 0 5px #000; color:#eee; font-size:14px; font-family:monospace; letter-spacing:2px; margin-bottom:20px;">NIGHTFALL SURVIVAL — SETTINGS</p>
+    <div id="options-screen"
+        style="display:none; position:absolute; inset:0; background: linear-gradient(rgba(5,3,15,0.2), rgba(5,3,15,0.4)), url('options_bg.png') center/cover no-repeat; z-index:25; flex-direction:column; align-items:center; justify-content:center; font-family:'Impact',sans-serif;">
+        <h1 style="text-shadow:0 0 10px #000; color:#ff6644; font-size:48px; letter-spacing:6px; margin-bottom:8px;">⚙
+            OPTIONS</h1>
+        <p
+            style="text-shadow:0 0 5px #000; color:#eee; font-size:14px; font-family:monospace; letter-spacing:2px; margin-bottom:20px;">
+            NIGHTFALL SURVIVAL — SETTINGS</p>
 
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:12px 30px; width:700px; max-width:95vw; background:rgba(0,0,0,0.6); padding:20px; border-radius:12px; border:1px solid #333;">
+        <div
+            style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:12px 30px; width:700px; max-width:95vw; background:rgba(0,0,0,0.6); padding:20px; border-radius:12px; border:1px solid #333;">
             <!-- Master Volume -->
             <div style="display:flex; align-items:center; justify-content:space-between;">
                 <span style="color:#ccc; font-size:18px; letter-spacing:2px;">🔊 MASTER</span>
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <input type="range" id="opt-master-vol" min="0" max="100" value="80" style="width:140px; accent-color:#ff6644; cursor:pointer;" />
-                    <input type="number" id="opt-master-vol-val" min="0" max="100" value="80" style="width:52px; background:rgba(255,102,68,0.15); border:1px solid #ff6644; color:#ff6644; font-size:14px; font-family:'Impact',sans-serif; text-align:center; border-radius:4px; padding:3px 2px; outline:none;" />
+                    <input type="range" id="opt-master-vol" min="0" max="100" value="80"
+                        style="width:140px; accent-color:#ff6644; cursor:pointer;" />
+                    <input type="number" id="opt-master-vol-val" min="0" max="100" value="80"
+                        style="width:52px; background:rgba(255,102,68,0.15); border:1px solid #ff6644; color:#ff6644; font-size:14px; font-family:'Impact',sans-serif; text-align:center; border-radius:4px; padding:3px 2px; outline:none;" />
                     <span style="color:#ff6644; font-size:13px;">%</span>
                 </div>
             </div>
@@ -1262,8 +1269,10 @@
             <div style="display:flex; align-items:center; justify-content:space-between;">
                 <span style="color:#ccc; font-size:18px; letter-spacing:2px;">🎵 MUSIC</span>
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <input type="range" id="opt-music-vol" min="0" max="100" value="60" style="width:140px; accent-color:#ffaa00; cursor:pointer;" />
-                    <input type="number" id="opt-music-vol-val" min="0" max="100" value="60" style="width:52px; background:rgba(255,170,0,0.15); border:1px solid #ffaa00; color:#ffaa00; font-size:14px; font-family:'Impact',sans-serif; text-align:center; border-radius:4px; padding:3px 2px; outline:none;" />
+                    <input type="range" id="opt-music-vol" min="0" max="100" value="60"
+                        style="width:140px; accent-color:#ffaa00; cursor:pointer;" />
+                    <input type="number" id="opt-music-vol-val" min="0" max="100" value="60"
+                        style="width:52px; background:rgba(255,170,0,0.15); border:1px solid #ffaa00; color:#ffaa00; font-size:14px; font-family:'Impact',sans-serif; text-align:center; border-radius:4px; padding:3px 2px; outline:none;" />
                     <span style="color:#ffaa00; font-size:13px;">%</span>
                 </div>
             </div>
@@ -1271,8 +1280,10 @@
             <div style="display:flex; align-items:center; justify-content:space-between;">
                 <span style="color:#ccc; font-size:18px; letter-spacing:2px;">💥 SFX</span>
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <input type="range" id="opt-sfx-vol" min="0" max="100" value="100" style="width:140px; accent-color:#00ffcc; cursor:pointer;" />
-                    <input type="number" id="opt-sfx-vol-val" min="0" max="100" value="100" style="width:52px; background:rgba(0,255,204,0.15); border:1px solid #00ffcc; color:#00ffcc; font-size:14px; font-family:'Impact',sans-serif; text-align:center; border-radius:4px; padding:3px 2px; outline:none;" />
+                    <input type="range" id="opt-sfx-vol" min="0" max="100" value="100"
+                        style="width:140px; accent-color:#00ffcc; cursor:pointer;" />
+                    <input type="number" id="opt-sfx-vol-val" min="0" max="100" value="100"
+                        style="width:52px; background:rgba(0,255,204,0.15); border:1px solid #00ffcc; color:#00ffcc; font-size:14px; font-family:'Impact',sans-serif; text-align:center; border-radius:4px; padding:3px 2px; outline:none;" />
                     <span style="color:#00ffcc; font-size:13px;">%</span>
                 </div>
             </div>
@@ -1280,8 +1291,10 @@
             <div style="display:flex; align-items:center; justify-content:space-between;">
                 <span style="color:#ccc; font-size:18px; letter-spacing:2px;">🎯 SENSITIVITY</span>
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <input type="range" id="opt-sensitivity" min="10" max="200" value="100" style="width:140px; accent-color:#aa66ff; cursor:pointer;" />
-                    <input type="number" id="opt-sensitivity-val" min="10" max="200" value="100" style="width:52px; background:rgba(170,102,255,0.15); border:1px solid #aa66ff; color:#aa66ff; font-size:14px; font-family:'Impact',sans-serif; text-align:center; border-radius:4px; padding:3px 2px; outline:none;" />
+                    <input type="range" id="opt-sensitivity" min="10" max="200" value="100"
+                        style="width:140px; accent-color:#aa66ff; cursor:pointer;" />
+                    <input type="number" id="opt-sensitivity-val" min="10" max="200" value="100"
+                        style="width:52px; background:rgba(170,102,255,0.15); border:1px solid #aa66ff; color:#aa66ff; font-size:14px; font-family:'Impact',sans-serif; text-align:center; border-radius:4px; padding:3px 2px; outline:none;" />
                     <span style="color:#aa66ff; font-size:13px;">%</span>
                 </div>
             </div>
@@ -1289,9 +1302,12 @@
             <div style="display:flex; align-items:center; justify-content:space-between;">
                 <span style="color:#ccc; font-size:18px; letter-spacing:2px;">🖥 GRAPHICS</span>
                 <div style="display:flex; gap:6px;">
-                    <button class="opt-q-btn" data-quality="low" style="background:transparent; border:2px solid #555; color:#aaa; padding:6px 16px; font-family:'Impact',sans-serif; font-size:14px; cursor:pointer; border-radius:4px; letter-spacing:1px; transition:all 0.2s;">LOW</button>
-                    <button class="opt-q-btn active" data-quality="medium" style="background:#ff6644; border:2px solid #ff6644; color:#000; padding:6px 16px; font-family:'Impact',sans-serif; font-size:14px; cursor:pointer; border-radius:4px; letter-spacing:1px; transition:all 0.2s;">MED</button>
-                    <button class="opt-q-btn" data-quality="high" style="background:transparent; border:2px solid #555; color:#aaa; padding:6px 16px; font-family:'Impact',sans-serif; font-size:14px; cursor:pointer; border-radius:4px; letter-spacing:1px; transition:all 0.2s;">HIGH</button>
+                    <button class="opt-q-btn" data-quality="low"
+                        style="background:transparent; border:2px solid #555; color:#aaa; padding:6px 16px; font-family:'Impact',sans-serif; font-size:14px; cursor:pointer; border-radius:4px; letter-spacing:1px; transition:all 0.2s;">LOW</button>
+                    <button class="opt-q-btn active" data-quality="medium"
+                        style="background:#ff6644; border:2px solid #ff6644; color:#000; padding:6px 16px; font-family:'Impact',sans-serif; font-size:14px; cursor:pointer; border-radius:4px; letter-spacing:1px; transition:all 0.2s;">MED</button>
+                    <button class="opt-q-btn" data-quality="high"
+                        style="background:transparent; border:2px solid #555; color:#aaa; padding:6px 16px; font-family:'Impact',sans-serif; font-size:14px; cursor:pointer; border-radius:4px; letter-spacing:1px; transition:all 0.2s;">HIGH</button>
                 </div>
             </div>
             <!-- Show FPS -->
@@ -1299,13 +1315,17 @@
                 <span style="color:#ccc; font-size:18px; letter-spacing:2px;">📊 SHOW FPS</span>
                 <label style="position:relative; display:inline-block; width:50px; height:26px; cursor:pointer;">
                     <input type="checkbox" id="opt-show-fps" checked style="opacity:0; width:0; height:0;">
-                    <span style="position:absolute; inset:0; background:#333; border-radius:13px; transition:0.3s;"></span>
-                    <span id="opt-fps-knob" style="position:absolute; left:24px; top:3px; width:20px; height:20px; background:#00ffcc; border-radius:50%; transition:0.3s; box-shadow:0 0 8px #00ffcc;"></span>
+                    <span
+                        style="position:absolute; inset:0; background:#333; border-radius:13px; transition:0.3s;"></span>
+                    <span id="opt-fps-knob"
+                        style="position:absolute; left:24px; top:3px; width:20px; height:20px; background:#00ffcc; border-radius:50%; transition:0.3s; box-shadow:0 0 8px #00ffcc;"></span>
                 </label>
             </div>
         </div>
 
-        <button id="btn-options-back" style="margin-top:35px; background:transparent; border:2px solid #ff3333; color:#ff3333; padding:12px 50px; font-size:20px; font-family:'Impact',sans-serif; letter-spacing:4px; cursor:pointer; border-radius:6px; transition:all 0.2s; text-transform:uppercase;">← BACK</button>
+        <button id="btn-options-back"
+            style="margin-top:35px; background:transparent; border:2px solid #ff3333; color:#ff3333; padding:12px 50px; font-size:20px; font-family:'Impact',sans-serif; letter-spacing:4px; cursor:pointer; border-radius:6px; transition:all 0.2s; text-transform:uppercase;">←
+            BACK</button>
     </div>
 
     <!-- ──────────────── PHASE 15: BIG SNOWFALL ──────────────── -->
@@ -1337,105 +1357,186 @@
     <!-- LOBBY SCREEN: 3D Fortnite-style Lobby -->
     <div id="lobby-screen" class="mp-screen">
         <!-- TOP NAVIGATION -->
-        <div style="width: 100%; display: flex; justify-content: space-between; padding: 30px; box-sizing: border-box; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);">
-            <div style="color: white; font-size: 32px; font-weight: bold; text-shadow: 0 0 10px #000; font-family: 'Impact', sans-serif;">PHASE <span style="color: #ffcc00">15</span></div>
+        <div
+            style="width: 100%; display: flex; justify-content: space-between; padding: 30px; box-sizing: border-box; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);">
+            <div
+                style="color: white; font-size: 32px; font-weight: bold; text-shadow: 0 0 10px #000; font-family: 'Impact', sans-serif;">
+                PHASE <span style="color: #ffcc00">15</span></div>
             <div style="display: flex; gap: 40px;">
                 <button id="tab-lobby" class="lobby-tab active">LOBBY</button>
                 <button id="tab-skins" class="lobby-tab">SKINS</button>
             </div>
             <div style="width: 150px;"></div> <!-- Spacer to center tabs -->
         </div>
-        
+
         <!-- LOBBY CONTENT -->
-        <div id="lobby-content" style="width: 100%; flex: 1; display: flex; flex-direction: column; justify-content: space-between; padding: 40px; box-sizing: border-box;">
+        <div id="lobby-content"
+            style="width: 100%; flex: 1; display: flex; flex-direction: column; justify-content: space-between; padding: 40px; box-sizing: border-box;">
             <!-- Server Info -->
-            <div style="align-self: flex-start; background: rgba(0,0,0,0.6); padding: 15px 25px; border-radius: 8px; border-left: 4px solid #00ffcc; backdrop-filter: blur(4px);">
+            <div
+                style="align-self: flex-start; background: rgba(0,0,0,0.6); padding: 15px 25px; border-radius: 8px; border-left: 4px solid #00ffcc; backdrop-filter: blur(4px);">
                 <div style="color: #ccc; font-size: 14px; font-family: monospace;">ROOM CODE</div>
-                <div id="lobby-code" style="color: #00ffcc; font-size: 32px; letter-spacing: 4px; text-shadow: 0 0 10px #00ffcc; margin: 5px 0;">------</div>
-                <button id="btn-lobby-leave" class="mp-btn danger" style="padding: 8px 16px; font-size: 14px; margin-top: 15px; width: 100%;">LEAVE ROOM</button>
+                <div id="lobby-code"
+                    style="color: #00ffcc; font-size: 32px; letter-spacing: 4px; text-shadow: 0 0 10px #00ffcc; margin: 5px 0;">
+                    ------</div>
+                <button id="btn-lobby-leave" class="mp-btn danger"
+                    style="padding: 8px 16px; font-size: 14px; margin-top: 15px; width: 100%;">LEAVE ROOM</button>
             </div>
-            
+
             <!-- Play Button Area -->
             <div style="align-self: center; margin-bottom: 20px; width: 100%; display: flex; justify-content: center;">
-                <button id="btn-lobby-start" class="mp-btn primary" style="font-size: 32px; padding: 15px 40px; min-width: 320px; text-shadow: none; box-shadow: 0 0 30px rgba(0, 255, 204, 0.2); background: transparent; color: #00ffcc; border: 3px solid #00ffcc; letter-spacing: 2px; display: flex; align-items: center; justify-content: center;">⚡ READY</button>
+                <button id="btn-lobby-start" class="mp-btn primary"
+                    style="font-size: 32px; padding: 15px 40px; min-width: 320px; text-shadow: none; box-shadow: 0 0 30px rgba(0, 255, 204, 0.2); background: transparent; color: #00ffcc; border: 3px solid #00ffcc; letter-spacing: 2px; display: flex; align-items: center; justify-content: center;">⚡
+                    READY</button>
             </div>
         </div>
 
         <!-- SKINS CONTENT (Hidden by default) -->
-        <div id="skins-content" style="display: none; width: 100%; height: 90vh; padding: 40px; box-sizing: border-box; flex-direction: row; background: radial-gradient(circle at left, rgba(0,0,0,0.8) 0%, transparent 60%); align-items: flex-start; overflow: hidden; justify-content: flex-start;">
+        <div id="skins-content"
+            style="display: none; width: 100%; height: 90vh; padding: 40px; box-sizing: border-box; flex-direction: row; background: radial-gradient(circle at left, rgba(0,0,0,0.8) 0%, transparent 60%); align-items: flex-start; overflow: hidden; justify-content: flex-start;">
             <!-- Left Side: Selection Grid -->
-            <div style="width: 45%; max-width: 550px; height: 100%; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box;">
-                <h2 style="color: white; font-size: 42px; text-shadow: 0 0 10px #000; margin-bottom: 15px; font-family: 'Impact', sans-serif; font-style: italic; flex-shrink: 0;">LOCKER</h2>
-                
+            <div
+                style="width: 45%; max-width: 550px; height: 100%; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box;">
+                <h2
+                    style="color: white; font-size: 42px; text-shadow: 0 0 10px #000; margin-bottom: 15px; font-family: 'Impact', sans-serif; font-style: italic; flex-shrink: 0;">
+                    LOCKER</h2>
+
                 <style>
-                    #skin-grid::-webkit-scrollbar { width: 16px !important; display: block !important; }
-                    #skin-grid::-webkit-scrollbar-track { background: rgba(0,0,0,0.6) !important; border-radius: 8px; }
-                    #skin-grid::-webkit-scrollbar-thumb { background: #00ffcc !important; border-radius: 8px; border: 3px solid rgba(0,0,0,0.6); }
-                    .skin-card { flex-shrink: 0 !important; height: 110px !important; width: 110px !important; box-sizing: border-box; }
+                    #skin-grid::-webkit-scrollbar {
+                        width: 16px !important;
+                        display: block !important;
+                    }
+
+                    #skin-grid::-webkit-scrollbar-track {
+                        background: rgba(0, 0, 0, 0.6) !important;
+                        border-radius: 8px;
+                    }
+
+                    #skin-grid::-webkit-scrollbar-thumb {
+                        background: #00ffcc !important;
+                        border-radius: 8px;
+                        border: 3px solid rgba(0, 0, 0, 0.6);
+                    }
+
+                    .skin-card {
+                        flex-shrink: 0 !important;
+                        height: 110px !important;
+                        width: 110px !important;
+                        box-sizing: border-box;
+                    }
                 </style>
-                <div id="skin-grid" style="flex: 1; width: 100%; display: flex; gap: 12px; flex-wrap: wrap; font-family: 'Impact', sans-serif; align-content: flex-start; overflow-y: scroll !important; padding-right: 10px; padding-bottom: 50px; background: rgba(0,0,0,0.2); border-radius: 8px;">
-                    <div class="skin-card active" data-skin="default" style="background-image: url('deffault.png'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid #00ffcc; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
-                        <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">DEFFAULT</div>
+                <div id="skin-grid"
+                    style="flex: 1; width: 100%; display: flex; gap: 12px; flex-wrap: wrap; font-family: 'Impact', sans-serif; align-content: flex-start; overflow-y: scroll !important; padding-right: 10px; padding-bottom: 50px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                    <div class="skin-card active" data-skin="default"
+                        style="background-image: url('deffault.png'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid #00ffcc; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div
+                            style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">
+                            DEFFAULT</div>
                     </div>
                     <!-- Light Yagami Skin -->
-                    <div class="skin-card" data-skin="light_yagami" style="width: 110px; height: 110px; background-image: url('Light_Yagami.webp'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
-                        <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">LIGHT<br>YAGAMI</div>
+                    <div class="skin-card" data-skin="light_yagami"
+                        style="width: 110px; height: 110px; background-image: url('Light_Yagami.webp'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div
+                            style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">
+                            LIGHT<br>YAGAMI</div>
                     </div>
                     <!-- Satoru Gojo Skin -->
-                    <div class="skin-card" data-skin="gojo" style="width: 110px; height: 110px; background-image: url('Gojo.jpg'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
-                        <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">SATORU<br>GOJŌ</div>
+                    <div class="skin-card" data-skin="gojo"
+                        style="width: 110px; height: 110px; background-image: url('Gojo.jpg'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div
+                            style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">
+                            SATORU<br>GOJŌ</div>
                     </div>
                     <!-- Son Goku Skin -->
-                    <div class="skin-card" data-skin="goku" style="width: 110px; height: 110px; background-image: url('Goku.jpg'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
-                        <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">SON<br>GOKU</div>
+                    <div class="skin-card" data-skin="goku"
+                        style="width: 110px; height: 110px; background-image: url('Goku.jpg'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div
+                            style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">
+                            SON<br>GOKU</div>
                     </div>
                     <!-- Yoichi Isagi Skin -->
-                    <div class="skin-card" data-skin="isagi" style="width: 110px; height: 110px; background-image: url('Isagi.webp'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
-                        <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">YOICHI<br>ISAGI</div>
+                    <div class="skin-card" data-skin="isagi"
+                        style="width: 110px; height: 110px; background-image: url('Isagi.webp'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div
+                            style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">
+                            YOICHI<br>ISAGI</div>
                     </div>
                     <!-- Bugs Bunny Skin -->
-                    <div class="skin-card" data-skin="bugs_bunny" style="width: 110px; height: 110px; background-image: url('Bugs.jpg'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
-                        <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">BUGS<br>BUNNY</div>
+                    <div class="skin-card" data-skin="bugs_bunny"
+                        style="width: 110px; height: 110px; background-image: url('Bugs.jpg'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div
+                            style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">
+                            BUGS<br>BUNNY</div>
                     </div>
                     <!-- Tung Tung Sahur Skin -->
-                    <div class="skin-card" data-skin="tung_tung" style="width: 110px; height: 110px; background-image: url('Tung.webp'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
-                        <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">TUNG TUNG<br>SAHUR</div>
+                    <div class="skin-card" data-skin="tung_tung"
+                        style="width: 110px; height: 110px; background-image: url('Tung.webp'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div
+                            style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">
+                            TUNG TUNG<br>SAHUR</div>
                     </div>
                     <!-- Sailor Moon Skin -->
-                    <div class="skin-card" data-skin="sailor_moon" style="width: 110px; height: 110px; background-image: url('Sailor.jpg'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
-                        <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">SAILOR<br>MOON</div>
+                    <div class="skin-card" data-skin="sailor_moon"
+                        style="width: 110px; height: 110px; background-image: url('Sailor.jpg'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div
+                            style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">
+                            SAILOR<br>MOON</div>
                     </div>
                     <!-- Suguru Geto Skin -->
-                    <div class="skin-card" data-skin="geto" style="width: 110px; height: 110px; background-image: url('Geto.webp'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
-                        <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">SUGURU<br>GETŌ</div>
+                    <div class="skin-card" data-skin="geto"
+                        style="width: 110px; height: 110px; background-image: url('Geto.webp'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div
+                            style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">
+                            SUGURU<br>GETŌ</div>
                     </div>
                     <!-- Pomni Skin -->
-                    <div class="skin-card" data-skin="pomni" style="width: 110px; height: 110px; background-image: url('Pomni.webp'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
-                        <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">POMNI</div>
+                    <div class="skin-card" data-skin="pomni"
+                        style="width: 110px; height: 110px; background-image: url('Pomni.webp'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div
+                            style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">
+                            POMNI</div>
                     </div>
                     <!-- L Lawliet Skin -->
-                    <div class="skin-card" data-skin="lawliet" style="width: 110px; height: 110px; background-image: url('L.jpg'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
-                        <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">L<br>LAWLIET</div>
+                    <div class="skin-card" data-skin="lawliet"
+                        style="width: 110px; height: 110px; background-image: url('L.jpg'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div
+                            style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">
+                            L<br>LAWLIET</div>
                     </div>
                     <!-- Cuphead Skin -->
-                    <div class="skin-card" data-skin="cuphead" style="width: 110px; height: 110px; background-image: url('Cuphead.jpg'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
-                        <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">CUPHEAD</div>
+                    <div class="skin-card" data-skin="cuphead"
+                        style="width: 110px; height: 110px; background-image: url('Cuphead.jpg'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div
+                            style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">
+                            CUPHEAD</div>
                     </div>
                     <!-- Super Mario Skin -->
-                    <div class="skin-card" data-skin="mario" style="width: 110px; height: 110px; background-image: url('Mario.jpg'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
-                        <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">SUPER<br>MARIO</div>
+                    <div class="skin-card" data-skin="mario"
+                        style="width: 110px; height: 110px; background-image: url('Mario.jpg'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div
+                            style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">
+                            SUPER<br>MARIO</div>
                     </div>
                     <!-- Sonic Skin -->
-                    <div class="skin-card" data-skin="sonic" style="width: 110px; height: 110px; background-image: url('Sonic.jpg'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
-                        <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">SONIC</div>
+                    <div class="skin-card" data-skin="sonic"
+                        style="width: 110px; height: 110px; background-image: url('Sonic.jpg'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div
+                            style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">
+                            SONIC</div>
                     </div>
                     <!-- Ben 10 Skin -->
-                    <div class="skin-card" data-skin="ben10" style="width: 110px; height: 110px; background-image: url('Ben.jpg'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
-                        <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">BEN 10</div>
+                    <div class="skin-card" data-skin="ben10"
+                        style="width: 110px; height: 110px; background-image: url('Ben.jpg'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div
+                            style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">
+                            BEN 10</div>
                     </div>
                     <!-- Coraline Skin -->
-                    <div class="skin-card" data-skin="coraline" style="width: 110px; height: 110px; background-image: url('Coraline.jpg'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
-                        <div style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">CORALINE</div>
+                    <div class="skin-card" data-skin="coraline"
+                        style="width: 110px; height: 110px; background-image: url('Coraline.jpg'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div
+                            style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">
+                            CORALINE</div>
                     </div>
                 </div>
             </div>
@@ -1487,7 +1588,9 @@
     </div>
 
     <!-- Death Notification Banner -->
-    <div id="death-banner" style="display:none; position:absolute; top:80px; left:50%; transform:translateX(-50%); background:rgba(200,0,0,0.8); border:2px solid #ff3333; color:white; padding:10px 40px; font-family:'Impact',sans-serif; font-size:24px; letter-spacing:2px; z-index:40; border-radius:5px; box-shadow:0 0 20px rgba(255,50,50,0.5); text-transform:uppercase;">PLAYER HAS DIED</div>
+    <div id="death-banner"
+        style="display:none; position:absolute; top:80px; left:50%; transform:translateX(-50%); background:rgba(200,0,0,0.8); border:2px solid #ff3333; color:white; padding:10px 40px; font-family:'Impact',sans-serif; font-size:24px; letter-spacing:2px; z-index:40; border-radius:5px; box-shadow:0 0 20px rgba(255,50,50,0.5); text-transform:uppercase;">
+        PLAYER HAS DIED</div>
 
     <!-- Pantalla de "Game Over" que se muestra cuando la vida del jugador llega a cero -->
     <!-- Game Over Screen -->
@@ -1497,24 +1600,23 @@
         <p id="killed-by"
             style="color: #ff3333; font-size: 18px; font-weight: bold; margin-bottom: 25px; font-family: monospace; letter-spacing: 2px;">
             KILLED BY: UNKNOWN</p>
-        
+
         <!-- Standard button (Singleplayer) -->
         <button class="menu-btn" id="btn-restart" onclick="location.reload()">Restart</button>
-        
+
         <!-- Multiplayer Death Buttons -->
         <div id="mp-death-btns" style="display:none; flex-direction:column; gap:15px;">
             <button class="mp-btn danger" onclick="location.reload()" style="width:250px;">✕ LEAVE ROOM</button>
         </div>
     </div>
 
-    <!-- VICTORY SCREEN -->
     <div id="victory-screen">
         <h1 class="victory-title">VICTORY</h1>
         <p style="font-size: 24px; color: #00ffff; margin-bottom: 30px;">THE NIGHT HAS BEEN CONQUERED</p>
         <p style="font-size: 18px; color: #aaa; margin-bottom: 40px; font-family: monospace;">You defeated the Ultimate
             Mecha-Zombie and survived all 15 waves.</p>
-        <button class="menu-btn" onclick="location.reload()"
-            style="background: #00ffff; color: #000; box-shadow: 0 0 20px #00ffff;">Play Again</button>
+        <button class="menu-btn" id="btn-victory-return"
+            style="background: #00ffff; color: #000; box-shadow: 0 0 20px #00ffff;">Return to lobby</button>
     </div>
 
     <!-- PAUSE SCREEN: Aparece al presionar ESC durante la partida -->
@@ -1522,7 +1624,9 @@
         <h1 id="pause-title">PAUSED</h1>
         <p id="pause-subtitle">Press ESC or click the button to resume</p>
         <button id="btn-resume">RESUME</button>
-        <button id="btn-quit-game" style="margin-top: 10px; background: transparent; border: 2px solid #ff3333; color: #ff3333; padding: 12px 40px; font-size: 18px; font-family: 'Impact', sans-serif; letter-spacing: 3px; cursor: pointer; border-radius: 6px; transition: all 0.2s;">EXIT GAME</button>
+        <button id="btn-quit-game"
+            style="margin-top: 10px; background: transparent; border: 2px solid #ff3333; color: #ff3333; padding: 12px 40px; font-size: 18px; font-family: 'Impact', sans-serif; letter-spacing: 3px; cursor: pointer; border-radius: 6px; transition: all 0.2s;">EXIT
+            GAME</button>
     </div>
 
     <!-- Interact Prompt -->
@@ -1576,7 +1680,8 @@
             </div>
         </div>
 
-        <div id="shop-players" style="margin: 10px 0; display:flex; gap:15px; justify-content:center; font-family: monospace; font-size: 16px;">
+        <div id="shop-players"
+            style="margin: 10px 0; display:flex; gap:15px; justify-content:center; font-family: monospace; font-size: 16px;">
             <!-- Player ready states go here -->
         </div>
         <button id="shop-close" style="background:#0a0; box-shadow:0 0 10px #0a0;">✔ READY FOR NEXT WAVE</button>
@@ -1659,7 +1764,8 @@
             </div>
         </div>
 
-        <div id="shop-players-mobile" style="margin: 6px 0; display:flex; gap:10px; justify-content:center; flex-wrap:wrap; font-family: monospace; font-size: 14px;">
+        <div id="shop-players-mobile"
+            style="margin: 6px 0; display:flex; gap:10px; justify-content:center; flex-wrap:wrap; font-family: monospace; font-size: 14px;">
             <!-- Player ready states go here -->
         </div>
         <button id="shop-close-mobile" style="

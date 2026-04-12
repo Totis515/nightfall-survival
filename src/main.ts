@@ -845,6 +845,10 @@ function connectMultiplayer() {
         }
     });
 
+    socket.on('game-victory', () => {
+        if (waveManager) waveManager.victory();
+    });
+
     socket.on('disconnect', () => {
         remotePlayers.forEach((_, id) => removeRemotePlayer(id));
     });
@@ -926,7 +930,7 @@ function rearrangeLobbySlots() {
 }
 
 function showScreen(id: string) {
-    document.querySelectorAll('.mp-screen').forEach(s => s.classList.remove('active'));
+    hideAllMpScreens();
     document.getElementById(id)?.classList.add('active');
     
     // Manage Main Menu overlay visibility 
@@ -961,6 +965,32 @@ function updateLobbyUI(players: Record<string, { id: string; username: string; p
 }
 
 function initMultiplayerUI() {
+    // Auto-rejoin if coming from a victory screen
+    if (sessionStorage.getItem('rejoinRoom')) {
+        const room = sessionStorage.getItem('rejoinRoom');
+        const user = sessionStorage.getItem('rejoinUsername');
+        const plat = sessionStorage.getItem('rejoinPlatform');
+        
+        sessionStorage.removeItem('rejoinRoom');
+        sessionStorage.removeItem('rejoinUsername');
+        sessionStorage.removeItem('rejoinPlatform');
+        
+        if (room && user) {
+            isMobile = plat === 'mobile';
+            myUsername = user;
+            const platSec = document.getElementById('platform-selection');
+            if (platSec) platSec.style.display = 'none';
+            connectMultiplayer();
+            showScreen('room-screen');
+            setTimeout(() => {
+                const joinInput = document.getElementById('room-code-input') as HTMLInputElement;
+                if (joinInput) joinInput.value = room;
+                document.getElementById('btn-join-room')?.click();
+            }, 600);
+            return;
+        }
+    }
+
     // Platform selection → show username screen (replace buttons to remove old listeners)
     ['btn-platform-pc', 'btn-platform-mobile'].forEach(btnId => {
         const btn = document.getElementById(btnId);
@@ -1123,6 +1153,16 @@ function initMultiplayerUI() {
         isMultiplayer = false;
         myRoomCode = '';
         showScreen('room-screen');
+    });
+
+    // Victory screen return
+    document.getElementById('btn-victory-return')?.addEventListener('click', () => {
+        if (myRoomCode) {
+            sessionStorage.setItem('rejoinRoom', myRoomCode);
+            sessionStorage.setItem('rejoinUsername', myUsername);
+            sessionStorage.setItem('rejoinPlatform', isMobile ? 'mobile' : 'pc');
+        }
+        location.reload();
     });
 
     // Sub-Tabs within Lobby Screen
@@ -2264,8 +2304,6 @@ function createHouse() {
     base.castShadow = true;
     base.receiveShadow = true;
     house.add(base);
-    collidables.push(base);       // Colisión para balas y raycasts de enemigos
-    playerCollidables.push(base); // Colisión para movimiento del jugador
 
     // Tejado visual: Restaurado a dimensiones originales y con colisión
     const roof = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 4, 3, 4), roofMat);
@@ -2273,7 +2311,6 @@ function createHouse() {
     roof.rotation.y = Math.PI / 4;
     roof.castShadow = true;
     house.add(roof);
-    playerCollidables.push(roof); // Colisión física en el techo para aterrizar adecuadamente
 
     return house;
 }
@@ -2292,6 +2329,14 @@ for (let i = 0; i < 10; i++) {
     house.rotation.y = seededRandom() * Math.PI;
     house.updateMatrixWorld(true);
     scene.add(house);
+    
+    // Empujar a las colisiones DESPUÉS de acomodar su matriz para que raycaster con false detecte el mundo
+    house.children.forEach(c => {
+        if (c instanceof THREE.Mesh) {
+            collidables.push(c);
+            playerCollidables.push(c);
+        }
+    });
 }
 
 // Añadir el edificio del Black Market en una posición FIJA que coincida con el marcador del cielo
@@ -3131,7 +3176,14 @@ class WaveManager {
     }
 
     victory() {
+        if (this.isGameOver) return;
         this.isGameOver = true;
+        
+        // El host le avisa al resto de la partida que ya terminaron (ganaron)
+        if (isMultiplayer && isHost && socket?.connected) {
+            socket.emit('game-victory');
+        }
+
         if (!isMobile) controls.unlock();
         const victoryScreen = document.getElementById('victory-screen');
         if (victoryScreen) victoryScreen.style.display = 'flex';
