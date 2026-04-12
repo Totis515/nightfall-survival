@@ -1923,6 +1923,7 @@ function createTree() {
     trunk.castShadow = true;
     trunk.receiveShadow = true;
     collidables.push(trunk);
+    playerCollidables.push(trunk);
     tree.add(trunk);
 
     // Dead Branches instead of leaves
@@ -2001,6 +2002,7 @@ function createFence() {
         post.position.set(i === 0 ? -1 : 1, 0.6, 0);
         post.castShadow = true;
         fence.add(post);
+        playerCollidables.push(post);
     }
 
     // Horizontal bars
@@ -4377,10 +4379,11 @@ function animate() {
         }
 
         // Lógica de colisión con deslizamiento (Sliding Collision)
+        const collisionY = camera.position.y - 1.0; 
         const oldPosZ = camera.position.z;
         controls.moveForward(-velocity.z * delta);
         for (let i = 0; i < 4; i++) {
-            collisionRaycaster.set(new THREE.Vector3(camera.position.x, 0.5, camera.position.z), collisionDirections[i]);
+            collisionRaycaster.set(new THREE.Vector3(camera.position.x, collisionY, camera.position.z), collisionDirections[i]);
             if (collisionRaycaster.intersectObjects(playerCollidables, false).some(h => h.distance < 0.6)) {
                 camera.position.z = oldPosZ; velocity.z = 0; break;
             }
@@ -4389,7 +4392,7 @@ function animate() {
         const oldPosX = camera.position.x;
         controls.moveRight(-velocity.x * delta);
         for (let i = 0; i < 4; i++) {
-            collisionRaycaster.set(new THREE.Vector3(camera.position.x, 0.5, camera.position.z), collisionDirections[i]);
+            collisionRaycaster.set(new THREE.Vector3(camera.position.x, collisionY, camera.position.z), collisionDirections[i]);
             if (collisionRaycaster.intersectObjects(playerCollidables, false).some(h => h.distance < 0.6)) {
                 camera.position.x = oldPosX; velocity.x = 0; break;
             }
@@ -4403,7 +4406,7 @@ function animate() {
             camera.position.clone(),
             new THREE.Vector3(0, -1, 0),
             0,
-            0.8  // verificar en un rango de 0.8 unidades bajo la cámara
+            Math.max(1.7, -velocity.y * delta + 1.6)
         );
         const downHits = downRay.intersectObjects(playerCollidables, false);
         if (downHits.length > 0 && velocity.y <= 0) {
