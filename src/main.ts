@@ -735,10 +735,10 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
     const eyeGeo = new THREE.PlaneGeometry(0.12, 0.09);
     const lEye = new THREE.Mesh(eyeGeo, eyeMat); lEye.position.set(-0.12, 0.05, 0.245);
     const rEye = new THREE.Mesh(eyeGeo, eyeMat); rEye.position.set(0.12, 0.05, 0.245);
-    // Lelouch: left eye = Geass (red), right eye = normal (purple)
+    // Lelouch: rEye = Geass red (appears left on screen due to 180° rotation), lEye = purple
     if (skinId === 'lelouch') {
-        lEye.material = new THREE.MeshBasicMaterial({color: 0xff0000}); // Geass eye - red
-        // rEye stays purple
+        rEye.material = new THREE.MeshBasicMaterial({color: 0xff0000}); // Geass eye - red
+        // lEye stays purple
     }
     if (skinId === 'doom') { lEye.visible = false; rEye.visible = false; }
     head.add(lEye, rEye);
