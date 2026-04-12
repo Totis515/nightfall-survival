@@ -499,38 +499,44 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
 
 function createNameLabel(username: string, platform: string = 'PC', isReady: boolean = false): THREE.Sprite {
     const canvas = document.createElement('canvas');
-    canvas.width = 256; canvas.height = 100;
+    canvas.width = 300; canvas.height = 120; // Más ancho para nombres largos
     const ctx = canvas.getContext('2d')!;
-    ctx.clearRect(0, 0, 256, 100);
+    ctx.clearRect(0, 0, 300, 120);
 
     ctx.fillStyle = 'rgba(0,0,0,0.75)';
     ctx.beginPath();
-    ctx.roundRect(8, 8, 240, 84, 10);
+    ctx.roundRect(10, 10, 280, 100, 10);
     ctx.fill();
 
     ctx.font = 'bold 20px Impact, Arial Black, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillStyle = '#00ffcc';
-    const platSymbol = platform.toLowerCase() === 'mobile' ? '📱' : '🖥️';
-    ctx.fillText(`${username.toUpperCase().slice(0, 12)} ${platSymbol}`, 128, 40);
+    const platSymbol = platform.toLowerCase() === 'mobile' ? '📱' : '💻';
+    // El nombre solo, sin emoji, centrado
+    ctx.fillText(`${username.toUpperCase()}`, 150, 45);
 
     const readyText = isReady ? 'READY' : 'NOT READY';
-    // Only show status during lobby (not during gameplay)
+    // Muestra estado de listo y plataforma
     if (!gameStarted) {
         if (isReady) {
             ctx.font = 'bold 16px Arial, sans-serif';
             ctx.fillStyle = '#00ffcc';
         } else {
-            ctx.font = 'bold 12px Arial, sans-serif';
+            ctx.font = 'bold 14px Arial, sans-serif';
             ctx.fillStyle = '#ff3333';
         }
-        ctx.fillText(readyText, 128, 65);
+        ctx.fillText(`${platSymbol} ${readyText}`, 150, 80);
+    } else {
+        // En partida solo mostrar icono de plataforma
+        ctx.font = 'bold 20px Arial, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(platSymbol, 150, 80);
     }
 
     const tex = new THREE.CanvasTexture(canvas);
     const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true });
     const sprite = new THREE.Sprite(mat);
-    sprite.scale.set(1.4, 0.7, 1); // Extra large label scale
+    sprite.scale.set(1.8, 0.72, 1); // Escalar al nuevo tamano del canvas
     sprite.position.y = 2.45;
     return sprite;
 }
@@ -851,8 +857,12 @@ function connectMultiplayer() {
 
     // Kicked from room by host
     socket.on('kicked-from-room', () => {
-        alert('You have been kicked from the room by the host.');
-        location.reload();
+        showCustomAlert('Has sido expulsado de la sala por el anfitrión.', () => {
+            isMultiplayer = false;
+            myRoomCode = '';
+            socket?.disconnect();
+            showScreen('room-screen');
+        });
     });
 
     socket.on('disconnect', () => {
@@ -952,9 +962,9 @@ function rearrangeLobbySlots() {
                 kickBtn.addEventListener('mouseover', () => { kickBtn.style.background = '#ff3333'; kickBtn.style.color = '#000'; });
                 kickBtn.addEventListener('mouseout', () => { kickBtn.style.background = 'transparent'; kickBtn.style.color = '#ff3333'; });
                 kickBtn.addEventListener('click', () => {
-                    if (confirm(`Kick ${nameSpan.innerText}?`)) {
+                    showCustomConfirm(`¿Expulsar a ${nameSpan.innerText}?`, () => {
                         socket?.emit('kick-player', { id });
-                    }
+                    });
                 });
                 row.appendChild(kickBtn);
             }
@@ -968,6 +978,52 @@ function rearrangeLobbySlots() {
     if (kickPanelEl) {
         kickPanelEl.style.display = (remotePlayers.size > 0 && !inSkinsTab) ? 'block' : 'none';
     }
+}
+
+function showCustomAlert(msg: string, onOk?: () => void) {
+    const overlay = document.getElementById('custom-dialog-overlay') as HTMLElement;
+    const msgEl = document.getElementById('custom-dialog-msg') as HTMLElement;
+    const btnContainer = document.getElementById('custom-dialog-buttons') as HTMLElement;
+    if (!overlay || !msgEl || !btnContainer) return;
+    
+    msgEl.innerText = msg;
+    btnContainer.innerHTML = '';
+    
+    const okBtn = document.createElement('button');
+    okBtn.className = 'mp-btn primary';
+    okBtn.innerText = 'OK';
+    okBtn.style.padding = '10px 40px';
+    okBtn.onclick = () => { overlay.style.display = 'none'; if (onOk) onOk(); };
+    btnContainer.appendChild(okBtn);
+    
+    overlay.style.display = 'flex';
+}
+
+function showCustomConfirm(msg: string, onYes: () => void) {
+    const overlay = document.getElementById('custom-dialog-overlay') as HTMLElement;
+    const msgEl = document.getElementById('custom-dialog-msg') as HTMLElement;
+    const btnContainer = document.getElementById('custom-dialog-buttons') as HTMLElement;
+    if (!overlay || !msgEl || !btnContainer) return;
+    
+    msgEl.innerText = msg;
+    btnContainer.innerHTML = '';
+    
+    const yesBtn = document.createElement('button');
+    yesBtn.className = 'mp-btn primary';
+    yesBtn.innerText = 'SI';
+    yesBtn.style.padding = '10px 40px';
+    yesBtn.onclick = () => { overlay.style.display = 'none'; onYes(); };
+    
+    const noBtn = document.createElement('button');
+    noBtn.className = 'mp-btn danger';
+    noBtn.innerText = 'NO';
+    noBtn.style.padding = '10px 40px';
+    noBtn.onclick = () => { overlay.style.display = 'none'; };
+    
+    btnContainer.appendChild(yesBtn);
+    btnContainer.appendChild(noBtn);
+    
+    overlay.style.display = 'flex';
 }
 
 function showScreen(id: string) {
@@ -3114,7 +3170,7 @@ class WaveManager {
     spawnRate: number = 2000; // ms
     activeEnemies: Enemy[] = [];
     isBreak: boolean = false; // Verdadero entre oleadas
-    maxWaves: number = 15; // Límite de la Phase 10
+    maxWaves: number = 10; // Reducido a 10 oleadas
     isGameOver: boolean = false;
     isNetworkClient: boolean = false; // set to true if multiplayer and NOT host
     syncTimer: number = 0;
@@ -3336,39 +3392,33 @@ class WaveManager {
         let type = EnemyType.STANDARD;
         const r = Math.random();
 
-        if (this.currentWave === this.maxWaves) {
+        if (this.currentWave === this.maxWaves) { // Wave 10
             type = EnemyType.BOSS_FINAL_ROBOT;
-        } else if (this.currentWave >= 13) {
-            if (r > 0.6) type = EnemyType.ROBOT;
-            else if (r > 0.4) type = EnemyType.TANK;
+        } else if (this.currentWave === 9) {
+            // Wave 9: Zombis en fuego y rápidos
+            if (r > 0.4) type = EnemyType.ZOMBIE_ON_FIRE;
             else if (r > 0.2) type = EnemyType.FAST;
-            else type = EnemyType.HUMANOID;
-        } else if (this.currentWave >= 10) {
-            if (r > 0.8) type = EnemyType.BOSS_SENTINEL;
-            else if (r > 0.6) type = EnemyType.ROBOT;
-            else if (r > 0.3) type = EnemyType.TANK;
-            else type = EnemyType.HUMANOID;
-        } else if (this.currentWave >= 8) {
-            // Stage 8 introduces Zombie on Fire
-            if (r > 0.7) type = EnemyType.ROBOT;
-            else if (r > 0.4) type = EnemyType.ZOMBIE_ON_FIRE;
-            else type = EnemyType.FAST;
-        } else if (this.currentWave >= 7) {
-            if (r > 0.6) type = EnemyType.ROBOT;
-            else if (r > 0.35) type = EnemyType.FAST;
+            else type = EnemyType.ROBOT;
+        } else if (this.currentWave === 8) {
+            // Wave 8: Robots gigante (Sentinel)
+            if (r > 0.6) type = EnemyType.BOSS_SENTINEL;
+            else if (r > 0.3) type = EnemyType.ROBOT;
+            else type = EnemyType.TANK;
+        } else if (this.currentWave === 5 || this.currentWave === 6) {
+            // Wave 5 & 6: Zombis gigantes (Goliath)
+            if (r > 0.7) type = EnemyType.BOSS_GOLIATH;
+            else if (r > 0.4) type = EnemyType.TANK;
             else type = EnemyType.STANDARD;
-        } else if (this.currentWave >= 5) {
-            // Wave 5-6: incluir robots, goliath boss y mixto
-            if (r > 0.75) type = EnemyType.BOSS_GOLIATH;
-            else if (r > 0.50) type = EnemyType.ROBOT;
-            else if (r > 0.25) type = EnemyType.TANK;
+        } else if (this.currentWave === 7) {
+            if (r > 0.6) type = EnemyType.ROBOT;
+            else if (r > 0.3) type = EnemyType.FAST;
             else type = EnemyType.STANDARD;
         } else if (this.currentWave >= 3) {
-            // Wave 3+: Introduce robots y zombies grandes
+            // Wave 3-4: Introduce robots y zombies grandes
             if (r > 0.7) type = EnemyType.ROBOT;
             else if (r > 0.5) type = EnemyType.TANK;
             else type = EnemyType.STANDARD;
-        } else if (this.currentWave >= 2) {
+        } else if (this.currentWave === 2) {
             if (r > 0.7) type = EnemyType.FAST;
             else if (r > 0.5) type = EnemyType.HUMANOID;
             else type = EnemyType.STANDARD;
