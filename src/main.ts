@@ -2641,7 +2641,7 @@ class Enemy {
             // Lanzar rayo a la altura del pecho para detectar árboles y casas correctamente
             const rayOrigin = new THREE.Vector3(this.mesh.position.x, this.mesh.position.y + 0.8, this.mesh.position.z);
             const ray = new THREE.Raycaster(rayOrigin, dir, 0, 1.5);
-            const intersects = ray.intersectObjects(playerCollidables, false);
+            const intersects = ray.intersectObjects(playerCollidables, true);
 
             if (intersects.length > 0) {
                 const normal = intersects[0].face?.normal;
@@ -2855,10 +2855,20 @@ class WeaponDrop {
             updateStatsHUD(); // Actualizar HUD al instante
             showPickupNotice("FUEL REFILLED");
         } else if (this.dropType === 'ammo') {
-            for (let i = 1; i < weapons.length; i++) {
+            const ammoAmounts: { [key: number]: number } = {
+                0: 50,    // Pistol Default
+                1: 100,   // Laser Pistol
+                2: 3,     // Rocket Launcher
+                3: 200,   // Minigun
+                4: 150    // Flamethrower
+            };
+            for (let i = 0; i < weapons.length; i++) {
                 const w = weapons[i];
-                if (playerInventory.includes(i)) w.ammoReserve += w.magSize * 2;
+                if (playerInventory.includes(i) || i === 0) {
+                    w.ammoReserve += ammoAmounts[i] || w.magSize;
+                }
             }
+            updateStatsHUD(); // Reflejar balas de inmediato
             showPickupNotice("AMMO REFILLED");
         } else if (this.dropType === 'jetpack') {
             hasJetpack = true;
@@ -2947,9 +2957,9 @@ class WaveManager {
             activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(-20, 0, -45), 4, 'weapon', 0xffaa00));
         } else if (wave >= 5) {
             // Higher waves: drop ammo & fuel refills
-            activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(-5, 0, 10), 0, 'ammo', 0x99ccff));
+            activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(-5, 0, 10), 0, 'ammo', 0xaaaaaa));
             if (hasJetpack) {
-                activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(5, 0, 10), 0, 'fuel', 0x00ff00));
+                activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(5, 0, 10), 0, 'fuel', 0xaa00ff));
             }
         }
     }
@@ -4397,8 +4407,13 @@ function animate() {
         const oldPosZ = camera.position.z;
         controls.moveForward(-velocity.z * delta);
         for (let i = 0; i < 4; i++) {
+            // Verificar colisión tanto en el nivel del pecho como al nivel de los pies (0.5)
             collisionRaycaster.set(new THREE.Vector3(camera.position.x, collisionY, camera.position.z), collisionDirections[i]);
-            if (collisionRaycaster.intersectObjects(playerCollidables, false).some(h => h.distance < 0.6)) {
+            const hitPecho = collisionRaycaster.intersectObjects(playerCollidables, true).some(h => h.distance < 0.6);
+            collisionRaycaster.set(new THREE.Vector3(camera.position.x, 0.5, camera.position.z), collisionDirections[i]);
+            const hitPies = collisionRaycaster.intersectObjects(playerCollidables, true).some(h => h.distance < 0.6);
+
+            if (hitPecho || hitPies) {
                 camera.position.z = oldPosZ; velocity.z = 0; break;
             }
         }
@@ -4407,7 +4422,11 @@ function animate() {
         controls.moveRight(-velocity.x * delta);
         for (let i = 0; i < 4; i++) {
             collisionRaycaster.set(new THREE.Vector3(camera.position.x, collisionY, camera.position.z), collisionDirections[i]);
-            if (collisionRaycaster.intersectObjects(playerCollidables, false).some(h => h.distance < 0.6)) {
+            const hitPecho = collisionRaycaster.intersectObjects(playerCollidables, true).some(h => h.distance < 0.6);
+            collisionRaycaster.set(new THREE.Vector3(camera.position.x, 0.5, camera.position.z), collisionDirections[i]);
+            const hitPies = collisionRaycaster.intersectObjects(playerCollidables, true).some(h => h.distance < 0.6);
+            
+            if (hitPecho || hitPies) {
                 camera.position.x = oldPosX; velocity.x = 0; break;
             }
         }
