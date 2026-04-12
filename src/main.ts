@@ -970,7 +970,7 @@ function rearrangeLobbySlots() {
                 kickLabel = new THREE.Sprite(mat);
                 kickLabel.name = 'kick_label';
                 kickLabel.scale.set(0.7, 0.23, 1);
-                kickLabel.position.y = 3.3; 
+                kickLabel.position.y = 2.92; 
                 p.group.add(kickLabel);
             }
             kickLabel.visible = true;
@@ -1092,18 +1092,24 @@ function initMultiplayerUI() {
         }
     }
 
-    // Platform selection → show username screen (replace buttons to remove old listeners)
+    // Connect Platform selections in Options Menu to toggle isMobile
     ['btn-platform-pc', 'btn-platform-mobile'].forEach(btnId => {
         const btn = document.getElementById(btnId);
-        const newBtn = btn?.cloneNode(true) as HTMLElement;
-        if (btn && newBtn) {
-            btn.parentNode?.replaceChild(newBtn, btn);
-            newBtn.addEventListener('click', () => {
-                isMobile = btnId === 'btn-platform-mobile';
-                const plat = document.getElementById('platform-selection');
-                if (plat) plat.style.display = 'none';
-                showScreen('username-screen');
-                (document.getElementById('username-input') as HTMLInputElement)?.focus();
+        if (btn) {
+            btn.addEventListener('click', () => {
+                isMobile = (btnId === 'btn-platform-mobile');
+                
+                // Update active state visual feedback
+                const pcBtn = document.getElementById('btn-platform-pc');
+                const mobBtn = document.getElementById('btn-platform-mobile');
+                if (pcBtn && mobBtn) {
+                    pcBtn.style.borderColor = isMobile ? '#555' : '#00ffcc';
+                    pcBtn.style.color = isMobile ? '#aaa' : '#00ffcc';
+                    pcBtn.style.background = isMobile ? 'rgba(0,0,0,0.7)' : 'rgba(0,255,204,0.1)';
+                    mobBtn.style.borderColor = isMobile ? '#00ffcc' : '#555';
+                    mobBtn.style.color = isMobile ? '#00ffcc' : '#aaa';
+                    mobBtn.style.background = isMobile ? 'rgba(0,255,204,0.1)' : 'rgba(0,0,0,0.7)';
+                }
             });
         }
     });
@@ -1123,8 +1129,11 @@ function initMultiplayerUI() {
     usernameInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') continueBtn?.click(); });
     document.getElementById('btn-username-back')?.addEventListener('click', () => {
         hideAllMpScreens();
-        const plat = document.getElementById('platform-selection');
-        if (plat) plat.style.display = 'block';
+        // Go back to main menu
+        const menu = document.getElementById('main-menu');
+        const menuBtns = document.getElementById('menu-buttons');
+        if (menu) menu.style.display = 'flex';
+        if (menuBtns) menuBtns.style.display = 'flex';
     });
 
     // Room screen - Create
@@ -1870,7 +1879,7 @@ class JetpackPickup {
 }
 const jetpacks: JetpackPickup[] = [];
 // Scatter 1 jetpack specifically further away, surrounded by purple
-jetpacks.push(new JetpackPickup(new THREE.Vector3(15, 0, -25)));
+jetpacks.push(new JetpackPickup(new THREE.Vector3(35, 0, -40)));
 
 const playerInventory: number[] = [0];
 let currentWeaponIndex = 0;
@@ -3617,38 +3626,13 @@ controls.addEventListener('unlock', () => {
 });
 
 
-// Elementos de la interfaz para la selección de plataforma
-const menuButtonsDiv = document.getElementById('menu-buttons') as HTMLElement;
-const platformSelectionDiv = document.getElementById('platform-selection') as HTMLElement;
-// btnStart ya está declarado al inicio del archivo
-
+// --- SINGLEPLAYER REDIRECT MOVED TO LOBBY "SOLO PLAY" BTN ---
 btnStart.addEventListener('click', () => {
-    // En lugar de lockear de inmediato, preguntamos la plataforma
-    menuButtonsDiv.style.display = 'none';
-    platformSelectionDiv.style.display = 'flex';
-});
-
-document.getElementById('btn-platform-back')?.addEventListener('click', () => {
-    platformSelectionDiv.style.display = 'none';
-    menuButtonsDiv.style.display = 'block';
-});
-
-document.getElementById('btn-platform-pc')?.addEventListener('click', () => {
-    isMobile = false;
-    controls.lock(); // Solicita el bloqueo del puntero (esto dispara el evento 'lock' y carga)
-});
-
-document.getElementById('btn-platform-mobile')?.addEventListener('click', () => {
-    isMobile = true;
-    (async () => {
-        // Intenta poner en pantalla completa si es posible en móvil
-        if (document.documentElement.requestFullscreen) {
-            try { await document.documentElement.requestFullscreen(); } catch (e) { }
-        }
-    })();
-    beginLoadingSequence(); // Móvil no usa PointerLock, inicia directo
-    const mbp = getEl('btn-mobile-pause');
-    if (mbp) mbp.style.display = 'flex';
+    // Proceed directly to the Username selection screen
+    const menuButtonsDiv = document.getElementById('menu-buttons');
+    if(menuButtonsDiv) menuButtonsDiv.style.display = 'none';
+    showScreen('username-screen');
+    (document.getElementById('username-input') as HTMLInputElement)?.focus();
 });
 
 // ---- OPTIONS SCREEN LOGIC ----
