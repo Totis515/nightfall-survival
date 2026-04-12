@@ -398,12 +398,17 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         hat.position.y = 0.28;
         const brim = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.08, 0.2), clothMat);
         brim.position.set(0, 0.2, 0.3);
-        // M emblem on brim
-        const mWhite = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.1, 0.02), new THREE.MeshBasicMaterial({color: 0xffffff}));
-        mWhite.position.set(0, 0.22, 0.41);
-        const mRed = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.07, 0.02), new THREE.MeshBasicMaterial({color: 0xff0000}));
-        mRed.position.set(0, 0.22, 0.42);
-        head.add(mWhite, mRed);
+        // M emblem on brim - large and prominent
+        const mWhite = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.18, 0.04), new THREE.MeshBasicMaterial({color: 0xffffff}));
+        mWhite.position.set(0, 0.23, 0.4);
+        const mRedL = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.14, 0.05), new THREE.MeshBasicMaterial({color: 0xff0000}));
+        mRedL.position.set(-0.07, 0, 0.01);
+        const mRedR = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.14, 0.05), new THREE.MeshBasicMaterial({color: 0xff0000}));
+        mRedR.position.set(0.07, 0, 0.01);
+        const mRedM = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.08, 0.05), new THREE.MeshBasicMaterial({color: 0xff0000}));
+        mRedM.position.set(0, -0.04, 0.01);
+        mWhite.add(mRedL, mRedR, mRedM);
+        head.add(mWhite);
         // Mustache (Brown) & Nose
         const brownMat = new THREE.MeshStandardMaterial({ color: 0x3d2314 });
         const mustache = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.05, 0.06), brownMat);
@@ -664,11 +669,16 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         const rShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.12, 0.28), new THREE.MeshStandardMaterial({color: 0x2a1f7a})); rShoulder.position.y = 0.22; rArm.add(rShoulder);
         const lShoulderG = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.04, 0.3), new THREE.MeshBasicMaterial({color: 0xffcc00})); lShoulderG.position.y = 0.29; lArm.add(lShoulderG);
         const rShoulderG = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.04, 0.3), new THREE.MeshBasicMaterial({color: 0xffcc00})); rShoulderG.position.y = 0.29; rArm.add(rShoulderG);
-        // ── CAPE: hanging from shoulders, lower ──
-        const capeInside = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.4), new THREE.MeshBasicMaterial({color: 0x8b0022, side: THREE.DoubleSide}));
-        capeInside.position.set(0, -0.1, -0.22); torso.add(capeInside);
-        const capeOutside = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.4), new THREE.MeshBasicMaterial({color: 0x1a0d3a, side: THREE.DoubleSide}));
-        capeOutside.position.set(0, -0.1, -0.23); torso.add(capeOutside);
+        // ── CAPE: thick 3D box that protrudes from back ──
+        // Outer cape (dark blue, wide and tall)
+        const capeBody = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.5, 0.18), new THREE.MeshStandardMaterial({color: 0x1a0d3a}));
+        capeBody.position.set(0, -0.3, -0.32);
+        capeBody.rotation.x = 0.18; // tilt slightly for a flowing look
+        torso.add(capeBody);
+        // Inner cape face (red crimson)
+        const capeRed = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 1.45), new THREE.MeshBasicMaterial({color: 0x8b0022, side: THREE.FrontSide}));
+        capeRed.position.set(0, 0, 0.092);
+        capeBody.add(capeRed);
         // ── LEGS ──
         lLeg.material = dBlueMat; rLeg.material = dBlueMat;
         const lLegG = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.06, 0.31), new THREE.MeshBasicMaterial({color: 0xffcc00})); lLegG.position.y = 0.15; lLeg.add(lLegG);
