@@ -1886,6 +1886,13 @@ const grassHeight = 0.9;
 const grassGeo = new THREE.ConeGeometry(grassWidth, grassHeight, 3);
 grassGeo.translate(0, grassHeight / 2, 0); // origen a la base
 
+// Generador pseudo-aleatorio para el mapa (Posiciones FIJAS pero con aspecto random)
+let mapSeed = 827461;
+function seededRandom() {
+    mapSeed = (mapSeed * 9301 + 49297) % 233280;
+    return mapSeed / 233280;
+}
+
 const grassMat = new THREE.MeshStandardMaterial({
     color: 0x3a4d1a, // Verde oliva oscuro
     flatShading: true
@@ -1897,23 +1904,16 @@ const grassInstanced = new THREE.InstancedMesh(grassGeo, grassMat, grassCount);
 
 const dummy = new THREE.Object3D();
 for (let i = 0; i < grassCount; i++) {
-    const isForest = Math.random() < 0.6; // 60% of grass in the forest
-    let x, z;
-    if (isForest) {
-        x = -10 - Math.random() * 80;
-        z = -10 - Math.random() * 80;
-    } else {
-        x = (Math.random() - 0.5) * 160;
-        z = (Math.random() - 0.5) * 160;
-    }
+    const x = (seededRandom() - 0.5) * 120;
+    const z = (seededRandom() - 0.5) * 120;
 
     if (Math.abs(x) < 3 && Math.abs(z) < 3) continue;
 
     dummy.position.set(x, 0, z);
-    dummy.rotation.y = Math.random() * Math.PI;
-    dummy.rotation.x = (Math.random() - 0.5) * 0.2; // ligera inclinación
-    dummy.rotation.z = (Math.random() - 0.5) * 0.2;
-    dummy.scale.setScalar(0.5 + Math.random());
+    dummy.rotation.y = seededRandom() * Math.PI;
+    dummy.rotation.x = (seededRandom() - 0.5) * 0.2; // ligera inclinación
+    dummy.rotation.z = (seededRandom() - 0.5) * 0.2;
+    dummy.scale.setScalar(0.5 + seededRandom());
     dummy.updateMatrix();
     grassInstanced.setMatrixAt(i, dummy.matrix);
 }
@@ -1924,7 +1924,7 @@ function createTree() {
     const tree = new THREE.Group();
     // Trunk
     const trunkGeo = new THREE.CylinderGeometry(0.3, 0.4, 3, 5);
-    const trunkMat = new THREE.MeshLambertMaterial({ color: 0x3e2723, side: THREE.DoubleSide }); // Cheaper material
+    const trunkMat = new THREE.MeshLambertMaterial({ color: 0x3e2723 }); // Cheaper material
     const trunk = new THREE.Mesh(trunkGeo, trunkMat);
     trunk.position.y = 1.5;
     trunk.castShadow = true;
@@ -1938,15 +1938,15 @@ function createTree() {
     for (let i = 0; i < 5; i++) {
         const branchGeo = new THREE.CylinderGeometry(0.05, 0.1, 1.5, 4);
         const branch = new THREE.Mesh(branchGeo, branchMat);
-        branch.position.y = 2 + Math.random() * 2;
-        branch.rotation.x = Math.random() * Math.PI;
-        branch.rotation.z = Math.random() * Math.PI;
+        branch.position.y = 2 + seededRandom() * 2;
+        branch.rotation.x = seededRandom() * Math.PI;
+        branch.rotation.z = seededRandom() * Math.PI;
         branch.castShadow = true;
         tree.add(branch);
     }
 
     // PINE VARIANT (Video style)
-    if (Math.random() > 0.5) {
+    if (seededRandom() > 0.5) {
         const pineMat = new THREE.MeshLambertMaterial({ color: 0x1b3022 });
         for (let i = 0; i < 3; i++) {
             const coneGeo = new THREE.ConeGeometry(1.5 - i * 0.4, 2, 6);
@@ -1959,22 +1959,17 @@ function createTree() {
     return tree;
 }
 
-// ---- ÁRBOLES FIJOS (BOSQUE OSCURO: Noroeste) ----
 const trees: THREE.Group[] = [];
 for (let i = 0; i < 60; i++) {
     const tree = createTree();
-    let tx, tz;
-    if (i < 45) { // 75% en el bosque oscuro
-        tx = -15 - Math.random() * 65;
-        tz = -15 - Math.random() * 65;
-    } else { // 25% dispersos
-        tx = (Math.random() - 0.5) * 120;
-        tz = (Math.random() - 0.5) * 120;
-    }
+    const angle = seededRandom() * Math.PI * 2;
+    const radius = 10 + seededRandom() * 50;
+    tree.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+    tree.rotation.y = seededRandom() * Math.PI;
 
-    tree.position.set(tx, 0, tz);
-    tree.rotation.y = Math.random() * Math.PI;
-    tree.scale.setScalar(0.8 + Math.random() * 0.6);
+    // Random height variation
+    tree.scale.setScalar(0.8 + seededRandom() * 0.6);
+    tree.updateMatrixWorld(true);
     scene.add(tree);
     trees.push(tree);
 }
@@ -1987,8 +1982,8 @@ function createBush() {
 
     for (let i = 0; i < 3; i++) {
         const leaf = new THREE.Mesh(geo, mat);
-        leaf.position.set((Math.random() - 0.5) * 0.8, (Math.random() * 0.5), (Math.random() - 0.5) * 0.8);
-        leaf.scale.setScalar(0.5 + Math.random() * 0.8);
+        leaf.position.set((seededRandom() - 0.5) * 0.8, (seededRandom() * 0.5), (seededRandom() - 0.5) * 0.8);
+        leaf.scale.setScalar(0.5 + seededRandom() * 0.8);
         leaf.castShadow = true;
         leaf.receiveShadow = true;
         bush.add(leaf);
@@ -1996,23 +1991,19 @@ function createBush() {
     return bush;
 }
 
-// Arbustos concentrados en el bosque oscuro
 for (let i = 0; i < 40; i++) {
     const bush = createBush();
-    let bx = (Math.random() - 0.5) * 120;
-    let bz = (Math.random() - 0.5) * 120;
-    if (Math.random() > 0.3) {
-        bx = -10 - Math.random() * 70;
-        bz = -10 - Math.random() * 70;
-    }
-    bush.position.set(bx, 0.4, bz);
+    const angle = seededRandom() * Math.PI * 2;
+    const radius = 5 + seededRandom() * 80;
+    bush.position.set(Math.cos(angle) * radius, 0.4, Math.sin(angle) * radius);
+    bush.updateMatrixWorld(true);
     scene.add(bush);
 }
 
 // ---- ASSETS & POIS ----
 function createFence() {
     const fence = new THREE.Group();
-    const material = new THREE.MeshStandardMaterial({ color: 0x4e342e, flatShading: true, side: THREE.DoubleSide }); // Brownish fence
+    const material = new THREE.MeshStandardMaterial({ color: 0x4e342e, flatShading: true }); // Brownish fence
 
     // Posts
     for (let i = 0; i < 2; i++) {
@@ -2039,8 +2030,7 @@ function createRuinedCar() {
     const bodyColors = [0x546e7a, 0x78909c, 0x455a64]; // Muted blue/gray car colors
     const bodyMat = new THREE.MeshStandardMaterial({
         color: bodyColors[Math.floor(Math.random() * bodyColors.length)],
-        flatShading: true,
-        side: THREE.DoubleSide
+        flatShading: true
     });
 
     // Base
@@ -2081,8 +2071,8 @@ function createRuinedCar() {
 
 function createBlackMarketBuilding() {
     const building = new THREE.Group();
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0x37474f, flatShading: true, side: THREE.DoubleSide }); // Dark slate blue building
-    const roofMat = new THREE.MeshStandardMaterial({ color: 0x5d4037, flatShading: true, side: THREE.DoubleSide }); // Brownish roof
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x37474f, flatShading: true }); // Dark slate blue building
+    const roofMat = new THREE.MeshStandardMaterial({ color: 0x5d4037, flatShading: true }); // Brownish roof
 
     // Main Structure
     const body = new THREE.Mesh(new THREE.BoxGeometry(8, 5, 6), wallMat);
@@ -2118,7 +2108,7 @@ function createBlackMarketBuilding() {
 
 function createTower() {
     const tower = new THREE.Group();
-    const stoneMat = new THREE.MeshLambertMaterial({ color: 0x1a1a2e, side: THREE.DoubleSide });
+    const stoneMat = new THREE.MeshLambertMaterial({ color: 0x1a1a2e });
 
     // Base tier
     const base = new THREE.Mesh(new THREE.BoxGeometry(6, 8, 6), stoneMat);
@@ -2155,12 +2145,13 @@ function createTower() {
 // Casa con colisiones en las paredes Y en el techo para que el jetpack aterrice sobre ella
 function createHouse() {
     const house = new THREE.Group();
-    const wallMat = new THREE.MeshLambertMaterial({ color: 0x4e342e, side: THREE.DoubleSide });
-    const roofMat = new THREE.MeshLambertMaterial({ color: 0x212121, side: THREE.DoubleSide });
+    const wallMat = new THREE.MeshLambertMaterial({ color: 0x4e342e });
+    const roofMat = new THREE.MeshLambertMaterial({ color: 0x212121 });
 
     const base = new THREE.Mesh(new THREE.BoxGeometry(5, 4, 5), wallMat);
     base.position.y = 2;
     house.add(base);
+    collidables.push(base);
     playerCollidables.push(base);
 
     // Visual del techo (CylinderGeometry crea una pirámide truncada de tope plano)
@@ -2174,45 +2165,28 @@ function createHouse() {
 }
 
 // Añadir la Torre
-// ---- BOSQUE OSCURO (Noroeste) ----
 const mainTower = createTower();
-mainTower.position.set(-60, 0, -60);
+mainTower.position.set(-60, 0, 60);
 scene.add(mainTower);
 
-// ---- ALDEA SEGURA (Centro-Sur) ----
-const housePositions = [
-    { x: -15, z: 20, r: 0.1 },
-    { x: 15, z: 20, r: -0.1 },
-    { x: 0, z: 35, r: Math.PI / 2 },
-    { x: -28, z: 5, r: 0.4 },
-    { x: 28, z: 5, r: -0.4 }
-];
-for (const hp of housePositions) {
+// Añadir Casas
+for (let i = 0; i < 10; i++) {
     const house = createHouse();
-    house.position.set(hp.x, 0, hp.z);
-    house.rotation.y = hp.r;
+    const angle = (i / 10) * Math.PI * 2 + seededRandom();
+    const radius = 25 + seededRandom() * 35;
+    house.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+    house.rotation.y = seededRandom() * Math.PI;
+    house.updateMatrixWorld(true);
     scene.add(house);
 }
 
-// Vallas cerrando la aldea
-const fencePositions = [
-    { x: -8, z: 20 }, { x: 8, z: 20 },
-    { x: -20, z: 12 }, { x: 20, z: 12 },
-    { x: -10, z: 35 }, { x: 10, z: 35 }
-];
-for (const fp of fencePositions) {
-    const fence = createFence();
-    fence.position.set(fp.x, 0, fp.z);
-    fence.rotation.y = (Math.random() - 0.5) * 0.5;
-    scene.add(fence);
-}
-
-// ---- MERCADO NEGRO Y DESHUESADERO (Centro-Este) ----
-const BM_X = 30, BM_Z = -40; // coincide con shopMarker
+// Añadir el edificio del Black Market en una posición FIJA que coincida con el marcador del cielo
+const BM_X = 30, BM_Z = -40; // coincide con la posición de shopMarker definida más adelante
 const blackMarket = createBlackMarketBuilding();
 blackMarket.position.set(BM_X, 0, BM_Z);
 scene.add(blackMarket);
 
+// Etiqueta de texto 3D flotante "BLACK MARKET" sobre el edificio
 const bmCanvas = document.createElement('canvas');
 bmCanvas.width = 512; bmCanvas.height = 128;
 const bmCtx = bmCanvas.getContext('2d')!;
@@ -2231,14 +2205,24 @@ bmSprite.position.set(BM_X, 7.5, BM_Z);
 bmSprite.scale.set(6, 1.5, 1);
 scene.add(bmSprite);
 
-// Carros arruinados agrupados cerca del mercado
+// Distribuir coches
 for (let i = 0; i < 8; i++) {
     const car = createRuinedCar();
-    const cx = BM_X + (Math.random() - 0.5) * 45 - 10;
-    const cz = BM_Z + (Math.random() - 0.5) * 45 + 10;
-    car.position.set(cx, 0, cz);
+    const angle = Math.random() * Math.PI * 2;
+    const radius = 15 + Math.random() * 45;
+    car.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
     car.rotation.y = Math.random() * Math.PI;
     scene.add(car);
+}
+
+// Distribuir vallas
+for (let i = 0; i < 15; i++) {
+    const fence = createFence();
+    const angle = Math.random() * Math.PI * 2;
+    const radius = 10 + Math.random() * 50;
+    fence.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+    fence.rotation.y = Math.random() * Math.PI;
+    scene.add(fence);
 }
 
 // Las armas especiales NO aparecen en el mapa al inicio.
