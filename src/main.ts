@@ -2144,20 +2144,12 @@ function createHouse() {
     house.add(base);
     playerCollidables.push(base);
 
-    // Visual del techo
-    const roof = new THREE.Mesh(new THREE.ConeGeometry(4, 3, 4), roofMat);
+    // Visual del techo (CylinderGeometry crea una pirámide truncada de tope plano)
+    const roof = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 4, 3, 4), roofMat);
     roof.position.y = 5.5;
     roof.rotation.y = Math.PI / 4;
     house.add(roof);
-
-    // Colisionador plano invisible en la parte superior de las paredes para que el jugador pueda aterrizar en el techo
-    const roofCollider = new THREE.Mesh(
-        new THREE.BoxGeometry(5, 0.2, 5),
-        new THREE.MeshBasicMaterial({ visible: false })
-    );
-    roofCollider.position.y = 4.1; // justo encima de las paredes
-    house.add(roofCollider);
-    playerCollidables.push(roofCollider);
+    playerCollidables.push(roof); // El techo físico es completamente explorable ahora
 
     return house;
 }
@@ -2634,15 +2626,26 @@ class Enemy {
             // Moverse hacia el jugador
             const dir = new THREE.Vector3().subVectors(playerPos, this.mesh.position).normalize();
 
-            // --- EVITAR COLISIONES SIMPLE ---
-            // Lanzar rayos para detectar obstáculos y girar para evitarlos
-            const ray = new THREE.Raycaster(this.mesh.position, dir, 0, 1.5);
-            const intersects = ray.intersectObjects(playerCollidables, true);
+            // --- EVITAR COLISIONES MEJORADO ---
+            // Lanzar rayo a la altura del pecho para detectar árboles y casas correctamente
+            const rayOrigin = new THREE.Vector3(this.mesh.position.x, this.mesh.position.y + 0.8, this.mesh.position.z);
+            const ray = new THREE.Raycaster(rayOrigin, dir, 0, 1.5);
+            const intersects = ray.intersectObjects(playerCollidables, false);
 
             if (intersects.length > 0) {
-                // Comportamiento de dirección: intentar ir perpendicular a la pared
-                const normal = intersects[0].face?.normal || new THREE.Vector3(0, 0, 1);
-                dir.add(normal.multiplyScalar(0.8)).normalize();
+                const normal = intersects[0].face?.normal;
+                if (normal) {
+                    if (intersects[0].distance < 0.8) {
+                        // Obstáculo inminente: deslizarse paralelo a la pared (elimina el movimiento hacia ella)
+                        const dot = dir.dot(normal);
+                        if (dot < 0) {
+                            dir.sub(normal.clone().multiplyScalar(dot)).normalize();
+                        }
+                    } else {
+                        // Obstáculo cercano pero no inminente: empezar a girar suavemente
+                        dir.add(normal.multiplyScalar(0.8)).normalize();
+                    }
+                }
             }
 
             this.mesh.position.add(dir.multiplyScalar(this.speed * delta));
