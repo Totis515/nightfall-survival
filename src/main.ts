@@ -1243,6 +1243,7 @@ const loadingText = document.querySelector('.loading-text') as HTMLElement;
 
 let playerHealth = 100;
 let playerStamina = 100;
+let staminaExhausted = false;
 let playerJetpackFuel = 0;
 let playerFireDebuff = 0; // 🔥 Debuff de fuego progresivo
 let hasJetpack = false;
@@ -2652,7 +2653,13 @@ class Enemy {
         // Horizontal push only, floor snap
         const safePush = pushDir.clone();
         safePush.y = 0;
-        this.mesh.position.add(safePush);
+        
+        // Jefes finales no tienen retroceso
+        const isBoss = (this.type === EnemyType.BOSS_GOLIATH || this.type === EnemyType.BOSS_SENTINEL || this.type === EnemyType.BOSS_FINAL_ROBOT);
+        if (!isBoss) {
+            this.mesh.position.add(safePush);
+        }
+        
         this.mesh.position.y = 0;
 
         if (this.health <= 0) {
@@ -3391,8 +3398,8 @@ controls.addEventListener('lock', () => {
 
 controls.addEventListener('unlock', () => {
     // Este evento se dispara cuando el puntero se libera (ESC del navegador)
-    // GUARD: No mostrar el menú principal si se desbloqueó por una UI interna o si es móvil
-    if (gameStarted && !isUIShowing && !isMobile) {
+    // GUARD: No mostrar el menú principal si se desbloqueó por una UI interna o si es móvil o si el juego acabo (victoria)
+    if (gameStarted && !isUIShowing && !isMobile && !waveManager.isGameOver) {
         if (!isPaused && playerHealth > 0) {
             // El jugador presionó ESC durante la partida → mostrar pantalla de PAUSA
             isPaused = true;
