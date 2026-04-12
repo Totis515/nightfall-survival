@@ -398,17 +398,19 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         hat.position.y = 0.28;
         const brim = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.08, 0.2), clothMat);
         brim.position.set(0, 0.2, 0.3);
-        // M emblem on brim - large and prominent
-        const mWhite = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.18, 0.04), new THREE.MeshBasicMaterial({color: 0xffffff}));
-        mWhite.position.set(0, 0.23, 0.4);
-        const mRedL = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.14, 0.05), new THREE.MeshBasicMaterial({color: 0xff0000}));
-        mRedL.position.set(-0.07, 0, 0.01);
-        const mRedR = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.14, 0.05), new THREE.MeshBasicMaterial({color: 0xff0000}));
-        mRedR.position.set(0.07, 0, 0.01);
-        const mRedM = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.08, 0.05), new THREE.MeshBasicMaterial({color: 0xff0000}));
-        mRedM.position.set(0, -0.04, 0.01);
-        mWhite.add(mRedL, mRedR, mRedM);
-        head.add(mWhite);
+        // M emblem on brim - CanvasTexture for real letter M
+        const mCanvas = document.createElement('canvas');
+        mCanvas.width = 64; mCanvas.height = 64;
+        const mCtx = mCanvas.getContext('2d')!;
+        mCtx.fillStyle = '#ffffff'; mCtx.fillRect(0, 0, 64, 64);
+        mCtx.fillStyle = '#ff0000';
+        mCtx.font = 'bold 56px Impact, Arial';
+        mCtx.textAlign = 'center'; mCtx.textBaseline = 'middle';
+        mCtx.fillText('M', 32, 34);
+        const mTex = new THREE.CanvasTexture(mCanvas);
+        const mBadge = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.16), new THREE.MeshBasicMaterial({map: mTex}));
+        mBadge.position.set(0, 0.24, 0.41);
+        head.add(mBadge);
         // Mustache (Brown) & Nose
         const brownMat = new THREE.MeshStandardMaterial({ color: 0x3d2314 });
         const mustache = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.05, 0.06), brownMat);
@@ -733,6 +735,11 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
     const eyeGeo = new THREE.PlaneGeometry(0.12, 0.09);
     const lEye = new THREE.Mesh(eyeGeo, eyeMat); lEye.position.set(-0.12, 0.05, 0.245);
     const rEye = new THREE.Mesh(eyeGeo, eyeMat); rEye.position.set(0.12, 0.05, 0.245);
+    // Lelouch: left eye = Geass (red), right eye = normal (purple)
+    if (skinId === 'lelouch') {
+        lEye.material = new THREE.MeshBasicMaterial({color: 0xff0000}); // Geass eye - red
+        // rEye stays purple
+    }
     if (skinId === 'doom') { lEye.visible = false; rEye.visible = false; }
     head.add(lEye, rEye);
     
