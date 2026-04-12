@@ -480,8 +480,20 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
     
     model.add(lShoe, rShoe, lLeg, rLeg, torso, lArm, rArm, head);
     model.rotation.y = Math.PI;
+
+    // Arma por defecto (GUN) en la mano derecha — se actualiza vía 'weapon_mesh'
+    const gunBarrel = new THREE.Mesh(
+        new THREE.BoxGeometry(0.06, 0.06, 0.45),
+        new THREE.MeshStandardMaterial({ color: 0x333333, flatShading: true })
+    );
+    gunBarrel.position.set(0, -0.22, -0.25);
+    gunBarrel.name = 'weapon_mesh';
+    rArm.add(gunBarrel);
+
     group.add(model);
     group.traverse(c => { c.frustumCulled = false; });
+    group.userData.modelRef = model; // guardar referencia al modelo para animaciones
+    group.userData.rArmRef = rArm;   // guardar referencia al brazo para cambios de arma
     return group;
 }
 
@@ -619,6 +631,33 @@ function connectMultiplayer() {
                     (wLabel.material as THREE.SpriteMaterial).map = makeWeaponCanvas(wName);
                     (wLabel.material as THREE.SpriteMaterial).needsUpdate = true;
                 }
+
+                // Actualizar malla 3D del arma en el brazo derecho
+                const rArmRef = p.group.userData.rArmRef as THREE.Mesh | undefined;
+                if (rArmRef) {
+                    const oldMesh = rArmRef.getObjectByName('weapon_mesh');
+                    if (oldMesh) rArmRef.remove(oldMesh);
+
+                    const gMat = new THREE.MeshStandardMaterial({ color: 0x333333, flatShading: true });
+                    let wMesh: THREE.Mesh;
+                    const idx = data.weaponIdx;
+                    if (idx === 1) { // Laser: cañón delgado brillante
+                        wMesh = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 0.5), new THREE.MeshStandardMaterial({ color: 0x00ffcc, emissive: 0x00ffcc, emissiveIntensity: 0.5 }));
+                    } else if (idx === 2) { // Rocket Launcher: tubo grueso
+                        wMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.6, 6), gMat);
+                        wMesh.rotation.x = Math.PI / 2;
+                    } else if (idx === 3) { // Minigun: cilindro ancho
+                        wMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.5, 6), gMat);
+                        wMesh.rotation.x = Math.PI / 2;
+                    } else if (idx === 4) { // Flamethrower: caja naranja
+                        wMesh = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.4), new THREE.MeshStandardMaterial({ color: 0xff6600, flatShading: true }));
+                    } else { // GUN por defecto
+                        wMesh = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.45), gMat);
+                    }
+                    wMesh.name = 'weapon_mesh';
+                    wMesh.position.set(0, -0.22, -0.25);
+                    rArmRef.add(wMesh);
+                }
             }
         }
     });
@@ -706,11 +745,30 @@ function connectMultiplayer() {
     });
 
     socket.on('player-died', (data: { id: string, name: string }) => {
-        // Player died => remove their mesh
         const p = remotePlayers.get(data.id);
         if (p) {
-            scene.remove(p.group);
-            remotePlayers.delete(data.id);
+            // Poner al personaje en pose de muerto: tumbado boca arriba
+            p.group.rotation.x = Math.PI / 2; // Caer de espaldas
+            p.group.position.y = -0.5;         // Quedar en el suelo
+
+            // Quitar el arma de la mano (si existe)
+            const rArmRef = p.group.userData.rArmRef;
+            if (rArmRef) {
+                const wm = rArmRef.getObjectByName('weapon_mesh');
+                if (wm) rArmRef.remove(wm);
+            }
+            // Quitar etiquetas flotantes
+            const lbl = p.group.getObjectByName('name_label');
+            if (lbl) p.group.remove(lbl);
+            const wlbl = p.group.getObjectByName('weapon_label');
+            if (wlbl) p.group.remove(wlbl);
+
+            // Marcar como muerto para que los enemigos lo ignoren
+            p.group.userData.isDead = true;
+            remotePlayers.delete(data.id); // Eliminar del mapa activo (enemigos ya no lo persiguen)
+
+            // El cuerpo permanece en la escena como decoración por 15 segundos, luego desaparece
+            setTimeout(() => scene.remove(p.group), 15000);
         }
         // Show banner
         const banner = document.getElementById('death-banner');
@@ -2203,8 +2261,8 @@ function createHouse() {
     const base = new THREE.Mesh(new THREE.BoxGeometry(5, 4, 5), wallMat);
     base.position.y = 2;
     house.add(base);
-    collidables.push(base);
-    playerCollidables.push(base);
+    collidables.push(base);        // Los disparos impactan contra las paredes
+    playerCollidables.push(base);  // El jugador y los monstruos no la atraviesan
 
     // Visual del techo (CylinderGeometry crea una pirámide truncada de tope plano)
     const roof = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 4, 3, 4), roofMat);
