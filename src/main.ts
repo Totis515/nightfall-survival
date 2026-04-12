@@ -857,7 +857,14 @@ function connectMultiplayer() {
 
     // Kicked from room by host
     socket.on('kicked-from-room', () => {
-        showCustomAlert('Has sido expulsado de la sala por el anfitrión.', () => {
+        let kicks = parseInt(localStorage.getItem('kicks_' + myRoomCode) || '0');
+        kicks++;
+        localStorage.setItem('kicks_' + myRoomCode, kicks.toString());
+
+        const rcInput = document.getElementById('room-code-input') as HTMLInputElement;
+        if(rcInput) rcInput.value = '';
+
+        showCustomAlert('You have been kicked from the room by the host.', () => {
             isMultiplayer = false;
             myRoomCode = '';
             socket?.disconnect();
@@ -931,10 +938,6 @@ function rearrangeLobbySlots() {
     ];
 
     let slotIndex = 0;
-    // Populate kick panel for host
-    const kickListEl = document.getElementById('lobby-kick-list');
-    const kickPanelEl = document.getElementById('lobby-player-list');
-    if (kickListEl) kickListEl.innerHTML = '';
     
     remotePlayers.forEach((p, id) => {
         if (!lobbyScene.children.includes(p.group)) {
@@ -947,37 +950,38 @@ function rearrangeLobbySlots() {
         p.group.scale.set(1.8, 1.8, 1.8);
         p.group.visible = !inSkinsTab; // Hide if in Skins
 
-        // Build kick list entry for the HTML panel
-        if (kickListEl) {
-            const row = document.createElement('div');
-            row.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:10px;';
-            const nameSpan = document.createElement('span');
-            nameSpan.style.cssText = 'color:#ccc; font-size:14px; font-family:monospace; letter-spacing:1px;';
-            nameSpan.innerText = p.group.userData.username || 'PLAYER';
-            row.appendChild(nameSpan);
-            if (isHost) {
-                const kickBtn = document.createElement('button');
-                kickBtn.innerText = 'KICK';
-                kickBtn.style.cssText = 'background:transparent; border:1px solid #ff3333; color:#ff3333; padding:3px 10px; font-size:11px; font-family:Impact,sans-serif; letter-spacing:1px; cursor:pointer; border-radius:4px; transition:all 0.2s;';
-                kickBtn.addEventListener('mouseover', () => { kickBtn.style.background = '#ff3333'; kickBtn.style.color = '#000'; });
-                kickBtn.addEventListener('mouseout', () => { kickBtn.style.background = 'transparent'; kickBtn.style.color = '#ff3333'; });
-                kickBtn.addEventListener('click', () => {
-                    showCustomConfirm(`¿Expulsar a ${nameSpan.innerText}?`, () => {
-                        socket?.emit('kick-player', { id });
-                    });
-                });
-                row.appendChild(kickBtn);
+        // Host can kick players: add/update 3D kick label above name
+        if (isHost && !inSkinsTab) {
+            let kickLabel = p.group.children.find(c => c.name === 'kick_label') as THREE.Sprite;
+            if (!kickLabel) {
+                const canvas = document.createElement('canvas');
+                canvas.width = 120; canvas.height = 40;
+                const ctx2 = canvas.getContext('2d')!;
+                ctx2.fillStyle = '#ff3333';
+                ctx2.beginPath();
+                ctx2.roundRect(0, 0, 120, 40, 5);
+                ctx2.fill();
+                ctx2.fillStyle = '#ffffff';
+                ctx2.font = 'bold 20px Impact';
+                ctx2.textAlign = 'center';
+                ctx2.fillText('KICK', 60, 28);
+                const tex = new THREE.CanvasTexture(canvas);
+                const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+                kickLabel = new THREE.Sprite(mat);
+                kickLabel.name = 'kick_label';
+                kickLabel.scale.set(0.7, 0.23, 1);
+                kickLabel.position.y = 3.3; 
+                p.group.add(kickLabel);
             }
-            kickListEl.appendChild(row);
+            kickLabel.visible = true;
+            kickLabel.userData = { targetId: id, targetName: p.group.userData.username };
+        } else {
+            let kickLabel = p.group.children.find(c => c.name === 'kick_label') as THREE.Sprite;
+            if (kickLabel) kickLabel.visible = false;
         }
 
         slotIndex++;
     });
-
-    // Show the panel only if there are remote players and we are in lobby tab
-    if (kickPanelEl) {
-        kickPanelEl.style.display = (remotePlayers.size > 0 && !inSkinsTab) ? 'block' : 'none';
-    }
 }
 
 function showCustomAlert(msg: string, onOk?: () => void) {
@@ -1010,7 +1014,7 @@ function showCustomConfirm(msg: string, onYes: () => void) {
     
     const yesBtn = document.createElement('button');
     yesBtn.className = 'mp-btn primary';
-    yesBtn.innerText = 'SI';
+    yesBtn.innerText = 'YES';
     yesBtn.style.padding = '10px 40px';
     yesBtn.onclick = () => { overlay.style.display = 'none'; onYes(); };
     
@@ -1186,6 +1190,13 @@ function initMultiplayerUI() {
         const roomErr = document.getElementById('room-error')!;
         const code = (roomCodeInput?.value || '').trim().toUpperCase();
         if (code.length !== 6) { roomErr.innerText = 'Code must be 6 characters!'; return; }
+        
+        const kicks = parseInt(localStorage.getItem('kicks_' + code) || '0');
+        if (kicks >= 3) {
+            roomErr.innerText = 'YOU ARE BANNED FROM THIS ROOM.';
+            return;
+        }
+
         const platStr = isMobile ? 'mobile' : 'pc';
         socket.emit('join-room', { roomCode: code, username: myUsername, platform: platStr, skin: currentSkin }, (res: any) => {
             if (res.error) { roomErr.innerText = res.error; return; }
@@ -1459,6 +1470,38 @@ lobbyScene.add(new THREE.AmbientLight(0xffffff, 1.5));
 new THREE.TextureLoader().load('fondo.png', (tex) => {
     lobbyScene.background = tex;
     lobbyScene.backgroundIntensity = 0.3; // 0 = black, 1 = full brightness. Set to 0.3 for requested darkness.
+});
+
+// Handle Lobby 3D Kick clicks
+const lobbyRaycaster = new THREE.Raycaster();
+const lobbyMouse = new THREE.Vector2();
+
+window.addEventListener('click', (event) => {
+    if (!inLobby3D || inSkinsTab || !isHost) return;
+    const overlay = document.getElementById('custom-dialog-overlay') as HTMLElement;
+    if (overlay && overlay.style.display === 'flex') return; // Don't allow clicks if a dialog is open
+
+    lobbyMouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    lobbyMouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    lobbyRaycaster.setFromCamera(lobbyMouse, lobbyCamera);
+    
+    // Find all kick_label sprites
+    const kickSprites: THREE.Object3D[] = [];
+    remotePlayers.forEach(p => {
+        const xl = p.group.children.find(c => c.name === 'kick_label');
+        if (xl && xl.visible) kickSprites.push(xl);
+    });
+
+    const intersects = lobbyRaycaster.intersectObjects(kickSprites, false);
+    if (intersects.length > 0) {
+        const targetLabel = intersects[0].object;
+        const tid = targetLabel.userData.targetId;
+        const name = targetLabel.userData.targetName || 'this player';
+        showCustomConfirm(`Are you sure you want to kick ${name}?`, () => {
+             socket?.emit('kick-player', { id: tid });
+        });
+    }
 });
 
 const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
