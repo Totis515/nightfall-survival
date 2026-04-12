@@ -12,13 +12,22 @@
         @media (max-height: 500px) {
             #options-screen h1 { font-size: 28px !important; margin-bottom: 2px !important; }
             #options-screen p { margin-bottom: 8px !important; font-size: 11px !important; }
-            .opt-grid { padding: 10px !important; gap: 4px 15px !important; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important; max-height: 60vh; overflow-y: auto; }
+            .opt-grid { padding: 8px !important; gap: 6px 12px !important; grid-template-columns: 1fr 1fr !important; max-height: 55vh; overflow-y: auto; width: 100% !important; box-sizing: border-box; }
+            .opt-grid span { font-size: 13px !important; letter-spacing: 1px !important; }
+            .opt-grid input[type="range"] { width: 90px !important; }
+            .opt-grid input[type="number"] { width: 35px !important; font-size: 11px !important; }
+            .opt-q-btn { padding: 4px 8px !important; font-size: 11px !important; }
             #btn-options-back { margin-top: 10px !important; font-size: 16px !important; padding: 6px 30px !important; }
             
             #lobby-content { padding: 10px !important; justify-content: space-around !important; }
             #btn-lobby-start { font-size: 18px !important; padding: 10px 20px !important; min-width: 250px !important; }
             #lobby-code-box { padding: 10px !important; }
             #lobby-code { font-size: 20px !important; }
+
+            #skins-content { flex-direction: column !important; padding: 10px !important; }
+            #skins-content > div:first-child { width: 100% !important; max-width: 100% !important; height: auto !important; max-height: 48vh !important; }
+            #skin-grid { flex-wrap: nowrap !important; overflow-x: auto !important; overflow-y: hidden !important; padding-bottom: 20px !important; }
+            .skin-card { width: 90px !important; height: 90px !important; flex-shrink: 0 !important; }
         }
         /* Todo este bloque define la apariencia visual del juego y de la interfaz de usuario (CSS) */
         body {
@@ -1443,7 +1452,8 @@
                     }
                 </style>
                 <div id="skin-grid"
-                    style="flex: 1; width: 100%; display: flex; gap: 12px; flex-wrap: wrap; font-family: 'Impact', sans-serif; align-content: flex-start; overflow-y: scroll !important; padding-right: 10px; padding-bottom: 50px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                    style="flex: 1; width: 100%; display: flex; gap: 12px; flex-wrap: wrap; font-family: 'Impact', sans-serif; align-content: flex-start; overflow-y: auto !important; overflow-x: hidden; padding-right: 10px; padding-bottom: 50px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                    
                     <div class="skin-card active" data-skin="default"
                         style="background-image: url('deffault.png'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid #00ffcc; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
                         <div
@@ -1554,6 +1564,13 @@
                         <div
                             style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">
                             CORALINE</div>
+                    </div>
+                    <!-- Miles Morales Skin -->
+                    <div class="skin-card" data-skin="miles"
+                        style="width: 110px; height: 110px; background-image: url('Miles.jpg'); background-repeat: no-repeat; background-size: cover; background-position: center; border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; color: white;">
+                        <div
+                            style="font-size: 10px; letter-spacing: 1px; text-shadow: 0 2px 4px black, 0 0 10px black; text-align: center;">
+                            MILES</div>
                     </div>
                 </div>
             </div>

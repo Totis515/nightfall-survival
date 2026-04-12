@@ -111,12 +111,25 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         clothHex = 0xffcc00; // Yellow raincoat
         darkHex = 0x0000aa; // Blue hair
         pantsHex = 0x333333;
+    } else if (skinId === 'miles') {
+        skinHex = 0xffffff;
+        clothHex = 0xffffff;
+        darkHex = 0xffffff;
+        pantsHex = 0xffffff;
     }
 
     const skinMat = new THREE.MeshStandardMaterial({ color: skinHex, flatShading: true });
     const clothMat = new THREE.MeshStandardMaterial({ color: clothHex, flatShading: true });
     const darkMat = new THREE.MeshStandardMaterial({ color: darkHex, flatShading: true });
     const pantsMat = new THREE.MeshStandardMaterial({ color: pantsHex, flatShading: true });
+    
+    if (skinId === 'miles') {
+        const tex = new THREE.TextureLoader().load('Miles.jpg');
+        skinMat.map = tex; 
+        clothMat.map = tex;
+        darkMat.map = tex; 
+        pantsMat.map = tex;
+    }
     
     const shoeGeo = new THREE.BoxGeometry(0.22, 0.15, 0.35);
     const lShoe = new THREE.Mesh(shoeGeo, darkMat); lShoe.position.set(-0.2, 0.075, 0.06);
@@ -1510,6 +1523,36 @@ window.addEventListener('click', (event) => {
         showCustomConfirm(`Are you sure you want to kick ${name}?`, () => {
              socket?.emit('kick-player', { id: tid });
         });
+    }
+});
+
+window.addEventListener('mousemove', (event) => {
+    if (!inLobby3D || inSkinsTab || !isHost) {
+        document.body.style.cursor = 'default';
+        return;
+    }
+    const overlay = document.getElementById('custom-dialog-overlay');
+    if (overlay && overlay.style.display === 'flex') {
+        document.body.style.cursor = 'default';
+        return;
+    }
+
+    lobbyMouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    lobbyMouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    lobbyRaycaster.setFromCamera(lobbyMouse, lobbyCamera);
+    
+    const kickSprites: THREE.Object3D[] = [];
+    remotePlayers.forEach(p => {
+        const xl = p.group.children.find(c => c.name === 'kick_label');
+        if (xl && xl.visible) kickSprites.push(xl);
+    });
+
+    const intersects = lobbyRaycaster.intersectObjects(kickSprites, false);
+    if (intersects.length > 0) {
+        document.body.style.cursor = 'pointer';
+    } else {
+        document.body.style.cursor = 'default';
     }
 });
 
