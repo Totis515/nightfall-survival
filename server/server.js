@@ -115,7 +115,13 @@ io.on('connection', (socket) => {
         if (!code || !rooms[code]?.players[socket.id]) return;
         const p = rooms[code].players[socket.id];
         p.x = data.x; p.y = data.y; p.z = data.z; p.rotY = data.rotY;
-        socket.to(code).emit('player-moved', { id: socket.id, x: data.x, y: data.y, z: data.z, rotY: data.rotY });
+        if (data.weaponIdx !== undefined) p.weaponIdx = data.weaponIdx;
+        socket.to(code).emit('player-moved', {
+            id: socket.id,
+            x: data.x, y: data.y, z: data.z,
+            rotY: data.rotY,
+            weaponIdx: p.weaponIdx || 0
+        });
     });
 
     // ── SKIN CHANGED ─────────────────────────────────────────────

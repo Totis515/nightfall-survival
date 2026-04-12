@@ -583,9 +583,47 @@ function connectMultiplayer() {
             showPickupNotice(`${p.username} JOINED!`);
         }
     });
-    socket.on('player-moved', (data: { id: string; x: number; y: number; z: number; rotY: number }) => {
+    socket.on('player-moved', (data: { id: string; x: number; y: number; z: number; rotY: number; weaponIdx?: number }) => {
         const p = remotePlayers.get(data.id);
-        if (p) { p.group.position.set(data.x, data.y - 1.6, data.z); p.group.rotation.y = data.rotY; }
+        // Sumar PI al ángulo recibido: el modelo mira hacia -Z pero la cámara calcula la dirección hacia +Z
+        if (p) {
+            p.group.position.set(data.x, data.y - 1.6, data.z);
+            p.group.rotation.y = data.rotY + Math.PI;
+            // Actualizar etiqueta de arma equipada si viene el dato
+            if (data.weaponIdx !== undefined) {
+                const weaponNames = ['GUN', 'LASER', 'ROCKET', 'MINIGUN', 'FLAMETHROWER'];
+                const wName = weaponNames[data.weaponIdx] || 'GUN';
+                let weaponLabel = p.group.getObjectByName('weapon_label') as THREE.Sprite | undefined;
+                if (!weaponLabel) {
+                    // Crear etiqueta flotante de arma si no existe
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 256; canvas.height = 48;
+                    const ctx = canvas.getContext('2d')!;
+                    ctx.font = 'bold 22px monospace';
+                    ctx.fillStyle = '#ffcc00';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(wName, 128, 32);
+                    const tex = new THREE.CanvasTexture(canvas);
+                    const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false }));
+                    spr.name = 'weapon_label';
+                    spr.scale.set(1.4, 0.3, 1);
+                    spr.position.set(0, 2.6, 0);
+                    p.group.add(spr);
+                } else {
+                    // Actualizar texto de la etiqueta existente
+                    const mat = (weaponLabel as THREE.Sprite).material as THREE.SpriteMaterial;
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 256; canvas.height = 48;
+                    const ctx = canvas.getContext('2d')!;
+                    ctx.font = 'bold 22px monospace';
+                    ctx.fillStyle = '#ffcc00';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(wName, 128, 32);
+                    mat.map = new THREE.CanvasTexture(canvas);
+                    mat.needsUpdate = true;
+                }
+            }
+        }
     });
     socket.on('player-left', (data: { id: string }) => {
         removeRemotePlayer(data.id);
@@ -1100,13 +1138,16 @@ function multiplayerUpdate() {
     // Calcular el yaw exacto basándonos en la dirección real de la mira
     const dir = new THREE.Vector3();
     controls.getDirection(dir);
+    // atan2(x, z) da el ángulo de la dirección de vista. Los modelos remotos
+    // giran con + Math.PI para corregir el offset del modelo base.
     const yaw = Math.atan2(dir.x, dir.z);
 
     socket.emit('player-update', {
         x: camera.position.x,
         y: camera.position.y,
         z: camera.position.z,
-        rotY: yaw
+        rotY: yaw,
+        weaponIdx: currentWeaponIndex
     });
 }
 
@@ -2855,17 +2896,19 @@ class WeaponDrop {
             updateStatsHUD(); // Actualizar HUD al instante
             showPickupNotice("FUEL REFILLED");
         } else if (this.dropType === 'ammo') {
+            // Cantidades específicas de munición por arma al recoger el Ammo Refill
             const ammoAmounts: { [key: number]: number } = {
-                0: 50,    // Pistol Default
+                0: 80,    // GUN (Rifle base)
                 1: 100,   // Laser Pistol
                 2: 3,     // Rocket Launcher
                 3: 200,   // Minigun
-                4: 150    // Flamethrower
+                4: 150    // Fire Gun (Flamethrower)
             };
             for (let i = 0; i < weapons.length; i++) {
                 const w = weapons[i];
+                // Aplica para todas, incluyendo el arma base (índice 0)
                 if (playerInventory.includes(i) || i === 0) {
-                    w.ammoReserve += ammoAmounts[i] || w.magSize;
+                    w.ammoReserve += ammoAmounts[i] ?? w.magSize;
                 }
             }
             updateStatsHUD(); // Reflejar balas de inmediato
