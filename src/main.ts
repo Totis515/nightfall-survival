@@ -524,11 +524,14 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         lShoe.material = redMat;
         rShoe.material = redMat;
     } else if (skinId === 'kunigami') {
-        const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.3, 0.55), darkMat);
-        hair.position.y = 0.24;
-        const spikyBack = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.2, 0.15), darkMat);
-        spikyBack.position.set(0, 0.35, -0.2);
-        head.add(hair, spikyBack);
+        const hair = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.28, 0.52), darkMat);
+        hair.position.y = 0.28;
+        head.add(hair);
+        // Small orange triangles on top
+        const tr1 = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.15, 4), darkMat); tr1.position.set(-0.15, 0.45, -0.15);
+        const tr2 = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.15, 4), darkMat); tr2.position.set(0.15, 0.45, -0.15);
+        const tr3 = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.15, 4), darkMat); tr3.position.set(0, 0.45, 0.1);
+        head.add(tr1, tr2, tr3);
         // Jersey stripe
         const stripe = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.6), new THREE.MeshBasicMaterial({ color: 0x111111 }));
         stripe.position.set(0, 0, 0.191);
@@ -538,25 +541,52 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         const shirt = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.6), new THREE.MeshBasicMaterial({ color: 0xadd8e6 }));
         shirt.position.set(0, 0, 0.191);
         torso.add(shirt);
-        // Spiky light blue hair
-        const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.2, 0.55), darkMat);
-        hair.position.y = 0.24;
-        const s1 = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.4, 4), darkMat); s1.position.set(-0.2, 0.4, 0); s1.rotation.z = 0.2;
-        const s2 = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.5, 4), darkMat); s2.position.set(0, 0.45, 0);
-        const s3 = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.4, 4), darkMat); s3.position.set(0.2, 0.4, 0); s3.rotation.z = -0.2;
+        // Hair base
+        const hairBase = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.2, 0.55), darkMat);
+        hairBase.position.y = 0.24;
+        head.add(hairBase);
+        // Halo of spikes
+        for (let i = 0; i < 8; i++) {
+            const angle = (i / 8) * Math.PI * 2;
+            const sx = Math.cos(angle) * 0.22;
+            const sz = Math.sin(angle) * 0.22;
+            const spike = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.35, 4), darkMat);
+            spike.position.set(sx, 0.35, sz);
+            spike.rotation.x = sz * 1.5;
+            spike.rotation.z = -sx * 1.5;
+            head.add(spike);
+        }
         // Unibrow
         const unibrow = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.04), new THREE.MeshBasicMaterial({color: 0xadd8e6}));
         unibrow.position.set(0, 0.12, 0.245);
-        head.add(hair, s1, s2, s3, unibrow);
+        head.add(unibrow);
     } else if (skinId === 'doom') {
-        // Doom Helmet Visor (Cyan reflection)
-        const visor = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.2, 0.1), new THREE.MeshBasicMaterial({ color: 0x00aaff }));
-        visor.position.set(0, 0.05, 0.21);
-        head.add(visor);
+        const doomSkin = new THREE.MeshStandardMaterial({color: 0x8b5a2b}); // Muscular bare arms
+        lArm.material = doomSkin;
+        rArm.material = doomSkin;
+        
+        // Glove cubes
+        const lglove = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.25, 0.22), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+        lglove.position.set(0, -0.15, 0); lArm.add(lglove);
+        const rglove = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.25, 0.22), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+        rglove.position.set(0, -0.15, 0); rArm.add(rglove);
+
+        // Shoulder pads (Dark green)
+        const padMat = new THREE.MeshStandardMaterial({color: 0x2b3d2b});
+        const lpad = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.15, 0.25), padMat); lpad.position.set(0, 0.2, 0); lArm.add(lpad);
+        const rpad = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.15, 0.25), padMat); rpad.position.set(0, 0.2, 0); rArm.add(rpad);
+
+        // Doom Helmet Visor (T-Shaped Cyan reflection)
+        const visorTop = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.08, 0.1), new THREE.MeshBasicMaterial({ color: 0x00aaff }));
+        visorTop.position.set(0, 0.05, 0.21);
+        const visorBot = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 0.1), new THREE.MeshBasicMaterial({ color: 0x00aaff }));
+        visorBot.position.set(0, -0.05, 0.21);
+        head.add(visorTop, visorBot);
+
         // Armor details (Chest plate)
-        const chestGeo = new THREE.BoxGeometry(0.6, 0.5, 0.45);
-        const chest = new THREE.Mesh(chestGeo, new THREE.MeshStandardMaterial({color: 0x223322}));
-        chest.position.set(0, 0.1, 0);
+        const chestGeo = new THREE.BoxGeometry(0.6, 0.4, 0.45);
+        const chest = new THREE.Mesh(chestGeo, padMat);
+        chest.position.set(0, 0.15, 0);
         torso.add(chest);
     }
 
