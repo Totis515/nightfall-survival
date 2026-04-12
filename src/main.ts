@@ -112,24 +112,16 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         darkHex = 0x0000aa; // Blue hair
         pantsHex = 0x333333;
     } else if (skinId === 'miles') {
-        skinHex = 0xffffff;
-        clothHex = 0xffffff;
-        darkHex = 0xffffff;
-        pantsHex = 0xffffff;
+        skinHex = 0x111111;
+        clothHex = 0x111111;
+        darkHex = 0xdd0000;
+        pantsHex = 0x111111;
     }
 
     const skinMat = new THREE.MeshStandardMaterial({ color: skinHex, flatShading: true });
     const clothMat = new THREE.MeshStandardMaterial({ color: clothHex, flatShading: true });
     const darkMat = new THREE.MeshStandardMaterial({ color: darkHex, flatShading: true });
     const pantsMat = new THREE.MeshStandardMaterial({ color: pantsHex, flatShading: true });
-    
-    if (skinId === 'miles') {
-        const tex = new THREE.TextureLoader().load('Miles.jpg');
-        skinMat.map = tex; 
-        clothMat.map = tex;
-        darkMat.map = tex; 
-        pantsMat.map = tex;
-    }
     
     const shoeGeo = new THREE.BoxGeometry(0.22, 0.15, 0.35);
     const lShoe = new THREE.Mesh(shoeGeo, darkMat); lShoe.position.set(-0.2, 0.075, 0.06);
@@ -482,6 +474,31 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         // Boots
         lShoe.material = raincoatMat;
         rShoe.material = raincoatMat;
+    } else if (skinId === 'miles') {
+        // Red spider on chest
+        const spider = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.28), new THREE.MeshBasicMaterial({ color: 0xdd0000 }));
+        spider.position.set(0, 0, 0.191);
+        torso.add(spider);
+
+        // White spider eyes (slanted)
+        const eyeL = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.1), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+        eyeL.position.set(-0.12, 0.05, 0.245);
+        eyeL.rotation.z = Math.PI / 8;
+        
+        const eyeR = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.1), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+        eyeR.position.set(0.12, 0.05, 0.245);
+        eyeR.rotation.z = -Math.PI / 8;
+        
+        head.add(eyeL, eyeR);
+
+        // Red hands (gloves)
+        const redMat = new THREE.MeshStandardMaterial({ color: 0xdd0000 });
+        lArm.material = redMat;
+        rArm.material = redMat;
+
+        // Red shoes/soles
+        lShoe.material = redMat;
+        rShoe.material = redMat;
     }
 
     // Default to cyan, but custom colours for certain skins
@@ -489,6 +506,7 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
     const eyeGeo = new THREE.PlaneGeometry(0.12, 0.09);
     const lEye = new THREE.Mesh(eyeGeo, eyeMat); lEye.position.set(-0.12, 0.05, 0.245);
     const rEye = new THREE.Mesh(eyeGeo, eyeMat); rEye.position.set(0.12, 0.05, 0.245);
+    if (skinId === 'miles') { lEye.visible = false; rEye.visible = false; }
     head.add(lEye, rEye);
     
     model.add(lShoe, rShoe, lLeg, rLeg, torso, lArm, rArm, head);
