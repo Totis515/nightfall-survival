@@ -112,9 +112,9 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         darkHex = 0x0000aa; // Blue hair
         pantsHex = 0x333333;
     } else if (skinId === 'miles') {
-        skinHex = 0x111111;
+        skinHex = 0x5c3a21; // Dark brown skin
         clothHex = 0x111111;
-        darkHex = 0xdd0000;
+        darkHex = 0x111111; // Black hair
         pantsHex = 0x111111;
     }
 
@@ -213,22 +213,12 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         const belly = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.5), new THREE.MeshBasicMaterial({ color: 0xffffff }));
         belly.position.set(0, -0.05, 0.191);
         torso.add(belly);
-
-        // Muzzle
-        const muzzle = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.2), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-        muzzle.position.set(0, -0.1, 0.241);
-        head.add(muzzle);
     } else if (skinId === 'tung_tung') {
         // Kentongan (Wooden drum in hand)
         const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.4, 8), new THREE.MeshStandardMaterial({ color: 0x5a2d0c }));
         drum.rotation.x = Math.PI / 2;
         drum.position.set(0, -0.2, 0.2);
         lArm.add(drum);
-
-        // Wooden nose
-        const nose = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.15), skinMat);
-        nose.position.set(0, 0, 0.25);
-        head.add(nose);
     } else if (skinId === 'sailor_moon') {
         // Skullcap hair base to avoid bald head
         const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.25, 0.55), darkMat);
@@ -355,23 +345,17 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         const bigShoeMat = new THREE.MeshStandardMaterial({ color: 0x5c3a21 });
         lShoe.material = bigShoeMat;
         rShoe.material = bigShoeMat;
-        // Red nose
-        const nose = new THREE.Mesh(new THREE.SphereGeometry(0.06), new THREE.MeshBasicMaterial({color: 0xff0000}));
-        nose.position.set(0, 0, 0.26);
-        head.add(nose);
     } else if (skinId === 'mario') {
         // Red hat
         const hat = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.15, 0.52), clothMat);
         hat.position.y = 0.28;
         const brim = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.08, 0.2), clothMat);
         brim.position.set(0, 0.2, 0.3);
-        // Mustache (Brown) & Nose
+        // Mustache (Brown)
         const brownMat = new THREE.MeshStandardMaterial({ color: 0x3d2314 });
         const mustache = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.05, 0.06), brownMat);
-        mustache.position.set(0, -0.05, 0.26);
-        const nose = new THREE.Mesh(new THREE.SphereGeometry(0.08), skinMat);
-        nose.position.set(0, 0, 0.27);
-        head.add(hat, brim, mustache, nose);
+        mustache.position.set(0, -0.05, 0.25);
+        head.add(hat, brim, mustache);
         // Overalls
         const overalls = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.5), pantsMat);
         overalls.position.set(0, 0, 0.191);
@@ -405,15 +389,12 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         const belly = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.35), peachMat);
         belly.position.set(0, 0, 0.26);
         torso.add(belly);
-        // Nose & Ears (Moved out and forward slightly)
-        const nose = new THREE.Mesh(new THREE.SphereGeometry(0.04), new THREE.MeshBasicMaterial({color: 0x000000}));
-        nose.position.set(0, 0, 0.08); // Right on tip of muzzle
-        muzzle.add(nose);
+        // Ears (Moved out and forward slightly)
         const earMat = new THREE.MeshStandardMaterial({color: 0x0000ff});
         const earGeo = new THREE.ConeGeometry(0.12, 0.2, 4);
         const lEar = new THREE.Mesh(earGeo, earMat); lEar.position.set(-0.25, 0.2, 0.05); lEar.rotation.z = Math.PI/3; lEar.rotation.x = Math.PI/8;
         const rEar = new THREE.Mesh(earGeo, earMat); rEar.position.set(0.25, 0.2, 0.05); rEar.rotation.z = -Math.PI/3; rEar.rotation.x = Math.PI/8;
-        head.add(muzzle, lEar, rEar);
+        head.add(lEar, rEar);
         // Red shoes with white stripe
         const rShoesMat = new THREE.MeshStandardMaterial({ color: 0xdd0000 });
         lShoe.material = rShoesMat;
@@ -472,24 +453,35 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         clip.rotation.z = Math.PI/4;
         head.add(topHair, leftHair, rightHair, backHair, clip);
         // Boots
-        lShoe.material = raincoatMat;
         rShoe.material = raincoatMat;
     } else if (skinId === 'miles') {
-        // Red spider on chest
-        const spider = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.28), new THREE.MeshBasicMaterial({ color: 0xdd0000 }));
-        spider.position.set(0, 0, 0.191);
-        torso.add(spider);
+        // Afro fade hair
+        const hair = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.15, 0.52), darkMat);
+        hair.position.y = 0.28;
+        head.add(hair);
 
-        // White spider eyes (slanted)
-        const eyeL = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.1), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-        eyeL.position.set(-0.12, 0.05, 0.245);
-        eyeL.rotation.z = Math.PI / 8;
+        // Improved Red spider on chest
+        const spiderBody = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 0.18), new THREE.MeshBasicMaterial({ color: 0xdd0000 }));
+        spiderBody.position.set(0, 0, 0.191);
+        torso.add(spiderBody);
         
-        const eyeR = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.1), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-        eyeR.position.set(0.12, 0.05, 0.245);
-        eyeR.rotation.z = -Math.PI / 8;
-        
-        head.add(eyeL, eyeR);
+        // Spider legs (thin red lines crossing)
+        const leg1 = new THREE.Mesh(new THREE.PlaneGeometry(0.28, 0.02), new THREE.MeshBasicMaterial({ color: 0xdd0000 }));
+        leg1.position.set(0, 0.04, 0.192); leg1.rotation.z = Math.PI/6;
+        const leg2 = new THREE.Mesh(new THREE.PlaneGeometry(0.28, 0.02), new THREE.MeshBasicMaterial({ color: 0xdd0000 }));
+        leg2.position.set(0, 0.04, 0.192); leg2.rotation.z = -Math.PI/6;
+        const leg3 = new THREE.Mesh(new THREE.PlaneGeometry(0.28, 0.02), new THREE.MeshBasicMaterial({ color: 0xdd0000 }));
+        leg3.position.set(0, -0.04, 0.192); leg3.rotation.z = -Math.PI/6;
+        const leg4 = new THREE.Mesh(new THREE.PlaneGeometry(0.28, 0.02), new THREE.MeshBasicMaterial({ color: 0xdd0000 }));
+        leg4.position.set(0, -0.04, 0.192); leg4.rotation.z = Math.PI/6;
+        torso.add(leg1, leg2, leg3, leg4);
+
+        // Suit red v-stripes on shoulders
+        const stripeL = new THREE.Mesh(new THREE.PlaneGeometry(0.04, 0.7), new THREE.MeshBasicMaterial({ color: 0xdd0000 }));
+        stripeL.position.set(-0.25, 0, 0.191); stripeL.rotation.z = 0.2;
+        const stripeR = new THREE.Mesh(new THREE.PlaneGeometry(0.04, 0.7), new THREE.MeshBasicMaterial({ color: 0xdd0000 }));
+        stripeR.position.set(0.25, 0, 0.191); stripeR.rotation.z = -0.2;
+        torso.add(stripeL, stripeR);
 
         // Red hands (gloves)
         const redMat = new THREE.MeshStandardMaterial({ color: 0xdd0000 });
@@ -506,7 +498,6 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
     const eyeGeo = new THREE.PlaneGeometry(0.12, 0.09);
     const lEye = new THREE.Mesh(eyeGeo, eyeMat); lEye.position.set(-0.12, 0.05, 0.245);
     const rEye = new THREE.Mesh(eyeGeo, eyeMat); rEye.position.set(0.12, 0.05, 0.245);
-    if (skinId === 'miles') { lEye.visible = false; rEye.visible = false; }
     head.add(lEye, rEye);
     
     model.add(lShoe, rShoe, lLeg, rLeg, torso, lArm, rArm, head);
@@ -579,6 +570,15 @@ function spawnRemotePlayer(id: string, username: string, x: number, y: number, z
     group.userData.username = username; // store for skin-changed lookup
     group.userData.platform = platform;
     group.userData.isReady = isReady;
+    
+    // Hide default weapon gun barrel if creating the dummy for the locker/lobby
+    if (group.userData.rArmRef) {
+        const weapon = group.userData.rArmRef.children.find((c: any) => c.name === 'weapon_mesh');
+        if (weapon) {
+            weapon.visible = !isLocalLobbyDummy && !inLobby3D; // Hide in lobby
+        }
+    }
+
     const label = createNameLabel(username, platform, isReady);
     label.name = "name_label";
     group.add(label);
