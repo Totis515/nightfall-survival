@@ -1897,8 +1897,15 @@ const grassInstanced = new THREE.InstancedMesh(grassGeo, grassMat, grassCount);
 
 const dummy = new THREE.Object3D();
 for (let i = 0; i < grassCount; i++) {
-    const x = (Math.random() - 0.5) * 120;
-    const z = (Math.random() - 0.5) * 120;
+    const isForest = Math.random() < 0.6; // 60% of grass in the forest
+    let x, z;
+    if (isForest) {
+        x = -10 - Math.random() * 80;
+        z = -10 - Math.random() * 80;
+    } else {
+        x = (Math.random() - 0.5) * 160;
+        z = (Math.random() - 0.5) * 160;
+    }
 
     if (Math.abs(x) < 3 && Math.abs(z) < 3) continue;
 
@@ -1917,7 +1924,7 @@ function createTree() {
     const tree = new THREE.Group();
     // Trunk
     const trunkGeo = new THREE.CylinderGeometry(0.3, 0.4, 3, 5);
-    const trunkMat = new THREE.MeshLambertMaterial({ color: 0x3e2723 }); // Cheaper material
+    const trunkMat = new THREE.MeshLambertMaterial({ color: 0x3e2723, side: THREE.DoubleSide }); // Cheaper material
     const trunk = new THREE.Mesh(trunkGeo, trunkMat);
     trunk.position.y = 1.5;
     trunk.castShadow = true;
@@ -1952,15 +1959,21 @@ function createTree() {
     return tree;
 }
 
+// ---- ÁRBOLES FIJOS (BOSQUE OSCURO: Noroeste) ----
 const trees: THREE.Group[] = [];
 for (let i = 0; i < 60; i++) {
     const tree = createTree();
-    const angle = Math.random() * Math.PI * 2;
-    const radius = 10 + Math.random() * 50;
-    tree.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
-    tree.rotation.y = Math.random() * Math.PI;
+    let tx, tz;
+    if (i < 45) { // 75% en el bosque oscuro
+        tx = -15 - Math.random() * 65;
+        tz = -15 - Math.random() * 65;
+    } else { // 25% dispersos
+        tx = (Math.random() - 0.5) * 120;
+        tz = (Math.random() - 0.5) * 120;
+    }
 
-    // Random height variation
+    tree.position.set(tx, 0, tz);
+    tree.rotation.y = Math.random() * Math.PI;
     tree.scale.setScalar(0.8 + Math.random() * 0.6);
     scene.add(tree);
     trees.push(tree);
@@ -1983,18 +1996,23 @@ function createBush() {
     return bush;
 }
 
+// Arbustos concentrados en el bosque oscuro
 for (let i = 0; i < 40; i++) {
     const bush = createBush();
-    const angle = Math.random() * Math.PI * 2;
-    const radius = 5 + Math.random() * 80;
-    bush.position.set(Math.cos(angle) * radius, 0.4, Math.sin(angle) * radius);
+    let bx = (Math.random() - 0.5) * 120;
+    let bz = (Math.random() - 0.5) * 120;
+    if (Math.random() > 0.3) {
+        bx = -10 - Math.random() * 70;
+        bz = -10 - Math.random() * 70;
+    }
+    bush.position.set(bx, 0.4, bz);
     scene.add(bush);
 }
 
 // ---- ASSETS & POIS ----
 function createFence() {
     const fence = new THREE.Group();
-    const material = new THREE.MeshStandardMaterial({ color: 0x4e342e, flatShading: true }); // Brownish fence
+    const material = new THREE.MeshStandardMaterial({ color: 0x4e342e, flatShading: true, side: THREE.DoubleSide }); // Brownish fence
 
     // Posts
     for (let i = 0; i < 2; i++) {
@@ -2021,7 +2039,8 @@ function createRuinedCar() {
     const bodyColors = [0x546e7a, 0x78909c, 0x455a64]; // Muted blue/gray car colors
     const bodyMat = new THREE.MeshStandardMaterial({
         color: bodyColors[Math.floor(Math.random() * bodyColors.length)],
-        flatShading: true
+        flatShading: true,
+        side: THREE.DoubleSide
     });
 
     // Base
@@ -2062,8 +2081,8 @@ function createRuinedCar() {
 
 function createBlackMarketBuilding() {
     const building = new THREE.Group();
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0x37474f, flatShading: true }); // Dark slate blue building
-    const roofMat = new THREE.MeshStandardMaterial({ color: 0x5d4037, flatShading: true }); // Brownish roof
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x37474f, flatShading: true, side: THREE.DoubleSide }); // Dark slate blue building
+    const roofMat = new THREE.MeshStandardMaterial({ color: 0x5d4037, flatShading: true, side: THREE.DoubleSide }); // Brownish roof
 
     // Main Structure
     const body = new THREE.Mesh(new THREE.BoxGeometry(8, 5, 6), wallMat);
@@ -2099,7 +2118,7 @@ function createBlackMarketBuilding() {
 
 function createTower() {
     const tower = new THREE.Group();
-    const stoneMat = new THREE.MeshLambertMaterial({ color: 0x1a1a2e });
+    const stoneMat = new THREE.MeshLambertMaterial({ color: 0x1a1a2e, side: THREE.DoubleSide });
 
     // Base tier
     const base = new THREE.Mesh(new THREE.BoxGeometry(6, 8, 6), stoneMat);
@@ -2136,8 +2155,8 @@ function createTower() {
 // Casa con colisiones en las paredes Y en el techo para que el jetpack aterrice sobre ella
 function createHouse() {
     const house = new THREE.Group();
-    const wallMat = new THREE.MeshLambertMaterial({ color: 0x4e342e });
-    const roofMat = new THREE.MeshLambertMaterial({ color: 0x212121 });
+    const wallMat = new THREE.MeshLambertMaterial({ color: 0x4e342e, side: THREE.DoubleSide });
+    const roofMat = new THREE.MeshLambertMaterial({ color: 0x212121, side: THREE.DoubleSide });
 
     const base = new THREE.Mesh(new THREE.BoxGeometry(5, 4, 5), wallMat);
     base.position.y = 2;
@@ -2155,27 +2174,45 @@ function createHouse() {
 }
 
 // Añadir la Torre
+// ---- BOSQUE OSCURO (Noroeste) ----
 const mainTower = createTower();
-mainTower.position.set(-60, 0, 60);
+mainTower.position.set(-60, 0, -60);
 scene.add(mainTower);
 
-// Añadir Casas
-for (let i = 0; i < 10; i++) {
+// ---- ALDEA SEGURA (Centro-Sur) ----
+const housePositions = [
+    { x: -15, z: 20, r: 0.1 },
+    { x: 15, z: 20, r: -0.1 },
+    { x: 0, z: 35, r: Math.PI / 2 },
+    { x: -28, z: 5, r: 0.4 },
+    { x: 28, z: 5, r: -0.4 }
+];
+for (const hp of housePositions) {
     const house = createHouse();
-    const angle = (i / 10) * Math.PI * 2 + Math.random();
-    const radius = 25 + Math.random() * 35;
-    house.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
-    house.rotation.y = Math.random() * Math.PI;
+    house.position.set(hp.x, 0, hp.z);
+    house.rotation.y = hp.r;
     scene.add(house);
 }
 
-// Añadir el edificio del Black Market en una posición FIJA que coincida con el marcador del cielo
-const BM_X = 30, BM_Z = -40; // coincide con la posición de shopMarker definida más adelante
+// Vallas cerrando la aldea
+const fencePositions = [
+    { x: -8, z: 20 }, { x: 8, z: 20 },
+    { x: -20, z: 12 }, { x: 20, z: 12 },
+    { x: -10, z: 35 }, { x: 10, z: 35 }
+];
+for (const fp of fencePositions) {
+    const fence = createFence();
+    fence.position.set(fp.x, 0, fp.z);
+    fence.rotation.y = (Math.random() - 0.5) * 0.5;
+    scene.add(fence);
+}
+
+// ---- MERCADO NEGRO Y DESHUESADERO (Centro-Este) ----
+const BM_X = 30, BM_Z = -40; // coincide con shopMarker
 const blackMarket = createBlackMarketBuilding();
 blackMarket.position.set(BM_X, 0, BM_Z);
 scene.add(blackMarket);
 
-// Etiqueta de texto 3D flotante "BLACK MARKET" sobre el edificio
 const bmCanvas = document.createElement('canvas');
 bmCanvas.width = 512; bmCanvas.height = 128;
 const bmCtx = bmCanvas.getContext('2d')!;
@@ -2194,24 +2231,14 @@ bmSprite.position.set(BM_X, 7.5, BM_Z);
 bmSprite.scale.set(6, 1.5, 1);
 scene.add(bmSprite);
 
-// Distribuir coches
+// Carros arruinados agrupados cerca del mercado
 for (let i = 0; i < 8; i++) {
     const car = createRuinedCar();
-    const angle = Math.random() * Math.PI * 2;
-    const radius = 15 + Math.random() * 45;
-    car.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+    const cx = BM_X + (Math.random() - 0.5) * 45 - 10;
+    const cz = BM_Z + (Math.random() - 0.5) * 45 + 10;
+    car.position.set(cx, 0, cz);
     car.rotation.y = Math.random() * Math.PI;
     scene.add(car);
-}
-
-// Distribuir vallas
-for (let i = 0; i < 15; i++) {
-    const fence = createFence();
-    const angle = Math.random() * Math.PI * 2;
-    const radius = 10 + Math.random() * 50;
-    fence.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
-    fence.rotation.y = Math.random() * Math.PI;
-    scene.add(fence);
 }
 
 // Las armas especiales NO aparecen en el mapa al inicio.
