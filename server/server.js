@@ -6,7 +6,15 @@ const cors = require('cors');
 const app = express();
 app.use(cors());
 const httpServer = createServer(app);
-const io = new Server(httpServer, { cors: { origin: '*', methods: ['GET', 'POST'] } });
+const io = new Server(httpServer, {
+    cors: { origin: '*', methods: ['GET', 'POST'] },
+    // Mejorar timeouts para conexiones inestables
+    pingTimeout: 20000,
+    pingInterval: 10000,
+    transports: ['websocket', 'polling'], // WebSocket primero, fallback a polling
+    upgradeTimeout: 10000,
+    maxHttpBufferSize: 1e6 // 1MB máximo por paquete
+});
 
 app.get('/', (req, res) => {
     const totalPlayers = Object.values(rooms).reduce((s, r) => s + Object.keys(r.players).length, 0);
@@ -16,14 +24,19 @@ app.get('/', (req, res) => {
 // ─────────────────────────────────────────────────────────────────
 // ROOM STRUCTURE:
 // rooms[code] = {
-//   players:  { [id]: { id, username, platform, x,y,z, rotY, ready } }
+//   players:  { [id]: { id, username, platform, x,y,z, rotY, weaponIdx, ready } }
 //   enemies:  { [nid]: { nid, type, x, z } }   ← active enemy state
 //   hostId:   string                             ← room creator (drives enemy spawning)
 //   gameStarted: bool
+//   _pendingPositions: Map                        ← buffer de posiciones para batching
+//   _flushTimer: NodeJS.Timeout                  ← timer de batching
 // }
 // ─────────────────────────────────────────────────────────────────
 const rooms = {};
 const MAX_PLAYERS = 4;
+
+// Intervalo de batching de posiciones (ms) — 50ms = 20 actualizaciones/seg máximo
+const BATCH_INTERVAL_MS = 50;
 
 function generateCode() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -35,6 +48,39 @@ function generateCode() {
 function allReady(room) {
     const players = Object.values(room.players);
     return players.length > 0 && players.every(p => p.ready);
+}
+
+// Enviar batch de posiciones acumuladas a todos en la sala
+function flushPositions(code) {
+    const room = rooms[code];
+    if (!room || !room._pendingPositions || room._pendingPositions.size === 0) return;
+
+    // Para cada jugador, enviar solo los movimientos de los DEMÁS (no el suyo propio)
+    room._pendingPositions.forEach((data, senderId) => {
+        // Broadcast a todos excepto al emisor original
+        io.to(code).except(senderId).emit('player-moved', data);
+    });
+    room._pendingPositions.clear();
+}
+
+// Inicializar estructura de batching para una sala
+function initRoomBatch(code) {
+    const room = rooms[code];
+    if (!room._pendingPositions) room._pendingPositions = new Map();
+    if (!room._flushTimer) {
+        room._flushTimer = setInterval(() => flushPositions(code), BATCH_INTERVAL_MS);
+    }
+}
+
+function cleanupRoom(code) {
+    const room = rooms[code];
+    if (!room) return;
+    if (room._flushTimer) {
+        clearInterval(room._flushTimer);
+        room._flushTimer = null;
+    }
+    delete rooms[code];
+    console.log(`[ROOM] Deleted empty room ${code}`);
 }
 
 io.on('connection', (socket) => {
@@ -49,12 +95,13 @@ io.on('connection', (socket) => {
         rooms[code] = { players: {}, enemies: {}, hostId: socket.id, gameStarted: false };
         rooms[code].players[socket.id] = {
             id: socket.id, username, platform: platform || 'pc', skin: skin || 'default',
-            x: 0, y: 1.6, z: 0, rotY: 0, ready: false
+            x: 0, y: 1.6, z: 0, rotY: 0, weaponIdx: 0, ready: false
         };
 
         socket.join(code);
         socket.data.roomCode = code;
         socket.data.username = username;
+        initRoomBatch(code);
 
         console.log(`[ROOM] Created ${code} by ${username} (host)`);
         callback({ roomCode: code, players: rooms[code].players });
@@ -75,12 +122,13 @@ io.on('connection', (socket) => {
 
         rooms[code].players[socket.id] = {
             id: socket.id, username, platform: platform || 'pc', skin: skin || 'default',
-            x: 0, y: 1.6, z: 0, rotY: 0, ready: false
+            x: 0, y: 1.6, z: 0, rotY: 0, weaponIdx: 0, ready: false
         };
 
         socket.join(code);
         socket.data.roomCode = code;
         socket.data.username = username;
+        initRoomBatch(code);
 
         // Tell the new player about ALL existing players (fix late-join visibility)
         socket.emit('existing-players', Object.values(rooms[code].players).filter(p => p.id !== socket.id));
@@ -109,19 +157,23 @@ io.on('connection', (socket) => {
         if (callback) callback({ ready: player.ready });
     });
 
-    // ── POSITION UPDATE ──────────────────────────────────────────
+    // ── POSITION UPDATE (con batching) ───────────────────────────
     socket.on('player-update', (data) => {
         const code = socket.data.roomCode;
         if (!code || !rooms[code]?.players[socket.id]) return;
         const p = rooms[code].players[socket.id];
         p.x = data.x; p.y = data.y; p.z = data.z; p.rotY = data.rotY;
         if (data.weaponIdx !== undefined) p.weaponIdx = data.weaponIdx;
-        socket.to(code).emit('player-moved', {
-            id: socket.id,
-            x: data.x, y: data.y, z: data.z,
-            rotY: data.rotY,
-            weaponIdx: p.weaponIdx || 0
-        });
+
+        // Acumular en buffer para envío en lote (reduce paquetes con 3-4 jugadores)
+        if (rooms[code]._pendingPositions) {
+            rooms[code]._pendingPositions.set(socket.id, {
+                id: socket.id,
+                x: data.x, y: data.y, z: data.z,
+                rotY: data.rotY,
+                weaponIdx: p.weaponIdx || 0
+            });
+        }
     });
 
     // ── SKIN CHANGED ─────────────────────────────────────────────
@@ -129,7 +181,6 @@ io.on('connection', (socket) => {
         const code = socket.data.roomCode;
         if (!code || !rooms[code]?.players[socket.id]) return;
         rooms[code].players[socket.id].skin = skin;
-        // Relay to everyone else in the room so they update that player's model
         socket.to(code).emit('skin-changed', { id: socket.id, skin });
     });
 
@@ -137,9 +188,7 @@ io.on('connection', (socket) => {
     socket.on('spawn-enemy', (data) => {
         const code = socket.data.roomCode;
         if (!code || !rooms[code]) return;
-        // Store enemy state for late joiners
         rooms[code].enemies[data.nid] = { nid: data.nid, type: data.type, x: data.x, z: data.z };
-        // Relay to all OTHER players
         socket.to(code).emit('spawn-enemy', data);
     });
 
@@ -147,7 +196,7 @@ io.on('connection', (socket) => {
     socket.on('enemy-sync', (enemiesArray) => {
         const code = socket.data.roomCode;
         if (!code || !rooms[code]) return;
-        // Broadcast directly to non-hosts without storing
+        // Retransmitir directamente (ya viene de host a ~10fps, no necesita batching extra)
         socket.broadcast.to(code).emit('enemy-sync', enemiesArray);
     });
 
@@ -164,11 +213,8 @@ io.on('connection', (socket) => {
     socket.on('wave-complete', (data) => {
         const code = socket.data.roomCode;
         if (!code || !rooms[code]) return;
-        rooms[code].enemies = {}; // Clear enemy state for next wave
-        
-        // Reset shop ready state for next wave
+        rooms[code].enemies = {};
         Object.values(rooms[code].players).forEach(p => p.shopReady = false);
-        
         io.to(code).emit('wave-complete', data);
         console.log(`[WAVE] Wave ${data.wave} complete in room ${code}`);
     });
@@ -187,13 +233,10 @@ io.on('connection', (socket) => {
         rooms[code].players[socket.id].shopReady = ready;
         const playerList = Object.values(rooms[code].players);
 
-        // Relay updated list to show checkmarks in UI
         io.to(code).emit('shop-players-update', { players: playerList });
 
-        // If everyone in room is ready
         if (playerList.length > 0 && playerList.every(p => p.shopReady)) {
             io.to(code).emit('all-shop-ready');
-            // Reset for the future
             playerList.forEach(p => p.shopReady = false);
         }
     });
@@ -222,26 +265,34 @@ io.on('connection', (socket) => {
     });
 
     // ── DISCONNECT ────────────────────────────────────────────────
-
-    socket.on('disconnect', () => {
+    socket.on('disconnect', (reason) => {
         const code = socket.data.roomCode;
+        console.log(`[-] ${socket.id} (${reason})`);
         if (code && rooms[code]) {
             delete rooms[code].players[socket.id];
+
+            // Limpiar buffer de posiciones para este jugador
+            if (rooms[code]._pendingPositions) {
+                rooms[code]._pendingPositions.delete(socket.id);
+            }
+
             io.to(code).emit('player-left', { id: socket.id });
-            // If host disconnects, assign new host
+
+            // Si el host se desconecta, asignar nuevo host automáticamente
             if (rooms[code].hostId === socket.id) {
                 const remaining = Object.keys(rooms[code].players);
                 if (remaining.length > 0) {
                     rooms[code].hostId = remaining[0];
                     io.to(code).emit('host-changed', { newHostId: remaining[0] });
+                    console.log(`[HOST] New host: ${remaining[0]} in room ${code}`);
                 }
             }
+
+            // Limpiar sala vacía
             if (Object.keys(rooms[code].players).length === 0) {
-                delete rooms[code];
-                console.log(`[ROOM] Deleted empty room ${code}`);
+                cleanupRoom(code);
             }
         }
-        console.log(`[-] ${socket.id}`);
     });
 });
 

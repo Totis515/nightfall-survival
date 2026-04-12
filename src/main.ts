@@ -585,42 +585,39 @@ function connectMultiplayer() {
     });
     socket.on('player-moved', (data: { id: string; x: number; y: number; z: number; rotY: number; weaponIdx?: number }) => {
         const p = remotePlayers.get(data.id);
-        // Sumar PI al ángulo recibido: el modelo mira hacia -Z pero la cámara calcula la dirección hacia +Z
         if (p) {
-            p.group.position.set(data.x, data.y - 1.6, data.z);
-            p.group.rotation.y = data.rotY + Math.PI;
-            // Actualizar etiqueta de arma equipada si viene el dato
-            if (data.weaponIdx !== undefined) {
+            // Guardar posición/rotación OBJETIVO para interpolación suave en el loop de animación
+            if (!p.group.userData.targetPos) p.group.userData.targetPos = new THREE.Vector3();
+            p.group.userData.targetPos.set(data.x, data.y - 1.6, data.z);
+            p.group.userData.targetRotY = data.rotY + Math.PI;
+
+            // Actualizar etiqueta de arma SOLO si cambió (evita crear canvas cada packet)
+            if (data.weaponIdx !== undefined && data.weaponIdx !== p.group.userData.lastWeaponIdx) {
+                p.group.userData.lastWeaponIdx = data.weaponIdx;
                 const weaponNames = ['GUN', 'LASER', 'ROCKET', 'MINIGUN', 'FLAMETHROWER'];
                 const wName = weaponNames[data.weaponIdx] || 'GUN';
-                let weaponLabel = p.group.getObjectByName('weapon_label') as THREE.Sprite | undefined;
-                if (!weaponLabel) {
-                    // Crear etiqueta flotante de arma si no existe
+                const makeWeaponCanvas = (text: string) => {
                     const canvas = document.createElement('canvas');
                     canvas.width = 256; canvas.height = 48;
                     const ctx = canvas.getContext('2d')!;
-                    ctx.font = 'bold 22px monospace';
+                    ctx.clearRect(0, 0, 256, 48);
+                    ctx.font = 'bold 20px monospace';
                     ctx.fillStyle = '#ffcc00';
                     ctx.textAlign = 'center';
-                    ctx.fillText(wName, 128, 32);
-                    const tex = new THREE.CanvasTexture(canvas);
-                    const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false }));
+                    ctx.fillText(text, 128, 32);
+                    return new THREE.CanvasTexture(canvas);
+                };
+                let wLabel = p.group.getObjectByName('weapon_label') as THREE.Sprite | undefined;
+                if (!wLabel) {
+                    const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: makeWeaponCanvas(wName), depthTest: false }));
                     spr.name = 'weapon_label';
                     spr.scale.set(1.4, 0.3, 1);
                     spr.position.set(0, 2.6, 0);
                     p.group.add(spr);
                 } else {
-                    // Actualizar texto de la etiqueta existente
-                    const mat = (weaponLabel as THREE.Sprite).material as THREE.SpriteMaterial;
-                    const canvas = document.createElement('canvas');
-                    canvas.width = 256; canvas.height = 48;
-                    const ctx = canvas.getContext('2d')!;
-                    ctx.font = 'bold 22px monospace';
-                    ctx.fillStyle = '#ffcc00';
-                    ctx.textAlign = 'center';
-                    ctx.fillText(wName, 128, 32);
-                    mat.map = new THREE.CanvasTexture(canvas);
-                    mat.needsUpdate = true;
+                    (wLabel.material as THREE.SpriteMaterial).map?.dispose();
+                    (wLabel.material as THREE.SpriteMaterial).map = makeWeaponCanvas(wName);
+                    (wLabel.material as THREE.SpriteMaterial).needsUpdate = true;
                 }
             }
         }
@@ -1130,25 +1127,39 @@ function initMultiplayerUI() {
 
 // Position sync – called in animate() loop
 let _mpFrame = 0;
+let _lastSentPos = new THREE.Vector3();
+let _lastSentYaw = 0;
+let _lastSentWeapon = -1;
 function multiplayerUpdate() {
     if (!isMultiplayer || !socket?.connected || !gameStarted) return;
     if (isSpectator || playerHealth <= 0) return;
-    if (++_mpFrame % 3 !== 0) return;
+    if (++_mpFrame % 3 !== 0) return; // Ejecutar a ~20fps
 
-    // Calcular el yaw exacto basándonos en la dirección real de la mira
     const dir = new THREE.Vector3();
     controls.getDirection(dir);
-    // atan2(x, z) da el ángulo de la dirección de vista. Los modelos remotos
-    // giran con + Math.PI para corregir el offset del modelo base.
     const yaw = Math.atan2(dir.x, dir.z);
 
-    socket.emit('player-update', {
-        x: camera.position.x,
-        y: camera.position.y,
-        z: camera.position.z,
-        rotY: yaw,
-        weaponIdx: currentWeaponIndex
-    });
+    // Delta-compression: solo enviar si hubo un cambio real de posición o arma
+    const dx = Math.abs(camera.position.x - _lastSentPos.x);
+    const dy = Math.abs(camera.position.y - _lastSentPos.y);
+    const dz = Math.abs(camera.position.z - _lastSentPos.z);
+    const dYaw = Math.abs(yaw - _lastSentYaw);
+    const weaponChanged = currentWeaponIndex !== _lastSentWeapon;
+
+    // Solo emitir si el jugador se movió más de 0.02 unidades, giró > 0.01 rad, o cambió arma
+    if (dx > 0.02 || dy > 0.02 || dz > 0.02 || dYaw > 0.01 || weaponChanged) {
+        _lastSentPos.copy(camera.position);
+        _lastSentYaw = yaw;
+        _lastSentWeapon = currentWeaponIndex;
+
+        socket.emit('player-update', {
+            x: Math.round(camera.position.x * 100) / 100,  // 2 decimales = menos bytes
+            y: Math.round(camera.position.y * 100) / 100,
+            z: Math.round(camera.position.z * 100) / 100,
+            rotY: Math.round(yaw * 1000) / 1000,
+            weaponIdx: currentWeaponIndex
+        });
+    }
 }
 
 // ---- ELEMENTOS DE LA INTERFAZ (UI) ----
@@ -4538,6 +4549,25 @@ function animate() {
         flameParticles.update(delta);
         jetpackParticles.update(delta);
         multiplayerUpdate(); // Phase 12: sync position to server
+
+        // Interpolación suave de jugadores remotos cada frame (independiente de la tasa de red)
+        if (isMultiplayer) {
+            const lerpFactor = Math.min(1, delta * 18); // ~18 = suave pero sin retraso notable
+            remotePlayers.forEach(rp => {
+                const target = rp.group.userData.targetPos as THREE.Vector3 | undefined;
+                const targetRotY = rp.group.userData.targetRotY as number | undefined;
+                if (target) {
+                    rp.group.position.lerp(target, lerpFactor);
+                }
+                if (targetRotY !== undefined) {
+                    // Interpolar ángulo con wrap-around para evitar giro de 360° falso
+                    let diff = targetRotY - rp.group.rotation.y;
+                    while (diff > Math.PI) diff -= 2 * Math.PI;
+                    while (diff < -Math.PI) diff += 2 * Math.PI;
+                    rp.group.rotation.y += diff * lerpFactor;
+                }
+            });
+        }
 
         // Actualizar Proyectiles y Objetos Recogibles
         for (let i = playerRockets.length - 1; i >= 0; i--) {
