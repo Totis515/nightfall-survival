@@ -131,6 +131,26 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         clothHex = 0x3d523d; // Armor
         darkHex = 0x2b3d2b;
         pantsHex = 0x2b3d2b;
+    } else if (skinId === 'morty') {
+        skinHex = 0xffcc99; // Pale Skin
+        clothHex = 0xffff00; // Yellow shirt
+        darkHex = 0x5c3a21; // Brown hair
+        pantsHex = 0x0055aa; // Blue jeans
+    } else if (skinId === 'lelouch') {
+        skinHex = 0xffe0bd;
+        clothHex = 0x111111; // Black jacket
+        darkHex = 0x221144; // Dark messy hair
+        pantsHex = 0x111111; // Black pants
+    } else if (skinId === 'mugman') {
+        skinHex = 0xffffff; // White body/cup
+        clothHex = 0x111111; // Black body like cuphead
+        darkHex = 0xffffff; // White gloves
+        pantsHex = 0x0000dd; // Blue shorts
+    } else if (skinId === 'aj') {
+        skinHex = 0x5c3a21; // Dark skin
+        clothHex = 0xffffff; // White shirt
+        darkHex = 0x111111; // Bald/short dark hair
+        pantsHex = 0x000088; // Blue jeans
     }
 
     const skinMat = new THREE.MeshStandardMaterial({ color: skinHex, flatShading: true });
@@ -613,10 +633,67 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         
         // Boots
         lShoe.material = armrGrey; rShoe.material = armrGrey;
+    } else if (skinId === 'morty') {
+        // Short brown hair flat block
+        const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.15, 0.55), darkMat);
+        hair.position.y = 0.25;
+        head.add(hair);
+        // White shoes
+        const whiteShoe = new THREE.MeshStandardMaterial({color: 0xffffff});
+        lShoe.material = whiteShoe;
+        rShoe.material = whiteShoe;
+    } else if (skinId === 'lelouch') {
+        // High collar
+        const collar = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.4, 0.45), new THREE.MeshStandardMaterial({color: 0x111111}));
+        collar.position.set(0, 0.1, -0.05);
+        torso.add(collar);
+        // Gold uniform accents
+        const goldMat = new THREE.MeshBasicMaterial({color: 0xffcc00});
+        const stripe1 = new THREE.Mesh(new THREE.PlaneGeometry(0.04, 0.6), goldMat); stripe1.position.set(-0.25, 0, 0.191); torso.add(stripe1);
+        const stripe2 = new THREE.Mesh(new THREE.PlaneGeometry(0.04, 0.6), goldMat); stripe2.position.set(0.25, 0, 0.191); torso.add(stripe2);
+        // Messy dark hair
+        const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.3, 0.55), darkMat); hair.position.y = 0.28; head.add(hair);
+        const spike = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.4, 4), darkMat); spike.position.set(0, 0.4, -0.1); spike.rotation.x= -0.2; head.add(spike);
+    } else if (skinId === 'mugman') {
+        // Overalls and buttons identical to cuphead
+        const overalls = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.5), pantsMat); overalls.position.set(0, 0, 0.191); torso.add(overalls);
+        const btnGeo = new THREE.SphereGeometry(0.04);
+        const btnMat = new THREE.MeshStandardMaterial({ color: 0xffcc00 }); // Yellow buttons
+        const b1 = new THREE.Mesh(btnGeo, btnMat); b1.position.set(-0.15, 0.15, 0.2);
+        const b2 = new THREE.Mesh(btnGeo, btnMat); b2.position.set(0.15, 0.15, 0.2);
+        torso.add(b1, b2);
+        // Handle on the back
+        const handle = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.04, 8, 16), new THREE.MeshStandardMaterial({color: 0xffffff}));
+        handle.position.set(0, 0, -0.25); head.add(handle);
+        // Brown shoes / White hands
+        const brownMat = new THREE.MeshStandardMaterial({ color: 0x5c3a21 });
+        lShoe.material = brownMat; rShoe.material = brownMat;
+        lArm.material = new THREE.MeshStandardMaterial({color: 0xffffff}); rArm.material = new THREE.MeshStandardMaterial({color: 0xffffff});
+        // Blue nose (instead of red)
+        const nose = new THREE.Mesh(new THREE.SphereGeometry(0.06), new THREE.MeshBasicMaterial({color: 0x00aaff})); nose.position.set(0, 0, 0.26); head.add(nose);
+        // Blue and White Straw
+        const whiteMat = new THREE.MeshStandardMaterial({color: 0xffffff});
+        const blueMat = new THREE.MeshStandardMaterial({color: 0x00aaff});
+        const strawBase = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.2), whiteMat); strawBase.position.set(0.15, 0.35, 0); strawBase.rotation.z = -Math.PI/8;
+        const strawTop1 = new THREE.Mesh(new THREE.CylinderGeometry(0.041, 0.041, 0.05), blueMat); strawTop1.position.y = 0.05;
+        const strawTop2 = new THREE.Mesh(new THREE.CylinderGeometry(0.041, 0.041, 0.05), blueMat); strawTop2.position.y = -0.05;
+        strawBase.add(strawTop1, strawTop2); head.add(strawBase);
+    } else if (skinId === 'aj') {
+        skinMat.color.setHex(0x5c3a21); // Ensure dark skin for head/arms
+        // Blue sweater vest
+        const vest = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.6, 0.4), new THREE.MeshStandardMaterial({color: 0x0055ff}));
+        vest.position.set(0, -0.05, 0); torso.add(vest);
+        // Glasses (Black frames)
+        const frameMat = new THREE.MeshBasicMaterial({color: 0x111111});
+        const lFrame = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.12, 0.05), frameMat); lFrame.position.set(-0.12, 0.05, 0.25); head.add(lFrame);
+        const rFrame = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.12, 0.05), frameMat); rFrame.position.set(0.12, 0.05, 0.25); head.add(rFrame);
+        const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.02, 0.05), frameMat); bridge.position.set(0, 0.05, 0.25); head.add(bridge);
+        // Short black hair
+        const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.1, 0.55), darkMat); hair.position.y = 0.25; head.add(hair);
     }
 
     // Default to cyan, but custom colours for certain skins
-    const eyeMat = new THREE.MeshBasicMaterial({ color: (skinId === 'light_yagami' || skinId === 'pomni') ? 0x822f2f : (skinId === 'lawliet' || skinId === 'cuphead' || skinId === 'geto') ? 0x111111 : 0x00ffcc });
+    const eyeMat = new THREE.MeshBasicMaterial({ color: (skinId === 'light_yagami' || skinId === 'pomni') ? 0x822f2f : (skinId === 'lawliet' || skinId === 'cuphead' || skinId === 'mugman' || skinId === 'geto') ? 0x111111 : (skinId === 'lelouch') ? 0xaa00ee : 0x00ffcc });
     const eyeGeo = new THREE.PlaneGeometry(0.12, 0.09);
     const lEye = new THREE.Mesh(eyeGeo, eyeMat); lEye.position.set(-0.12, 0.05, 0.245);
     const rEye = new THREE.Mesh(eyeGeo, eyeMat); rEye.position.set(0.12, 0.05, 0.245);
