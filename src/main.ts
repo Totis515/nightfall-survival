@@ -747,11 +747,13 @@ function connectMultiplayer() {
     socket.on('player-died', (data: { id: string, name: string }) => {
         const p = remotePlayers.get(data.id);
         if (p) {
-            // Poner al personaje en pose de muerto: tumbado boca arriba
-            p.group.rotation.x = Math.PI / 2; // Caer de espaldas
-            p.group.position.y = -0.5;         // Quedar en el suelo
+            // Pose de muerto: rotar todo el grupo 90° para tumbarlo de espaldas
+            // El modelo tiene pies a y=0, cabeza ~y=1.9 -> centro en y~0.95
+            // Al girar sobre X, necesitamos mover el grupo para que quede en el suelo
+            p.group.rotation.set(Math.PI / 2, p.group.rotation.y, 0);
+            p.group.position.y = 0.95; // La mitad de altura del modelo (aprox)
 
-            // Quitar el arma de la mano (si existe)
+            // Quitar arma de la mano derecha
             const rArmRef = p.group.userData.rArmRef;
             if (rArmRef) {
                 const wm = rArmRef.getObjectByName('weapon_mesh');
@@ -763,11 +765,10 @@ function connectMultiplayer() {
             const wlbl = p.group.getObjectByName('weapon_label');
             if (wlbl) p.group.remove(wlbl);
 
-            // Marcar como muerto para que los enemigos lo ignoren
-            p.group.userData.isDead = true;
-            remotePlayers.delete(data.id); // Eliminar del mapa activo (enemigos ya no lo persiguen)
+            // Eliminar del mapa activo => enemigos dejan de perseguir
+            remotePlayers.delete(data.id);
 
-            // El cuerpo permanece en la escena como decoración por 15 segundos, luego desaparece
+            // Cuerpo permanece 15s como decoración visible, luego se limpia
             setTimeout(() => scene.remove(p.group), 15000);
         }
         // Show banner
@@ -2252,24 +2253,30 @@ function createTower() {
     return tower;
 }
 
-// Casa con colisiones en las paredes Y en el techo para que el jetpack aterrice sobre ella
+// Casa: el cubo visible (BoxGeometry) ES la colisión. Nada invisible.
 function createHouse() {
     const house = new THREE.Group();
     const wallMat = new THREE.MeshLambertMaterial({ color: 0x4e342e });
     const roofMat = new THREE.MeshLambertMaterial({ color: 0x212121 });
 
+    // Cuerpo principal de la casa — el cubo visible actua como colisionador completo
     const base = new THREE.Mesh(new THREE.BoxGeometry(5, 4, 5), wallMat);
-    base.position.y = 2;
+    base.position.y = 2;  // centro en Y=2 => pies en y=0, techo en y=4
+    base.castShadow = true;
+    base.receiveShadow = true;
     house.add(base);
-    collidables.push(base);        // Los disparos impactan contra las paredes
-    playerCollidables.push(base);  // El jugador y los monstruos no la atraviesan
+    collidables.push(base);       // Colisión para balas y raycasts de enemigos
+    playerCollidables.push(base); // Colisión para movimiento del jugador
 
-    // Visual del techo (CylinderGeometry crea una pirámide truncada de tope plano)
-    const roof = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 4, 3, 4), roofMat);
-    roof.position.y = 5.5;
+    // Tejado visual: CylinderGeometry truncado da un perfil de pirámide plana
+    // NO se agrega a playerCollidables para que el jetpack pueda volar libre encima
+    const roof = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 3.0, 2.5, 4), roofMat);
+    roof.position.y = 5.2;
     roof.rotation.y = Math.PI / 4;
+    roof.castShadow = true;
     house.add(roof);
-    playerCollidables.push(roof); // El techo físico es completamente explorable ahora
+    // Solo se puede ATERRIZAR sobre el techo cuadrado de las paredes (y=4)
+    // - El raycaster hacia abajo del jugador detecta el top del base box sin necesidad de mesh extra
 
     return house;
 }
@@ -3152,14 +3159,19 @@ class WaveManager {
         }
 
         // Actualizar enemigos actuales
+        // Solo inclui jugadores VIVOS como objetivos
         const allPlayers: THREE.Vector3[] = [];
         if (playerHealth > 0) allPlayers.push(playerPos);
 
         if (isMultiplayer && isHost) {
+            // Solo los jugadores remotos vivos (en remotePlayers) son objetivos válidos
             remotePlayers.forEach(rp => {
                 allPlayers.push(rp.group.position);
             });
         }
+
+        // Si no hay jugadores vivos, los enemigos se quedan quietos
+        if (allPlayers.length === 0) return;
 
         for (let i = this.activeEnemies.length - 1; i >= 0; i--) {
             const en = this.activeEnemies[i];
