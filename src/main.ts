@@ -748,10 +748,8 @@ function connectMultiplayer() {
         const p = remotePlayers.get(data.id);
         if (p) {
             // Pose de muerto: rotar todo el grupo 90° para tumbarlo de espaldas
-            // El modelo tiene pies a y=0, cabeza ~y=1.9 -> centro en y~0.95
-            // Al girar sobre X, necesitamos mover el grupo para que quede en el suelo
             p.group.rotation.set(Math.PI / 2, p.group.rotation.y, 0);
-            p.group.position.y = 0.95; // La mitad de altura del modelo (aprox)
+            p.group.position.y = 0.15; // Pegado al suelo, antes estaba muy alto (0.95)
 
             // Quitar arma de la mano derecha
             const rArmRef = p.group.userData.rArmRef;
@@ -2269,15 +2267,13 @@ function createHouse() {
     collidables.push(base);       // Colisión para balas y raycasts de enemigos
     playerCollidables.push(base); // Colisión para movimiento del jugador
 
-    // Tejado visual: CylinderGeometry truncado da un perfil de pirámide plana
-    // NO se agrega a playerCollidables para que el jetpack pueda volar libre encima
-    const roof = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 3.0, 2.5, 4), roofMat);
-    roof.position.y = 5.2;
+    // Tejado visual: Restaurado a dimensiones originales y con colisión
+    const roof = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 4, 3, 4), roofMat);
+    roof.position.y = 5.5; // Centro 5.5 superior
     roof.rotation.y = Math.PI / 4;
     roof.castShadow = true;
     house.add(roof);
-    // Solo se puede ATERRIZAR sobre el techo cuadrado de las paredes (y=4)
-    // - El raycaster hacia abajo del jugador detecta el top del base box sin necesidad de mesh extra
+    playerCollidables.push(roof); // Colisión física en el techo para aterrizar adecuadamente
 
     return house;
 }
@@ -4189,8 +4185,8 @@ let lastLookX = 0;
 let lastLookY = 0; // Estado para mantener presionada la barra espaciadora
 
 // Velocidades incrementadas para un movimiento terrestre más rápido
-const walkSpeed = 60.0;
-const sprintSpeed = 100.0;
+const walkSpeed = 55.0; // Reducido levemente
+const sprintSpeed = 85.0; // Reducido para no ser tan rápido
 let speed = walkSpeed;
 const mass = 100.0;
 let prevTime = performance.now();

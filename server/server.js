@@ -262,6 +262,16 @@ io.on('connection', (socket) => {
             rooms[code].players[socket.id].isDead = true;
         }
         io.to(code).emit('player-died', { id: socket.id, name: data.name });
+
+        // MIGRAR HOST SI EL HOST MUERE
+        if (rooms[code].hostId === socket.id) {
+            const remaining = Object.values(rooms[code].players).filter(p => !p.isDead && p.id !== socket.id);
+            if (remaining.length > 0) {
+                rooms[code].hostId = remaining[0].id;
+                io.to(code).emit('host-changed', { newHostId: remaining[0].id });
+                console.log(`[HOST CHANGED] Dead Host. New Host: ${remaining[0].id} in room ${code}`);
+            }
+        }
     });
 
     // ── DISCONNECT ────────────────────────────────────────────────
