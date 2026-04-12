@@ -119,7 +119,7 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
     } else if (skinId === 'kunigami') {
         skinHex = 0xffe0bd;
         clothHex = 0x1a36b8; // Medium blue jersey
-        darkHex = 0x1a237e; // Dark blue hair
+        darkHex = 0xff6600; // TRUE Orange hair!
         pantsHex = 0x1a36b8; // Medium blue pants
     } else if (skinId === 'rick') {
         skinHex = 0xf1e4cf;
@@ -405,14 +405,14 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         const gloveMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
         lArm.material = gloveMat;
         rArm.material = gloveMat;
-        // Blue spikes (Prominent Sonic back quills)
-        const spikeGeo = new THREE.ConeGeometry(0.18, 0.5, 4);
-        const sTop = new THREE.Mesh(spikeGeo, darkMat); sTop.rotation.x = -Math.PI / 1.5; sTop.position.set(0, 0.25, -0.3);
-        const sMid = new THREE.Mesh(spikeGeo, darkMat); sMid.rotation.x = -Math.PI / 1.8; sMid.position.set(0, 0.05, -0.35);
-        const sBot = new THREE.Mesh(spikeGeo, darkMat); sBot.rotation.x = -Math.PI / 2.2; sBot.position.set(0, -0.15, -0.3);
+        // Blue spikes (Prominent Sonic back quills - wide but short)
+        const spikeGeo = new THREE.ConeGeometry(0.24, 0.35, 4);
+        const sTop = new THREE.Mesh(spikeGeo, darkMat); sTop.rotation.x = -Math.PI / 1.5; sTop.position.set(0, 0.2, -0.28);
+        const sMid = new THREE.Mesh(spikeGeo, darkMat); sMid.rotation.x = -Math.PI / 1.8; sMid.position.set(0, 0, -0.32);
+        const sBot = new THREE.Mesh(spikeGeo, darkMat); sBot.rotation.x = -Math.PI / 2.2; sBot.position.set(0, -0.2, -0.28);
         // Side spikes to widen hair
-        const sSideL = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.4, 4), darkMat); sSideL.rotation.x = -Math.PI / 1.8; sSideL.rotation.y = 0.5; sSideL.position.set(-0.25, 0.1, -0.2);
-        const sSideR = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.4, 4), darkMat); sSideR.rotation.x = -Math.PI / 1.8; sSideR.rotation.y = -0.5; sSideR.position.set(0.25, 0.1, -0.2);
+        const sSideL = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.3, 4), darkMat); sSideL.rotation.x = -Math.PI / 1.8; sSideL.rotation.y = 0.5; sSideL.position.set(-0.25, 0.05, -0.2);
+        const sSideR = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.3, 4), darkMat); sSideR.rotation.x = -Math.PI / 1.8; sSideR.rotation.y = -0.5; sSideR.position.set(0.25, 0.05, -0.2);
         head.add(sTop, sMid, sBot, sSideL, sSideR);
         // Muzzle and Belly
         const peachMat = new THREE.MeshStandardMaterial({color: 0xffdab9});
