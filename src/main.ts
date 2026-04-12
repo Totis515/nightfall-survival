@@ -138,19 +138,19 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         pantsHex = 0x0055aa; // Blue jeans
     } else if (skinId === 'lelouch') {
         skinHex = 0xffe0bd;
-        clothHex = 0x111111; // Black jacket
+        clothHex = 0x20155e; // Dark blue uniform
         darkHex = 0x221144; // Dark messy hair
-        pantsHex = 0x111111; // Black pants
+        pantsHex = 0x20155e; // Dark blue pants
     } else if (skinId === 'mugman') {
         skinHex = 0xffffff; // White body/cup
         clothHex = 0x111111; // Black body like cuphead
         darkHex = 0xffffff; // White gloves
         pantsHex = 0x0000dd; // Blue shorts
     } else if (skinId === 'aj') {
-        skinHex = 0x5c3a21; // Dark skin
-        clothHex = 0xffffff; // White shirt
-        darkHex = 0x111111; // Bald/short dark hair
-        pantsHex = 0x000088; // Blue jeans
+        skinHex = 0x4caf50; // Green Alien Skin
+        clothHex = 0x4caf50; // Green Body
+        darkHex = 0x4caf50; // Green
+        pantsHex = 0x4caf50; // Green legs
     }
 
     const skinMat = new THREE.MeshStandardMaterial({ color: skinHex, flatShading: true });
@@ -643,25 +643,29 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         lShoe.material = whiteShoe;
         rShoe.material = whiteShoe;
     } else if (skinId === 'lelouch') {
-        // High collar
-        const collar = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.4, 0.45), new THREE.MeshStandardMaterial({color: 0x111111}));
-        collar.position.set(0, 0.1, -0.05);
-        torso.add(collar);
-        // Gold uniform accents
+        const dBlueMat = new THREE.MeshStandardMaterial({color: 0x20155e});
         const goldMat = new THREE.MeshBasicMaterial({color: 0xffcc00});
-        const stripe1 = new THREE.Mesh(new THREE.PlaneGeometry(0.04, 0.6), goldMat); stripe1.position.set(-0.25, 0, 0.191); torso.add(stripe1);
-        const stripe2 = new THREE.Mesh(new THREE.PlaneGeometry(0.04, 0.6), goldMat); stripe2.position.set(0.25, 0, 0.191); torso.add(stripe2);
+        // High flared collar
+        const lSpikeC = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.4, 4), dBlueMat); lSpikeC.position.set(-0.25, 0.4, -0.1); lSpikeC.rotation.z = 0.2; torso.add(lSpikeC);
+        const rSpikeC = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.4, 4), dBlueMat); rSpikeC.position.set(0.25, 0.4, -0.1); rSpikeC.rotation.z = -0.2; torso.add(rSpikeC);
+        // Collar Gold trim
+        const lSpikeG = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.35, 4), goldMat); lSpikeG.position.set(-0.25, 0.38, -0.12); lSpikeG.rotation.z = 0.2; torso.add(lSpikeG);
+        const rSpikeG = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.35, 4), goldMat); rSpikeG.position.set(0.25, 0.38, -0.12); rSpikeG.rotation.z = -0.2; torso.add(rSpikeG);
+        // Gold uniform accents (chest)
+        const stripe1 = new THREE.Mesh(new THREE.PlaneGeometry(0.04, 0.6), goldMat); stripe1.position.set(-0.15, 0, 0.191); torso.add(stripe1);
+        const stripe2 = new THREE.Mesh(new THREE.PlaneGeometry(0.04, 0.6), goldMat); stripe2.position.set(0.15, 0, 0.191); torso.add(stripe2);
+        // Skirt/Coat tails hanging down
+        const tailL = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.6, 4), dBlueMat); tailL.position.set(-0.25, -0.3, 0); tailL.rotation.z = Math.PI; torso.add(tailL);
+        const tailR = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.6, 4), dBlueMat); tailR.position.set(0.25, -0.3, 0); tailR.rotation.z = Math.PI; torso.add(tailR);
+        // Red inside, blue outside cape
+        const capeInside = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 1.2), new THREE.MeshBasicMaterial({color: 0x8b0022}));
+        capeInside.position.set(0, 0.2, -0.21); torso.add(capeInside);
+        const capeOutside = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 1.2), new THREE.MeshBasicMaterial({color: 0x111111}));
+        capeOutside.position.set(0, 0.2, -0.211); capeOutside.rotation.y = Math.PI; torso.add(capeOutside);
         // Messy dark hair
         const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.3, 0.55), darkMat); hair.position.y = 0.28; head.add(hair);
         const spike = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.4, 4), darkMat); spike.position.set(0, 0.4, -0.1); spike.rotation.x= -0.2; head.add(spike);
     } else if (skinId === 'mugman') {
-        // Overalls and buttons identical to cuphead
-        const overalls = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.5), pantsMat); overalls.position.set(0, 0, 0.191); torso.add(overalls);
-        const btnGeo = new THREE.SphereGeometry(0.04);
-        const btnMat = new THREE.MeshStandardMaterial({ color: 0xffcc00 }); // Yellow buttons
-        const b1 = new THREE.Mesh(btnGeo, btnMat); b1.position.set(-0.15, 0.15, 0.2);
-        const b2 = new THREE.Mesh(btnGeo, btnMat); b2.position.set(0.15, 0.15, 0.2);
-        torso.add(b1, b2);
         // Handle on the back
         const handle = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.04, 8, 16), new THREE.MeshStandardMaterial({color: 0xffffff}));
         handle.position.set(0, 0, -0.25); head.add(handle);
@@ -679,17 +683,29 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         const strawTop2 = new THREE.Mesh(new THREE.CylinderGeometry(0.041, 0.041, 0.05), blueMat); strawTop2.position.y = -0.05;
         strawBase.add(strawTop1, strawTop2); head.add(strawBase);
     } else if (skinId === 'aj') {
-        skinMat.color.setHex(0x5c3a21); // Ensure dark skin for head/arms
-        // Blue sweater vest
-        const vest = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.6, 0.4), new THREE.MeshStandardMaterial({color: 0x0055ff}));
-        vest.position.set(0, -0.05, 0); torso.add(vest);
-        // Glasses (Black frames)
-        const frameMat = new THREE.MeshBasicMaterial({color: 0x111111});
-        const lFrame = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.12, 0.05), frameMat); lFrame.position.set(-0.12, 0.05, 0.25); head.add(lFrame);
-        const rFrame = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.12, 0.05), frameMat); rFrame.position.set(0.12, 0.05, 0.25); head.add(rFrame);
-        const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.02, 0.05), frameMat); bridge.position.set(0, 0.05, 0.25); head.add(bridge);
-        // Short black hair
-        const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.1, 0.55), darkMat); hair.position.y = 0.25; head.add(hair);
+        // Red gloves
+        const redGlove = new THREE.MeshStandardMaterial({color: 0x8b0000});
+        lArm.material = redGlove; rArm.material = redGlove;
+        // Big smile Black mouth
+        const mouth = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.1), new THREE.MeshBasicMaterial({color: 0x111111}));
+        mouth.position.set(0, -0.05, 0.245);
+        // Fangs
+        const fangMat = new THREE.MeshBasicMaterial({color: 0xffffff});
+        const fangL = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.06, 0.01), fangMat); fangL.position.set(-0.1, -0.05, 0.01);
+        const fangR = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.06, 0.01), fangMat); fangR.position.set(0.1, -0.05, 0.01);
+        mouth.add(fangL, fangR);
+        head.add(mouth);
+        // Antennas
+        const greenMat = new THREE.MeshStandardMaterial({color: 0x4caf50});
+        const antL = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.2), greenMat); antL.position.set(-0.15, 0.35, 0); antL.rotation.z = 0.2;
+        const ballL = new THREE.Mesh(new THREE.SphereGeometry(0.05), greenMat); ballL.position.y = 0.1; antL.add(ballL);
+        const antR = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.2), greenMat); antR.position.set(0.15, 0.35, 0); antR.rotation.z = -0.2;
+        const ballR = new THREE.Mesh(new THREE.SphereGeometry(0.05), greenMat); ballR.position.y = 0.1; antR.add(ballR);
+        head.add(antL, antR);
+        // Brown Backpack
+        const pack = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.25), new THREE.MeshStandardMaterial({color: 0x5c3a21}));
+        pack.position.set(0, 0, -0.25);
+        torso.add(pack);
     }
 
     // Default to cyan, but custom colours for certain skins
