@@ -398,6 +398,12 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         hat.position.y = 0.28;
         const brim = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.08, 0.2), clothMat);
         brim.position.set(0, 0.2, 0.3);
+        // M emblem on brim
+        const mWhite = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.1, 0.02), new THREE.MeshBasicMaterial({color: 0xffffff}));
+        mWhite.position.set(0, 0.22, 0.41);
+        const mRed = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.07, 0.02), new THREE.MeshBasicMaterial({color: 0xff0000}));
+        mRed.position.set(0, 0.22, 0.42);
+        head.add(mWhite, mRed);
         // Mustache (Brown) & Nose
         const brownMat = new THREE.MeshStandardMaterial({ color: 0x3d2314 });
         const mustache = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.05, 0.06), brownMat);
@@ -645,26 +651,34 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
     } else if (skinId === 'lelouch') {
         const dBlueMat = new THREE.MeshStandardMaterial({color: 0x20155e});
         const goldMat = new THREE.MeshBasicMaterial({color: 0xffcc00});
-        // High flared collar
-        const lSpikeC = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.4, 4), dBlueMat); lSpikeC.position.set(-0.25, 0.4, -0.1); lSpikeC.rotation.z = 0.2; torso.add(lSpikeC);
-        const rSpikeC = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.4, 4), dBlueMat); rSpikeC.position.set(0.25, 0.4, -0.1); rSpikeC.rotation.z = -0.2; torso.add(rSpikeC);
-        // Collar Gold trim
-        const lSpikeG = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.35, 4), goldMat); lSpikeG.position.set(-0.25, 0.38, -0.12); lSpikeG.rotation.z = 0.2; torso.add(lSpikeG);
-        const rSpikeG = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.35, 4), goldMat); rSpikeG.position.set(0.25, 0.38, -0.12); rSpikeG.rotation.z = -0.2; torso.add(rSpikeG);
-        // Gold uniform accents (chest)
-        const stripe1 = new THREE.Mesh(new THREE.PlaneGeometry(0.04, 0.6), goldMat); stripe1.position.set(-0.15, 0, 0.191); torso.add(stripe1);
-        const stripe2 = new THREE.Mesh(new THREE.PlaneGeometry(0.04, 0.6), goldMat); stripe2.position.set(0.15, 0, 0.191); torso.add(stripe2);
-        // Skirt/Coat tails hanging down
-        const tailL = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.6, 4), dBlueMat); tailL.position.set(-0.25, -0.3, 0); tailL.rotation.z = Math.PI; torso.add(tailL);
-        const tailR = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.6, 4), dBlueMat); tailR.position.set(0.25, -0.3, 0); tailR.rotation.z = Math.PI; torso.add(tailR);
-        // Red inside, blue outside cape
-        const capeInside = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 1.2), new THREE.MeshBasicMaterial({color: 0x8b0022}));
-        capeInside.position.set(0, 0.2, -0.21); torso.add(capeInside);
-        const capeOutside = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 1.2), new THREE.MeshBasicMaterial({color: 0x111111}));
-        capeOutside.position.set(0, 0.2, -0.211); capeOutside.rotation.y = Math.PI; torso.add(capeOutside);
-        // Messy dark hair
-        const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.3, 0.55), darkMat); hair.position.y = 0.28; head.add(hair);
-        const spike = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.4, 4), darkMat); spike.position.set(0, 0.4, -0.1); spike.rotation.x= -0.2; head.add(spike);
+        // ── TORSO: Dark blue body ──
+        torso.material = dBlueMat;
+        // Gold V on chest
+        const gV1 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.5, 0.02), new THREE.MeshBasicMaterial({color: 0xffcc00})); gV1.rotation.z = 0.25; gV1.position.set(-0.08, 0.05, 0.192); torso.add(gV1);
+        const gV2 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.5, 0.02), new THREE.MeshBasicMaterial({color: 0xffcc00})); gV2.rotation.z = -0.25; gV2.position.set(0.08, 0.05, 0.192); torso.add(gV2);
+        // Gold horizontal belt trim
+        const beltTrim = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.06, 0.02), new THREE.MeshBasicMaterial({color: 0xffcc00})); beltTrim.position.set(0, -0.28, 0.192); torso.add(beltTrim);
+        // Gold shoulder pieces
+        lArm.material = dBlueMat; rArm.material = dBlueMat;
+        const lShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.12, 0.28), new THREE.MeshStandardMaterial({color: 0x2a1f7a})); lShoulder.position.y = 0.22; lArm.add(lShoulder);
+        const rShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.12, 0.28), new THREE.MeshStandardMaterial({color: 0x2a1f7a})); rShoulder.position.y = 0.22; rArm.add(rShoulder);
+        const lShoulderG = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.04, 0.3), new THREE.MeshBasicMaterial({color: 0xffcc00})); lShoulderG.position.y = 0.29; lArm.add(lShoulderG);
+        const rShoulderG = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.04, 0.3), new THREE.MeshBasicMaterial({color: 0xffcc00})); rShoulderG.position.y = 0.29; rArm.add(rShoulderG);
+        // ── CAPE: hanging from shoulders, lower ──
+        const capeInside = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.4), new THREE.MeshBasicMaterial({color: 0x8b0022, side: THREE.DoubleSide}));
+        capeInside.position.set(0, -0.1, -0.22); torso.add(capeInside);
+        const capeOutside = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.4), new THREE.MeshBasicMaterial({color: 0x1a0d3a, side: THREE.DoubleSide}));
+        capeOutside.position.set(0, -0.1, -0.23); torso.add(capeOutside);
+        // ── LEGS ──
+        lLeg.material = dBlueMat; rLeg.material = dBlueMat;
+        const lLegG = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.06, 0.31), new THREE.MeshBasicMaterial({color: 0xffcc00})); lLegG.position.y = 0.15; lLeg.add(lLegG);
+        const rLegG = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.06, 0.31), new THREE.MeshBasicMaterial({color: 0xffcc00})); rLegG.position.y = 0.15; rLeg.add(rLegG);
+        // ── HAIR: multiple wild spikes ──
+        const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.25, 0.55), darkMat); hair.position.y = 0.27; head.add(hair);
+        const sp1 = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.32, 4), darkMat); sp1.position.set(0, 0.45, -0.1); sp1.rotation.x = -0.25; head.add(sp1);
+        const sp2 = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.28, 4), darkMat); sp2.position.set(-0.18, 0.42, -0.1); sp2.rotation.set(-0.2, 0.3, 0.3); head.add(sp2);
+        const sp3 = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.28, 4), darkMat); sp3.position.set(0.18, 0.42, -0.1); sp3.rotation.set(-0.2, -0.3, -0.3); head.add(sp3);
+        const sp4 = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.24, 4), darkMat); sp4.position.set(-0.08, 0.44, 0.05); sp4.rotation.set(0.1, 0.4, 0.2); head.add(sp4);
     } else if (skinId === 'mugman') {
         // Handle on the back
         const handle = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.04, 8, 16), new THREE.MeshStandardMaterial({color: 0xffffff}));
@@ -686,15 +700,11 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         // Red gloves
         const redGlove = new THREE.MeshStandardMaterial({color: 0x8b0000});
         lArm.material = redGlove; rArm.material = redGlove;
-        // Big smile Black mouth
-        const mouth = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.1), new THREE.MeshBasicMaterial({color: 0x111111}));
-        mouth.position.set(0, -0.05, 0.245);
-        // Fangs
+        // Fangs only (no black square)
         const fangMat = new THREE.MeshBasicMaterial({color: 0xffffff});
-        const fangL = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.06, 0.01), fangMat); fangL.position.set(-0.1, -0.05, 0.01);
-        const fangR = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.06, 0.01), fangMat); fangR.position.set(0.1, -0.05, 0.01);
-        mouth.add(fangL, fangR);
-        head.add(mouth);
+        const fangL = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.08, 0.02), fangMat); fangL.position.set(-0.08, -0.07, 0.246);
+        const fangR = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.08, 0.02), fangMat); fangR.position.set(0.08, -0.07, 0.246);
+        head.add(fangL, fangR);
         // Antennas
         const greenMat = new THREE.MeshStandardMaterial({color: 0x4caf50});
         const antL = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.2), greenMat); antL.position.set(-0.15, 0.35, 0); antL.rotation.z = 0.2;
