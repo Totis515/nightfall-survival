@@ -116,6 +116,21 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         clothHex = 0x111111;
         darkHex = 0x111111; // Black hair
         pantsHex = 0x111111;
+    } else if (skinId === 'kunigami') {
+        skinHex = 0xffe0bd;
+        clothHex = 0x001144; // Dark blue jersey
+        darkHex = 0xff6600; // Orange hair
+        pantsHex = 0x111111; // Black shorts
+    } else if (skinId === 'rick') {
+        skinHex = 0xf1e4cf;
+        clothHex = 0xffffff; // White coat
+        darkHex = 0xadd8e6; // Cyan hair
+        pantsHex = 0x8b4513; // Brown pants
+    } else if (skinId === 'doom') {
+        skinHex = 0x2b3d2b; // Helmet skin
+        clothHex = 0x3d523d; // Armor
+        darkHex = 0x2b3d2b;
+        pantsHex = 0x2b3d2b;
     }
 
     const skinMat = new THREE.MeshStandardMaterial({ color: skinHex, flatShading: true });
@@ -213,12 +228,20 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         const belly = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.5), new THREE.MeshBasicMaterial({ color: 0xffffff }));
         belly.position.set(0, -0.05, 0.191);
         torso.add(belly);
+        // Muzzle
+        const muzzle = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.2), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+        muzzle.position.set(0, -0.1, 0.241);
+        head.add(muzzle);
     } else if (skinId === 'tung_tung') {
         // Kentongan (Wooden drum in hand)
         const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.4, 8), new THREE.MeshStandardMaterial({ color: 0x5a2d0c }));
         drum.rotation.x = Math.PI / 2;
         drum.position.set(0, -0.2, 0.2);
         lArm.add(drum);
+        // Wooden nose
+        const nose = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.15), skinMat);
+        nose.position.set(0, 0, 0.25);
+        head.add(nose);
     } else if (skinId === 'sailor_moon') {
         // Skullcap hair base to avoid bald head
         const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.25, 0.55), darkMat);
@@ -345,17 +368,23 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         const bigShoeMat = new THREE.MeshStandardMaterial({ color: 0x5c3a21 });
         lShoe.material = bigShoeMat;
         rShoe.material = bigShoeMat;
+        // Red nose
+        const nose = new THREE.Mesh(new THREE.SphereGeometry(0.06), new THREE.MeshBasicMaterial({color: 0xff0000}));
+        nose.position.set(0, 0, 0.26);
+        head.add(nose);
     } else if (skinId === 'mario') {
         // Red hat
         const hat = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.15, 0.52), clothMat);
         hat.position.y = 0.28;
         const brim = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.08, 0.2), clothMat);
         brim.position.set(0, 0.2, 0.3);
-        // Mustache (Brown)
+        // Mustache (Brown) & Nose
         const brownMat = new THREE.MeshStandardMaterial({ color: 0x3d2314 });
         const mustache = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.05, 0.06), brownMat);
         mustache.position.set(0, -0.05, 0.25);
-        head.add(hat, brim, mustache);
+        const nose = new THREE.Mesh(new THREE.SphereGeometry(0.08), skinMat);
+        nose.position.set(0, 0, 0.27);
+        head.add(hat, brim, mustache, nose);
         // Overalls
         const overalls = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.5), pantsMat);
         overalls.position.set(0, 0, 0.191);
@@ -389,12 +418,15 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         const belly = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.35), peachMat);
         belly.position.set(0, 0, 0.26);
         torso.add(belly);
-        // Ears (Moved out and forward slightly)
+        // Nose & Ears (Moved out and forward slightly)
+        const nose = new THREE.Mesh(new THREE.SphereGeometry(0.04), new THREE.MeshBasicMaterial({color: 0x000000}));
+        nose.position.set(0, 0, 0.08); // Right on tip of muzzle
+        muzzle.add(nose);
         const earMat = new THREE.MeshStandardMaterial({color: 0x0000ff});
         const earGeo = new THREE.ConeGeometry(0.12, 0.2, 4);
         const lEar = new THREE.Mesh(earGeo, earMat); lEar.position.set(-0.25, 0.2, 0.05); lEar.rotation.z = Math.PI/3; lEar.rotation.x = Math.PI/8;
         const rEar = new THREE.Mesh(earGeo, earMat); rEar.position.set(0.25, 0.2, 0.05); rEar.rotation.z = -Math.PI/3; rEar.rotation.x = Math.PI/8;
-        head.add(lEar, rEar);
+        head.add(muzzle, lEar, rEar);
         // Red shoes with white stripe
         const rShoesMat = new THREE.MeshStandardMaterial({ color: 0xdd0000 });
         lShoe.material = rShoesMat;
@@ -491,6 +523,41 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
         // Red shoes/soles
         lShoe.material = redMat;
         rShoe.material = redMat;
+    } else if (skinId === 'kunigami') {
+        const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.3, 0.55), darkMat);
+        hair.position.y = 0.24;
+        const spikyBack = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.2, 0.15), darkMat);
+        spikyBack.position.set(0, 0.35, -0.2);
+        head.add(hair, spikyBack);
+        // Jersey stripe
+        const stripe = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.6), new THREE.MeshBasicMaterial({ color: 0x111111 }));
+        stripe.position.set(0, 0, 0.191);
+        torso.add(stripe);
+    } else if (skinId === 'rick') {
+        // Lab coat over light blue shirt
+        const shirt = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.6), new THREE.MeshBasicMaterial({ color: 0xadd8e6 }));
+        shirt.position.set(0, 0, 0.191);
+        torso.add(shirt);
+        // Spiky light blue hair
+        const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.2, 0.55), darkMat);
+        hair.position.y = 0.24;
+        const s1 = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.4, 4), darkMat); s1.position.set(-0.2, 0.4, 0); s1.rotation.z = 0.2;
+        const s2 = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.5, 4), darkMat); s2.position.set(0, 0.45, 0);
+        const s3 = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.4, 4), darkMat); s3.position.set(0.2, 0.4, 0); s3.rotation.z = -0.2;
+        // Unibrow
+        const unibrow = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.04), new THREE.MeshBasicMaterial({color: 0xadd8e6}));
+        unibrow.position.set(0, 0.12, 0.245);
+        head.add(hair, s1, s2, s3, unibrow);
+    } else if (skinId === 'doom') {
+        // Doom Helmet Visor (Cyan reflection)
+        const visor = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.2, 0.1), new THREE.MeshBasicMaterial({ color: 0x00aaff }));
+        visor.position.set(0, 0.05, 0.21);
+        head.add(visor);
+        // Armor details (Chest plate)
+        const chestGeo = new THREE.BoxGeometry(0.6, 0.5, 0.45);
+        const chest = new THREE.Mesh(chestGeo, new THREE.MeshStandardMaterial({color: 0x223322}));
+        chest.position.set(0, 0.1, 0);
+        torso.add(chest);
     }
 
     // Default to cyan, but custom colours for certain skins
@@ -498,6 +565,7 @@ function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
     const eyeGeo = new THREE.PlaneGeometry(0.12, 0.09);
     const lEye = new THREE.Mesh(eyeGeo, eyeMat); lEye.position.set(-0.12, 0.05, 0.245);
     const rEye = new THREE.Mesh(eyeGeo, eyeMat); rEye.position.set(0.12, 0.05, 0.245);
+    if (skinId === 'doom') { lEye.visible = false; rEye.visible = false; }
     head.add(lEye, rEye);
     
     model.add(lShoe, rShoe, lLeg, rLeg, torso, lArm, rArm, head);
