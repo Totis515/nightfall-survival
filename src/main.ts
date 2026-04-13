@@ -2182,8 +2182,8 @@ class JetpackPickup {
     }
 }
 const jetpacks: JetpackPickup[] = [];
-// Scatter 1 jetpack specifically further away, surrounded by purple
-jetpacks.push(new JetpackPickup(new THREE.Vector3(35, 0, -40)));
+// Jetpack cerca del spawn del jugador (0,0,0) para que sea fácil de encontrar al inicio
+jetpacks.push(new JetpackPickup(new THREE.Vector3(8, 0, 8)));
 
 const playerInventory: number[] = [0];
 let currentWeaponIndex = 0;
@@ -2750,25 +2750,57 @@ function createTower() {
     return tower;
 }
 
-// Casa: el cubo visible (BoxGeometry) ES la colisión. Nada invisible.
+// Casa: cuerpo visual + 4 paredes invisibles de colisión en el perímetro.
 function createHouse() {
     const house = new THREE.Group();
     const wallMat = new THREE.MeshLambertMaterial({ color: 0x4e342e });
     const roofMat = new THREE.MeshLambertMaterial({ color: 0x212121 });
 
-    // Cuerpo principal de la casa — el cubo visible actua como colisionador completo
+    // Cuerpo principal de la casa (solo visual, la colisión la dan las paredes invisibles)
     const base = new THREE.Mesh(new THREE.BoxGeometry(5, 4, 5), wallMat);
     base.position.y = 2;  // centro en Y=2 => pies en y=0, techo en y=4
     base.castShadow = true;
     base.receiveShadow = true;
     house.add(base);
 
-    // Tejado visual: Restaurado a dimensiones originales y con colisión
+    // Tejado visual
     const roof = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 4, 3, 4), roofMat);
-    roof.position.y = 5.5; // Centro 5.5 superior
+    roof.position.y = 5.5;
     roof.rotation.y = Math.PI / 4;
     roof.castShadow = true;
     house.add(roof);
+
+    // ── 4 paredes de colisión invisibles alrededor del perímetro ──
+    // Más anchas/altas que el cuerpo para que el raycaster siempre las detecte.
+    const invisMat = new THREE.MeshBasicMaterial({ visible: false });
+    const wallH = 5;   // altura total de la pared de colisión
+    const wallW = 6;   // ancho (supera los 5 unidades del body para capturar esquinas)
+    const wallD = 0.3; // grosor mínimo para que el raycast lo intercepte
+    const offset = 2.7; // mitad del body (2.5) + medio grosor (0.15)
+
+    // Frente (+Z)
+    const wFront = new THREE.Mesh(new THREE.BoxGeometry(wallW, wallH, wallD), invisMat);
+    wFront.position.set(0, wallH / 2, offset);
+    wFront.name = 'house_coll';
+    house.add(wFront);
+
+    // Atrás (-Z)
+    const wBack = new THREE.Mesh(new THREE.BoxGeometry(wallW, wallH, wallD), invisMat);
+    wBack.position.set(0, wallH / 2, -offset);
+    wBack.name = 'house_coll';
+    house.add(wBack);
+
+    // Derecha (+X)
+    const wRight = new THREE.Mesh(new THREE.BoxGeometry(wallD, wallH, wallW), invisMat);
+    wRight.position.set(offset, wallH / 2, 0);
+    wRight.name = 'house_coll';
+    house.add(wRight);
+
+    // Izquierda (-X)
+    const wLeft = new THREE.Mesh(new THREE.BoxGeometry(wallD, wallH, wallW), invisMat);
+    wLeft.position.set(-offset, wallH / 2, 0);
+    wLeft.name = 'house_coll';
+    house.add(wLeft);
 
     return house;
 }
@@ -2787,10 +2819,11 @@ for (let i = 0; i < 10; i++) {
     house.rotation.y = seededRandom() * Math.PI;
     house.updateMatrixWorld(true);
     scene.add(house);
-    
-    // Empujar a las colisiones DESPUÉS de acomodar su matriz para que raycaster con false detecte el mundo
+
+    // Solo registrar las paredes de colisión invisibles (name = 'house_coll')
+    // El cuerpo visual ya no se usa como colisionador para evitar falsos negativos en las esquinas.
     house.children.forEach(c => {
-        if (c instanceof THREE.Mesh) {
+        if (c instanceof THREE.Mesh && c.name === 'house_coll') {
             collidables.push(c);
             playerCollidables.push(c);
         }
