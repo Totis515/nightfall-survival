@@ -2459,6 +2459,9 @@ const collisionDirections = [
     new THREE.Vector3(1, 0, -1).normalize(), new THREE.Vector3(-1, 0, -1).normalize()
 ];
 
+// Colisiones matemáticas en forma de cilindro para garantizar que no se atraviese ningún cuerpo base y deslice perfectamente
+const collisionCylinders: { x: number, z: number, radius: number, height: number }[] = [];
+
 // ---- TERRENO Y CÉSPED ----
 // Suelo principal de pocos polígonos (low poly)
 const floorGeo = new THREE.PlaneGeometry(300, 300, 32, 32);
@@ -2784,6 +2787,8 @@ function createHouse() {
 const mainTower = createTower();
 mainTower.position.set(-60, 0, 60);
 scene.add(mainTower);
+// Torre cilindro: base 6x6 -> radio ~4, altura 8
+collisionCylinders.push({ x: -60, z: 60, radius: 4.0, height: 8 });
 
 // Añadir Casas
 for (let i = 0; i < 10; i++) {
@@ -2802,6 +2807,9 @@ for (let i = 0; i < 10; i++) {
             playerCollidables.push(c);
         }
     });
+
+    // Añadimos cilindro perfecto para la base de la casa (cubo 5x5 -> radio suave 3.5, altura 4)
+    collisionCylinders.push({ x: house.position.x, z: house.position.z, radius: 3.5, height: 4.0 });
 }
 
 // Añadir el edificio del Black Market en una posición FIJA que coincida con el marcador del cielo
@@ -2809,6 +2817,8 @@ const BM_X = 30, BM_Z = -40; // coincide con la posición de shopMarker definida
 const blackMarket = createBlackMarketBuilding();
 blackMarket.position.set(BM_X, 0, BM_Z);
 scene.add(blackMarket);
+// BlackMarket cilindro: base 8x6 -> radio suave 4.8, altura 5
+collisionCylinders.push({ x: BM_X, z: BM_Z, radius: 4.8, height: 5.0 });
 
 // Etiqueta de texto 3D flotante "BLACK MARKET" sobre el edificio
 const bmCanvas = document.createElement('canvas');
@@ -2837,6 +2847,8 @@ for (let i = 0; i < 8; i++) {
     car.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
     car.rotation.y = Math.random() * Math.PI;
     scene.add(car);
+    // Coche cilindro: base 2x4 -> radio aprox 2.5, altura 1.0 (sólo cubre la base)
+    collisionCylinders.push({ x: car.position.x, z: car.position.z, radius: 2.5, height: 1.0 });
 }
 
 // Distribuir vallas
@@ -5094,6 +5106,19 @@ function animate() {
             
             if (hitPecho || hitPies) {
                 camera.position.x = oldPosX; velocity.x = 0; break;
+            }
+        }
+
+        // Lógica matemática infalible (Cilindros) para estructuras grandes
+        for (const cyl of collisionCylinders) {
+            const dx = camera.position.x - cyl.x;
+            const dz = camera.position.z - cyl.z;
+            const dist = Math.sqrt(dx * dx + dz * dz);
+            // Solo empujar si los pies del jugador están por debajo de la altura máxima del cuerpo
+            if (dist < cyl.radius && (camera.position.y - 1.6) < cyl.height) {
+                const push = cyl.radius - dist;
+                camera.position.x += (dx / dist) * push;
+                camera.position.z += (dz / dist) * push;
             }
         }
 
