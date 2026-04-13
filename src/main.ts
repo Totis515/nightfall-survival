@@ -2876,51 +2876,64 @@ for (let i = 0; i < 15; i++) {
     ammoPickups.push(new AmmoPickup(pos));
 }
 
+// ---- BIOMA ----
+enum Biome { FOREST = 0, SNOW = 1 }
+let currentBiome: Biome = Biome.FOREST;
+let playerSlowDebuff = 0; // segundos de ralentización por ataque nevado
+
 // Definición de los diferentes tipos de enemigos y sus características (salud, velocidad, daño)
 enum EnemyType {
     STANDARD,
     TANK,
     FAST,
-    HUMANOID,   // New: Pale skin, blue shirt
-    ZOMBIE_ON_FIRE, // New: Phase 15
+    HUMANOID,
+    ZOMBIE_ON_FIRE,
     ROBOT,
     BOSS_GOLIATH,
     BOSS_SENTINEL,
-    BOSS_FINAL_ROBOT // Final boss for Stage 15
+    BOSS_FINAL_ROBOT,
+    // ===== BIOMA NIEVE =====
+    SNOW_ZOMBIE,        // Zombie nevado — ralentiza al jugador
+    SNOW_FAST,          // Zombie rápido nevado — ralentiza más
+    REINDEER_ZOMBIE,    // Zombie montado en reno — salta obstáculos
+    SNOWMAN,            // Hombre de nieve — lanza bolas de nieve
+    BOSS_SNOW_GOLIATH,  // Gigante nevado (Wave 15)
+    BOSS_GIANT_SNOWMAN, // Snowman Gigante (Wave 18)
+    BOSS_BLIZZARD_KING  // Rey de la Ventisca — fusión zombie+snowman (Wave 20)
 }
 
 interface EnemyStats {
     health: number;
     speed: number;
     damage: number;
-    shirtColor: number; // Para la ropa
-    skinColor: number; // Para la cabeza/brazos
+    shirtColor: number;
+    skinColor: number;
     size: number;
     attackRange: number;
     attackCooldown: number;
     reward: number;
-    name: string; // Nombre añadido para el feed de muertes (kill feed)
+    name: string;
+    slowDuration?: number; // segundos de slowdown al atacar (solo nieve)
 }
 
 const ENEMY_DATA: Record<EnemyType, EnemyStats> = {
-    // Standard: Purple shirt (matches video!), green zombie skin
-    [EnemyType.STANDARD]: { health: 70, speed: 2.2, damage: 10, shirtColor: 0x673ab7, skinColor: 0x558b2f, size: 1.0, attackRange: 1.5, attackCooldown: 1000, reward: 15, name: "ZOMBIE" },
-    // Tank: Pale gray-green skin, dark jacket
-    [EnemyType.TANK]: { health: 180, speed: 1.3, damage: 25, shirtColor: 0x37474f, skinColor: 0x6d4c41, size: 1.4, attackRange: 1.8, attackCooldown: 1500, reward: 50, name: "TANK ZOMBIE" },
-    // Fast: Yellow-green Skin, red shirt
-    [EnemyType.FAST]: { health: 40, speed: 3.8, damage: 5, shirtColor: 0xb71c1c, skinColor: 0x827717, size: 0.85, attackRange: 1.2, attackCooldown: 500, reward: 30, name: "FAST ZOMBIE" },
-    // Humanoid: Pale skin, blue shirt (From video!)
-    [EnemyType.HUMANOID]: { health: 60, speed: 2.5, damage: 12, shirtColor: 0x2196f3, skinColor: 0xd1d1d1, size: 1.0, attackRange: 1.5, attackCooldown: 900, reward: 20, name: "HUMAN ZOMBIE" },
-    // Zombie on Fire: Naranja, daño progresivo
-    [EnemyType.ZOMBIE_ON_FIRE]: { health: 90, speed: 2.5, damage: 5, shirtColor: 0xdd4400, skinColor: 0xffaa00, size: 1.0, attackRange: 1.5, attackCooldown: 900, reward: 40, name: "ZOMBIE ON FIRE" },
-    // Robot: Grey metal, cyan glow (Wave 3+)
-    [EnemyType.ROBOT]: { health: 250, speed: 2.5, damage: 15, shirtColor: 0x444444, skinColor: 0x888888, size: 1.1, attackRange: 15.0, attackCooldown: 2000, reward: 100, name: "ROBOT" },
-    // Boss Goliath: Massive, slow zombie (Wave 5)
-    [EnemyType.BOSS_GOLIATH]: { health: 1200, speed: 1.8, damage: 45, shirtColor: 0x1a1a1a, skinColor: 0x2d3d1d, size: 2.5, attackRange: 2.5, attackCooldown: 1200, reward: 500, name: "GOLIATH" },
-    // Boss Sentinel: Advanced Robot (Wave 10)
-    [EnemyType.BOSS_SENTINEL]: { health: 2000, speed: 1.2, damage: 20, shirtColor: 0x222222, skinColor: 0x555555, size: 2.2, attackRange: 18.0, attackCooldown: 250, reward: 1000, name: "SENTINEL" },
-    // Final Boss: Gigantic Robot Zombie (Stage 15)
-    [EnemyType.BOSS_FINAL_ROBOT]: { health: 6000, speed: 4.5, damage: 40, shirtColor: 0x000000, skinColor: 0x555555, size: 4.5, attackRange: 15.0, attackCooldown: 300, reward: 5000, name: "ULTIMATE MECHA-ZOMBIE" },
+    [EnemyType.STANDARD]:          { health: 70,   speed: 2.2, damage: 10, shirtColor: 0x673ab7, skinColor: 0x558b2f, size: 1.0, attackRange: 1.5,  attackCooldown: 1000, reward: 15,   name: "ZOMBIE" },
+    [EnemyType.TANK]:              { health: 180,  speed: 1.3, damage: 25, shirtColor: 0x37474f, skinColor: 0x6d4c41, size: 1.4, attackRange: 1.8,  attackCooldown: 1500, reward: 50,   name: "TANK ZOMBIE" },
+    [EnemyType.FAST]:              { health: 40,   speed: 3.8, damage: 5,  shirtColor: 0xb71c1c, skinColor: 0x827717, size: 0.85,attackRange: 1.2,  attackCooldown: 500,  reward: 30,   name: "FAST ZOMBIE" },
+    [EnemyType.HUMANOID]:          { health: 60,   speed: 2.5, damage: 12, shirtColor: 0x2196f3, skinColor: 0xd1d1d1, size: 1.0, attackRange: 1.5,  attackCooldown: 900,  reward: 20,   name: "HUMAN ZOMBIE" },
+    [EnemyType.ZOMBIE_ON_FIRE]:    { health: 90,   speed: 2.5, damage: 5,  shirtColor: 0xdd4400, skinColor: 0xffaa00, size: 1.0, attackRange: 1.5,  attackCooldown: 900,  reward: 40,   name: "ZOMBIE ON FIRE" },
+    [EnemyType.ROBOT]:             { health: 250,  speed: 2.5, damage: 15, shirtColor: 0x444444, skinColor: 0x888888, size: 1.1, attackRange: 15.0, attackCooldown: 2000, reward: 100,  name: "ROBOT" },
+    [EnemyType.BOSS_GOLIATH]:      { health: 1200, speed: 1.8, damage: 45, shirtColor: 0x1a1a1a, skinColor: 0x2d3d1d, size: 2.5, attackRange: 2.5,  attackCooldown: 1200, reward: 500,  name: "GOLIATH" },
+    [EnemyType.BOSS_SENTINEL]:     { health: 2000, speed: 1.2, damage: 20, shirtColor: 0x222222, skinColor: 0x555555, size: 2.2, attackRange: 18.0, attackCooldown: 250,  reward: 1000, name: "SENTINEL" },
+    [EnemyType.BOSS_FINAL_ROBOT]:  { health: 6000, speed: 4.5, damage: 40, shirtColor: 0x000000, skinColor: 0x555555, size: 4.5, attackRange: 15.0, attackCooldown: 300,  reward: 5000, name: "ULTIMATE MECHA-ZOMBIE" },
+    // ===== NIEVE =====
+    [EnemyType.SNOW_ZOMBIE]:       { health: 110,  speed: 2.0, damage: 12, shirtColor: 0x4a5568, skinColor: 0xb0c4de, size: 1.0, attackRange: 1.5,  attackCooldown: 1000, reward: 25,   name: "SNOW ZOMBIE",    slowDuration: 2.0 },
+    [EnemyType.SNOW_FAST]:         { health: 55,   speed: 4.2, damage: 8,  shirtColor: 0x334455, skinColor: 0x8899aa, size: 0.8, attackRange: 1.2,  attackCooldown: 450,  reward: 40,   name: "SNOW RUNNER",   slowDuration: 1.5 },
+    [EnemyType.REINDEER_ZOMBIE]:   { health: 130,  speed: 2.8, damage: 14, shirtColor: 0x4a3728, skinColor: 0xb0c4de, size: 1.1, attackRange: 1.8,  attackCooldown: 1100, reward: 60,   name: "REINDEER ZOMBIE",slowDuration: 2.5 },
+    [EnemyType.SNOWMAN]:           { health: 180,  speed: 1.6, damage: 10, shirtColor: 0xcc2200, skinColor: 0xf0f8ff, size: 1.2, attackRange: 18.0, attackCooldown: 2200, reward: 90,   name: "SNOWMAN",       slowDuration: 3.0 },
+    [EnemyType.BOSS_SNOW_GOLIATH]: { health: 2800, speed: 1.5, damage: 55, shirtColor: 0x2a3040, skinColor: 0x8ab4d4, size: 2.8, attackRange: 2.8,  attackCooldown: 1300, reward: 700,  name: "SNOW GOLIATH",  slowDuration: 3.5 },
+    [EnemyType.BOSS_GIANT_SNOWMAN]:{ health: 3500, speed: 1.2, damage: 15, shirtColor: 0x990000, skinColor: 0xf0f8ff, size: 3.5, attackRange: 20.0, attackCooldown: 1800, reward: 1200, name: "GIANT SNOWMAN",  slowDuration: 4.0 },
+    [EnemyType.BOSS_BLIZZARD_KING]:{ health: 8000, speed: 3.5, damage: 50, shirtColor: 0x001133, skinColor: 0xaaddff, size: 5.0, attackRange: 18.0, attackCooldown: 280,  reward: 8000, name: "BLIZZARD KING",  slowDuration: 5.0 },
 };
 
 class Enemy {
@@ -3107,12 +3120,8 @@ class Enemy {
             collidables.push(head);
         }
 
-        // Si es ZOMBIE_ON_FIRE, usar material emisivo naranja en lugar de PointLight (mejor rendimiento)
+        // Si es ZOMBIE_ON_FIRE — emisivo naranja
         if (this.type === EnemyType.ZOMBIE_ON_FIRE) {
-            const glowMat = new THREE.MeshStandardMaterial({
-                color: 0xff4400, emissive: 0xff2200, emissiveIntensity: 1.5, roughness: 0.4
-            });
-            // Aplicar el material emisivo al torso del zombie
             this.mesh.traverse(child => {
                 if ((child as THREE.Mesh).isMesh) {
                     const m = child as THREE.Mesh;
@@ -3122,6 +3131,172 @@ class Enemy {
                     }
                 }
             });
+        }
+
+        // ===== MODELOS ESPECIALES NIEVE =====
+        // SNOWMAN — reemplaza el cuerpo humanoide con esferas
+        if (this.type === EnemyType.SNOWMAN || this.type === EnemyType.BOSS_GIANT_SNOWMAN) {
+            // Limpiar el modelo humanoide generado
+            while (this.mesh.children.length) this.mesh.remove(this.mesh.children[0]);
+            this.bodyParts = [];
+            const s = stats.size;
+            const snowMat  = new THREE.MeshLambertMaterial({ color: 0xf0f8ff });
+            const hatMat   = new THREE.MeshLambertMaterial({ color: 0x111111 });
+            const scarfMat = new THREE.MeshLambertMaterial({ color: 0xcc2200 });
+            const eyeMat   = new THREE.MeshBasicMaterial({ color: 0xff8800 });
+            const noseMat  = new THREE.MeshLambertMaterial({ color: 0xff6600 });
+            // Base
+            const base3 = new THREE.Mesh(new THREE.SphereGeometry(0.55*s,10,10), snowMat);
+            base3.position.y = 0.55*s;
+            this.mesh.add(base3); this.bodyParts.push({mesh:base3, color:0xf0f8ff});
+            // Torso
+            const mid3  = new THREE.Mesh(new THREE.SphereGeometry(0.42*s,10,10), snowMat);
+            mid3.position.y = 1.35*s;
+            this.mesh.add(mid3); this.bodyParts.push({mesh:mid3, color:0xf0f8ff});
+            (this as any)._torso = mid3; collidables.push(mid3);
+            // Botones
+            for (let bi=0;bi<3;bi++) {
+                const btn = new THREE.Mesh(new THREE.SphereGeometry(0.05*s,6,6), new THREE.MeshBasicMaterial({color:0x222222}));
+                btn.position.set(0,(1.1+bi*0.18)*s,0.42*s); this.mesh.add(btn);
+            }
+            // Bufanda
+            const scarf = new THREE.Mesh(new THREE.TorusGeometry(0.44*s,0.08*s,8,24), scarfMat);
+            scarf.position.y=1.7*s; scarf.rotation.x=Math.PI/2; this.mesh.add(scarf);
+            // Cabeza
+            const head3 = new THREE.Mesh(new THREE.SphereGeometry(0.30*s,10,10), snowMat);
+            head3.position.y = 1.95*s;
+            this.mesh.add(head3); this.bodyParts.push({mesh:head3, color:0xf0f8ff});
+            (this as any)._head = head3; collidables.push(head3);
+            // Ojos naranja brillante (como en la imagen)
+            for (const ox of [-0.12, 0.12]) {
+                const eye = new THREE.Mesh(new THREE.SphereGeometry(0.045*s,6,6), eyeMat);
+                eye.position.set(ox*s, 0.06*s, 0.28*s); head3.add(eye);
+            }
+            // Nariz cónica naranja
+            const nose = new THREE.Mesh(new THREE.ConeGeometry(0.04*s,0.2*s,6), noseMat);
+            nose.rotation.x = Math.PI/2; nose.position.set(0,0,0.32*s); head3.add(nose);
+            // Sombrero (cilindro negro)
+            const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.38*s,0.38*s,0.05*s,16), hatMat);
+            brim.position.y = 0.3*s; head3.add(brim);
+            const top3 = new THREE.Mesh(new THREE.CylinderGeometry(0.22*s,0.33*s,0.4*s,16), hatMat);
+            top3.position.y = 0.55*s; head3.add(top3);
+            // Brazos (palos)
+            const stickMat = new THREE.MeshLambertMaterial({color:0x3e2723});
+            for (const sx of [-1,1]) {
+                const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.04*s,0.04*s,0.7*s,6), stickMat);
+                stick.position.set(sx*0.55*s, 1.35*s, 0); stick.rotation.z = sx*Math.PI/4;
+                this.mesh.add(stick);
+            }
+        }
+
+        // REINDEER_ZOMBIE — zombie sobre reno
+        if (this.type === EnemyType.REINDEER_ZOMBIE) {
+            const s = stats.size;
+            const deerMat  = new THREE.MeshLambertMaterial({ color: 0x7a5c41 });
+            const antlerMat= new THREE.MeshLambertMaterial({ color: 0x5a3a20 });
+            // Cuerpo reno
+            const dBody = new THREE.Mesh(new THREE.BoxGeometry(0.7*s,0.5*s,1.2*s), deerMat);
+            dBody.position.y = 0.6*s; this.mesh.add(dBody);
+            // Patas
+            for (const [lx,lz] of [[-0.25,-0.4],[0.25,-0.4],[-0.25,0.4],[0.25,0.4]] as [number,number][]) {
+                const leg = new THREE.Mesh(new THREE.BoxGeometry(0.12*s,0.55*s,0.12*s), deerMat);
+                leg.position.set(lx*s,0.25*s,lz*s); this.mesh.add(leg);
+            }
+            // Cuello y cabeza de reno
+            const dNeck = new THREE.Mesh(new THREE.BoxGeometry(0.2*s,0.4*s,0.2*s), deerMat);
+            dNeck.position.set(0,0.9*s,-0.5*s); this.mesh.add(dNeck);
+            const dHead = new THREE.Mesh(new THREE.BoxGeometry(0.3*s,0.25*s,0.45*s), deerMat);
+            dHead.position.set(0,1.1*s,-0.65*s); this.mesh.add(dHead);
+            // Cuernos
+            for (const ax of [-0.12,0.12]) {
+                const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.03*s,0.03*s,0.5*s,4), antlerMat);
+                ant.position.set(ax*s,1.4*s,-0.65*s); ant.rotation.z = ax*0.5; this.mesh.add(ant);
+                const antB = new THREE.Mesh(new THREE.CylinderGeometry(0.02*s,0.02*s,0.3*s,4), antlerMat);
+                antB.position.set(ax*1.2*s,1.55*s,-0.65*s); antB.rotation.z = ax*1.2; this.mesh.add(antB);
+            }
+            // El zombie encima
+            const skinM  = new THREE.MeshLambertMaterial({ color: 0xb0c4de });
+            const shirtM = new THREE.MeshLambertMaterial({ color: 0x4a5568 });
+            const zTorso = new THREE.Mesh(new THREE.BoxGeometry(0.55*s,0.55*s,0.3*s), shirtM);
+            zTorso.position.set(0,1.35*s,0.1*s);
+            this.mesh.add(zTorso);
+            (this as any)._torso = zTorso; collidables.push(zTorso);
+            const zHead = new THREE.Mesh(new THREE.BoxGeometry(0.38*s,0.38*s,0.38*s), skinM);
+            zHead.position.set(0,1.8*s,0.1*s);
+            this.mesh.add(zHead);
+            (this as any)._head = zHead; collidables.push(zHead);
+            const eyeM2 = new THREE.MeshBasicMaterial({color:0x00ffff});
+            for (const ex of [-0.1,0.1]) {
+                const e = new THREE.Mesh(new THREE.PlaneGeometry(0.09*s,0.07*s), eyeM2);
+                e.position.set(ex*s,0.04*s,0.2*s); zHead.add(e);
+            }
+            this.bodyParts.push({mesh:zTorso,color:0x4a5568},{mesh:zHead,color:0xb0c4de});
+        }
+
+        // BOSS_BLIZZARD_KING — zombie nevado gigante con partes de snowman
+        if (this.type === EnemyType.BOSS_BLIZZARD_KING) {
+            while (this.mesh.children.length) this.mesh.remove(this.mesh.children[0]);
+            this.bodyParts = [];
+            const s = stats.size;
+            const snowM2 = new THREE.MeshLambertMaterial({color:0xaaddff});
+            const darkM2 = new THREE.MeshLambertMaterial({color:0x001133});
+            const hatM2  = new THREE.MeshLambertMaterial({color:0x050a1a});
+            // Piernas zombi
+            for (const lx of [-0.3,0.3]) {
+                const leg = new THREE.Mesh(new THREE.BoxGeometry(0.35*s,0.9*s,0.35*s), darkM2);
+                leg.position.set(lx*s,0.45*s,0); this.mesh.add(leg);
+                this.bodyParts.push({mesh:leg,color:0x001133});
+            }
+            // Torso esferico (snowman + zombie fusión)
+            const torsoB = new THREE.Mesh(new THREE.SphereGeometry(0.7*s,12,12), snowM2);
+            torsoB.position.y = 1.5*s; this.mesh.add(torsoB);
+            (this as any)._torso = torsoB; collidables.push(torsoB);
+            this.bodyParts.push({mesh:torsoB,color:0xaaddff});
+            // Cabeza zombie (cuadrada)
+            const headB = new THREE.Mesh(new THREE.BoxGeometry(0.8*s,0.8*s,0.8*s), snowM2);
+            headB.position.y = 2.6*s; this.mesh.add(headB);
+            (this as any)._head = headB; collidables.push(headB);
+            this.bodyParts.push({mesh:headB,color:0xaaddff});
+            // Ojos cyan
+            const eyeB = new THREE.MeshBasicMaterial({color:0x00ffff, emissive:0x00ffff} as any);
+            for (const ex of [-0.25,0.25]) {
+                const e = new THREE.Mesh(new THREE.SphereGeometry(0.1*s,8,8), eyeB);
+                e.position.set(ex*s,0.1*s,0.42*s); headB.add(e);
+            }
+            // Sombrero enorme
+            const brimB = new THREE.Mesh(new THREE.CylinderGeometry(0.9*s,0.9*s,0.08*s,16), hatM2);
+            brimB.position.y = 0.45*s; headB.add(brimB);
+            const topB  = new THREE.Mesh(new THREE.CylinderGeometry(0.55*s,0.8*s,0.9*s,16), hatM2);
+            topB.position.y = 0.95*s; headB.add(topB);
+            // Brazos zombi enormes
+            for (const ax of [-1,1]) {
+                const arm = new THREE.Mesh(new THREE.BoxGeometry(0.3*s,1.0*s,0.3*s), snowM2);
+                arm.position.set(ax*1.1*s,1.6*s,0); this.mesh.add(arm);
+                this.bodyParts.push({mesh:arm,color:0xaaddff});
+            }
+        }
+
+        // SNOW_ZOMBIE / SNOW_FAST — ojos cyan brillante en lugar de rojo
+        const isSnowZombie = (this.type === EnemyType.SNOW_ZOMBIE || this.type === EnemyType.SNOW_FAST
+            || this.type === EnemyType.BOSS_SNOW_GOLIATH);
+        if (isSnowZombie) {
+            this.mesh.traverse(child => {
+                if ((child as THREE.Mesh).isMesh) {
+                    const m = child as THREE.Mesh;
+                    const mat = m.material as THREE.MeshStandardMaterial;
+                    if (mat && mat.color && mat.color.getHex() === 0xff0000) {
+                        // Cambiar ojos rojos a cyan brillante
+                        m.material = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+                    }
+                }
+            });
+            // Manchas de nieve en el torso
+            const snowPatchMat = new THREE.MeshLambertMaterial({color:0xddeeff, transparent:true, opacity:0.8});
+            for (let sp=0;sp<4;sp++) {
+                const patch = new THREE.Mesh(new THREE.SphereGeometry(0.08*stats.size,5,5), snowPatchMat);
+                patch.position.set((Math.random()-0.5)*0.4*stats.size, (0.9+Math.random()*0.5)*stats.size, 0.2*stats.size);
+                this.mesh.add(patch);
+            }
         }
 
         // Place zombie at spawn position, feet below ground for rising effect
@@ -3348,36 +3523,98 @@ class Enemy {
     attackPlayer(playerPos: THREE.Vector3) {
         if (this.isDead) return;
 
-        if (this.type === EnemyType.ROBOT || this.type === EnemyType.BOSS_SENTINEL) {
-            // LÓGICA DE ATAQUE A DISTANCIA: Apuntar directamente a la altura de la cámara del jugador
-            const spawnPos = this.mesh.position.clone();
-            spawnPos.y += 1.5 * ENEMY_DATA[this.type].size; // disparar desde el "ojo" del robot
-            // Apuntar a la posición real de la cámara en el mundo (incluye altura al volar)
-            const targetPos = camera.position.clone();
-            const dir = new THREE.Vector3().subVectors(targetPos, spawnPos).normalize();
-            const laser = new Laser(spawnPos, dir, ENEMY_DATA[this.type].name); // Pasar el nombre del tirador
-            enemyProjectiles.push(laser);
-            soundManager.playBeep();
-        } else {
-            // LÓGICA DE ATAQUE CUERPO A CUERPO
-            lastAttackerName = ENEMY_DATA[this.type].name; // Establecer nombre del atacante
-            
-            if (this.type === EnemyType.ZOMBIE_ON_FIRE) {
-                playerFireDebuff = 3.0; // Aplica debuff de quemadura de 3 segundos
-            }
-            
-            takeDamage(this.damage); // Usar función global de daño
-            soundManager.playGroan();
+        const stats = ENEMY_DATA[this.type];
 
+        // ---- Ataques a distancia (robot, snowman) ----
+        if (this.type === EnemyType.ROBOT || this.type === EnemyType.BOSS_SENTINEL) {
+            const spawnPos = this.mesh.position.clone();
+            spawnPos.y += 1.5 * stats.size;
+            const dir = new THREE.Vector3().subVectors(camera.position, spawnPos).normalize();
+            enemyProjectiles.push(new Laser(spawnPos, dir, stats.name));
+            soundManager.playBeep();
+        } else if (this.type === EnemyType.SNOWMAN || this.type === EnemyType.BOSS_GIANT_SNOWMAN
+            || (this.type === EnemyType.BOSS_BLIZZARD_KING && Math.random() > 0.4)) {
+            // Lanzar bola de nieve
+            const spawnPos = this.mesh.position.clone();
+            spawnPos.y += 1.8 * stats.size;
+            const dir = new THREE.Vector3().subVectors(camera.position, spawnPos).normalize();
+            snowballProjectiles.push(new SnowballProjectile(spawnPos, dir, stats.slowDuration ?? 3.0));
+        } else {
+            // Cuerpo a cuerpo
+            lastAttackerName = stats.name;
+            if (this.type === EnemyType.ZOMBIE_ON_FIRE) playerFireDebuff = 3.0;
+            // Slow debuff para enemigos nevados
+            if (stats.slowDuration && stats.slowDuration > 0) {
+                playerSlowDebuff = Math.max(playerSlowDebuff, stats.slowDuration);
+                showSlowOverlay();
+            }
+            takeDamage(this.damage);
+            soundManager.playGroan();
             const flash = document.createElement('div');
-            flash.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(255,0,0,0.3);pointer-events:none;z-index:100;';
+            flash.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(180,220,255,0.3);pointer-events:none;z-index:100;';
             document.body.appendChild(flash);
             setTimeout(() => flash.remove(), 100);
         }
     }
 }
 
+// ---- PROYECTIL: BOLA DE NIEVE ----
+class SnowballProjectile {
+    mesh: THREE.Mesh;
+    velocity: THREE.Vector3;
+    slowDuration: number;
+    isDead: boolean = false;
+    private age: number = 0;
 
+    constructor(pos: THREE.Vector3, dir: THREE.Vector3, slowDuration: number) {
+        this.slowDuration = slowDuration;
+        this.velocity = dir.clone().multiplyScalar(14);
+        const geo = new THREE.SphereGeometry(0.28, 8, 8);
+        const mat = new THREE.MeshLambertMaterial({ color: 0xddeeff });
+        this.mesh = new THREE.Mesh(geo, mat);
+        this.mesh.position.copy(pos);
+        scene.add(this.mesh);
+    }
+
+    update(delta: number) {
+        if (this.isDead) return;
+        this.age += delta;
+        this.velocity.y -= 6 * delta; // Gravedad suave
+        this.mesh.position.addScaledVector(this.velocity, delta);
+        this.mesh.rotation.x += delta * 5;
+        // Impacto con el suelo
+        if (this.mesh.position.y < 0.3) this.explode();
+        // Impacto con el jugador
+        if (this.mesh.position.distanceTo(camera.position) < 1.2) {
+            takeDamage(ENEMY_DATA[EnemyType.SNOWMAN].damage);
+            playerSlowDebuff = Math.max(playerSlowDebuff, this.slowDuration);
+            showSlowOverlay();
+            this.explode();
+        }
+        if (this.age > 8) this.destroy();
+    }
+
+    explode() {
+        if (this.isDead) return;
+        // Partículas blancas
+        snowImpactParticles.spawn(this.mesh.position.clone(), 10);
+        this.destroy();
+    }
+
+    destroy() {
+        this.isDead = true;
+        scene.remove(this.mesh);
+    }
+}
+
+const snowballProjectiles: SnowballProjectile[] = [];
+
+function showSlowOverlay() {
+    const overlay = document.getElementById('slow-overlay');
+    if (overlay) {
+        overlay.style.opacity = '1';
+    }
+}
 
 // ---- SISTEMA DE DROPS DE ARMAS ----
 class WeaponDrop {
@@ -3545,7 +3782,7 @@ class WaveManager {
     spawnRate: number = 2000; // ms
     activeEnemies: Enemy[] = [];
     isBreak: boolean = false; // Verdadero entre oleadas
-    maxWaves: number = 10; // Reducido a 10 oleadas
+    maxWaves: number = 20; // 10 Forest + 10 Snowy
     isGameOver: boolean = false;
     isNetworkClient: boolean = false; // set to true if multiplayer and NOT host
     syncTimer: number = 0;
@@ -3557,31 +3794,36 @@ class WaveManager {
         soundManager.startGameMusic();
         this.currentWave++;
 
-        // SPANW WEAPON DROPS
         this.spawnWeaponDrop(this.currentWave);
 
-        if (this.currentWave === this.maxWaves) {
-            // Stage Final: El Jefe
+        // Número de wave relativo al bioma (1-10 en cada bioma)
+        const biomeWave = this.currentWave <= 10 ? this.currentWave : this.currentWave - 10;
+        const biomeName = this.currentWave <= 10 ? 'FOREST' : 'SNOWY';
+
+        const isFinalWave = (this.currentWave === this.maxWaves);
+        const isBiomeBossWave = (biomeWave === 10);
+
+        if (isBiomeBossWave) {
             this.enemiesToSpawn = 1;
             this.spawnRate = 3000;
         } else {
-            this.enemiesToSpawn = 6 + (this.currentWave * 4); // 10, 14, 18, 22...
-            this.spawnRate = Math.max(400, 2000 - (this.currentWave * 120));
+            this.enemiesToSpawn = 6 + (biomeWave * 4);
+            this.spawnRate = Math.max(400, 2000 - (biomeWave * 140));
         }
 
-        // Esconder pantalla de WAVE COMPLETE
         const wc = document.getElementById('wave-complete');
         if (wc) wc.style.display = 'none';
 
         if (enemiesEl) enemiesEl.innerText = this.enemiesToSpawn.toString();
         if (hordeEl) hordeEl.innerText = `Enemies: 0 (To Spawn: ${this.enemiesToSpawn})`;
         if (stageEl) {
-            stageEl.innerText = `WAVE ${this.currentWave}`;
-            if (this.currentWave === this.maxWaves) {
-                stageEl.innerText = "FINAL WAVE: BOSS";
-                stageEl.style.color = '#ff0000';
+            if (isFinalWave) {
+                stageEl.innerHTML = `<span style="font-size:0.7em;color:#aaddff">${biomeName}</span><br>FINAL WAVE: BOSS`;
+                stageEl.style.color = '#aaddff';
             } else {
-                stageEl.style.color = '#ff3333';
+                const biomeColor = this.currentWave <= 10 ? '#ff3333' : '#88ccff';
+                stageEl.innerHTML = `<span style="font-size:0.7em;color:${biomeColor};">${biomeName}</span><br>WAVE ${biomeWave}`;
+                stageEl.style.color = biomeColor;
             }
         }
     }
@@ -3629,20 +3871,40 @@ class WaveManager {
         this.isBreak = true;
         soundManager.startWinMusic();
 
+        // Victoria final al completar Wave 20
         if (this.currentWave === this.maxWaves) {
             this.victory();
             return;
         }
 
-        // Host drives wave transitions for all players
+        // Transición de bioma al completar Wave 10
+        if (this.currentWave === 10) {
+            if (isMultiplayer && isHost && socket?.connected) {
+                socket.emit('wave-complete', { wave: this.currentWave });
+            }
+            const biomeWave = this.currentWave;
+            const wcWave = document.getElementById('wc-wave');
+            const wc = document.getElementById('wave-complete');
+            if (wc) wc.style.display = 'flex';
+            if (wcWave) wcWave.innerText = `FOREST COMPLETE! A BLIZZARD APPROACHES...`;
+            setTimeout(() => {
+                if (wc) wc.style.display = 'none';
+                transitionToSnowBiome();
+            }, 2000);
+            if (stageEl) stageEl.innerHTML = `<span style="font-size:0.8em;color:#aaddff">BIOME CHANGE...</span>`;
+            return;
+        }
+
         if (isMultiplayer && isHost && socket?.connected) {
             socket.emit('wave-complete', { wave: this.currentWave });
         }
 
+        const biomeWave = this.currentWave <= 10 ? this.currentWave : this.currentWave - 10;
+        const biomeName = this.currentWave <= 10 ? 'FOREST' : 'SNOWY';
         const wc = document.getElementById('wave-complete');
         const wcWave = document.getElementById('wc-wave');
         if (wc) wc.style.display = 'flex';
-        if (wcWave) wcWave.innerText = `WAVE ${this.currentWave} COMPLETE!`;
+        if (wcWave) wcWave.innerText = `${biomeName} WAVE ${biomeWave} COMPLETE!`;
 
         setTimeout(() => {
             if (wc) wc.style.display = 'none';
@@ -3759,44 +4021,62 @@ class WaveManager {
     }
 
     spawnEnemy() {
-        // Non-host clients don't self-spawn - they receive spawn commands from host
         if (this.isNetworkClient) return;
-
         if (this.enemiesToSpawn <= 0) return;
 
         let type = EnemyType.STANDARD;
         const r = Math.random();
+        const bw = this.currentWave <= 10 ? this.currentWave : this.currentWave - 10; // biome-wave
 
-        if (this.currentWave === this.maxWaves) { // Wave 10
-            type = EnemyType.BOSS_FINAL_ROBOT;
-        } else if (this.currentWave === 9) {
-            // Wave 9: Zombis en fuego y rápidos
-            if (r > 0.4) type = EnemyType.ZOMBIE_ON_FIRE;
-            else if (r > 0.2) type = EnemyType.FAST;
-            else type = EnemyType.ROBOT;
-        } else if (this.currentWave === 8) {
-            // Wave 8: Robots gigante (Sentinel)
-            if (r > 0.6) type = EnemyType.BOSS_SENTINEL;
-            else if (r > 0.3) type = EnemyType.ROBOT;
-            else type = EnemyType.TANK;
-        } else if (this.currentWave === 5 || this.currentWave === 6) {
-            // Wave 5 & 6: Zombis gigantes (Goliath)
-            if (r > 0.7) type = EnemyType.BOSS_GOLIATH;
-            else if (r > 0.4) type = EnemyType.TANK;
-            else type = EnemyType.STANDARD;
-        } else if (this.currentWave === 7) {
-            if (r > 0.6) type = EnemyType.ROBOT;
-            else if (r > 0.3) type = EnemyType.FAST;
-            else type = EnemyType.STANDARD;
-        } else if (this.currentWave >= 3) {
-            // Wave 3-4: Introduce robots y zombies grandes
-            if (r > 0.7) type = EnemyType.ROBOT;
-            else if (r > 0.5) type = EnemyType.TANK;
-            else type = EnemyType.STANDARD;
-        } else if (this.currentWave === 2) {
-            if (r > 0.7) type = EnemyType.FAST;
-            else if (r > 0.5) type = EnemyType.HUMANOID;
-            else type = EnemyType.STANDARD;
+        if (currentBiome === Biome.SNOW) {
+            // ===== BIOMA NIEVE: Waves 11-20 =====
+            if (bw === 10) { // Wave 20
+                type = EnemyType.BOSS_BLIZZARD_KING;
+            } else if (bw === 8) { // Wave 18
+                type = r > 0.6 ? EnemyType.BOSS_GIANT_SNOWMAN
+                     : r > 0.3 ? EnemyType.SNOWMAN
+                     : EnemyType.SNOW_ZOMBIE;
+            } else if (bw === 5 || bw === 6) { // Wave 15-16
+                type = r > 0.7 ? EnemyType.BOSS_SNOW_GOLIATH
+                     : r > 0.4 ? EnemyType.REINDEER_ZOMBIE
+                     : EnemyType.SNOW_ZOMBIE;
+            } else if (bw === 7) { // Wave 17
+                type = r > 0.5 ? EnemyType.SNOWMAN
+                     : r > 0.3 ? EnemyType.REINDEER_ZOMBIE
+                     : EnemyType.SNOW_FAST;
+            } else if (bw === 9) { // Wave 19
+                type = r > 0.5 ? EnemyType.BOSS_GIANT_SNOWMAN
+                     : r > 0.2 ? EnemyType.SNOWMAN
+                     : EnemyType.SNOW_FAST;
+            } else if (bw >= 3) {
+                type = r > 0.6 ? EnemyType.SNOWMAN
+                     : r > 0.4 ? EnemyType.REINDEER_ZOMBIE
+                     : r > 0.2 ? EnemyType.SNOW_FAST
+                     : EnemyType.SNOW_ZOMBIE;
+            } else if (bw === 2) {
+                type = r > 0.6 ? EnemyType.SNOW_FAST
+                     : r > 0.3 ? EnemyType.REINDEER_ZOMBIE
+                     : EnemyType.SNOW_ZOMBIE;
+            } else { // bw === 1
+                type = r > 0.7 ? EnemyType.SNOW_FAST : EnemyType.SNOW_ZOMBIE;
+            }
+        } else {
+            // ===== BIOMA BOSQUE: Waves 1-10 =====
+            if (bw === 10) {
+                type = EnemyType.BOSS_FINAL_ROBOT;
+            } else if (bw === 9) {
+                type = r > 0.4 ? EnemyType.ZOMBIE_ON_FIRE : r > 0.2 ? EnemyType.FAST : EnemyType.ROBOT;
+            } else if (bw === 8) {
+                type = r > 0.6 ? EnemyType.BOSS_SENTINEL : r > 0.3 ? EnemyType.ROBOT : EnemyType.TANK;
+            } else if (bw === 5 || bw === 6) {
+                type = r > 0.7 ? EnemyType.BOSS_GOLIATH : r > 0.4 ? EnemyType.TANK : EnemyType.STANDARD;
+            } else if (bw === 7) {
+                type = r > 0.6 ? EnemyType.ROBOT : r > 0.3 ? EnemyType.FAST : EnemyType.STANDARD;
+            } else if (bw >= 3) {
+                type = r > 0.7 ? EnemyType.ROBOT : r > 0.5 ? EnemyType.TANK : EnemyType.STANDARD;
+            } else if (bw === 2) {
+                type = r > 0.7 ? EnemyType.FAST : r > 0.5 ? EnemyType.HUMANOID : EnemyType.STANDARD;
+            }
         }
 
         const angle = Math.random() * Math.PI * 2;
@@ -4702,6 +4982,120 @@ class GenericParticleSystem {
 const bloodParticles = new GenericParticleSystem(800, { color: 0xff1100, size: 0.18, gravity: 20, lifeBase: 0.8, spread: 0.1 });
 const flameParticles = new GenericParticleSystem(500, { color: 0xffaa00, size: 0.4, gravity: -2, lifeBase: 0.4, spread: 2.0, blending: THREE.AdditiveBlending });
 const jetpackParticles = new GenericParticleSystem(300, { color: 0xff6600, size: 0.5, gravity: 15, lifeBase: 0.2, spread: 0.5, blending: THREE.AdditiveBlending });
+// Partículas de impacto de nieve (blancas y suaves)
+const snowImpactParticles = new GenericParticleSystem(400, { color: 0xddeeff, size: 0.22, gravity: 8, lifeBase: 0.6, spread: 0.8 });
+
+// ---- SISTEMA DE COPOS DE NIEVE ----
+class SnowflakeSystem {
+    points: THREE.Points;
+    positions: Float32Array;
+    count: number;
+    active: boolean = false;
+
+    constructor(count: number) {
+        this.count = count;
+        this.positions = new Float32Array(count * 3);
+        for (let i = 0; i < count; i++) {
+            this.positions[i * 3]     = (Math.random() - 0.5) * 120;
+            this.positions[i * 3 + 1] = Math.random() * 35;
+            this.positions[i * 3 + 2] = (Math.random() - 0.5) * 120;
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
+        const mat = new THREE.PointsMaterial({ color: 0xddeeff, size: 0.18, transparent: true, opacity: 0.85 });
+        this.points = new THREE.Points(geo, mat);
+        this.points.frustumCulled = false;
+        this.points.visible = false;
+    }
+
+    enable() {
+        this.active = true;
+        this.points.visible = true;
+        scene.add(this.points);
+    }
+
+    update(delta: number, camPos: THREE.Vector3) {
+        if (!this.active) return;
+        const pos = this.positions;
+        for (let i = 0; i < this.count; i++) {
+            pos[i * 3 + 1] -= (1.8 + Math.sin(i) * 0.5) * delta; // Caída
+            pos[i * 3]     += Math.sin(i * 0.01 + pos[i * 3 + 1]) * 0.02; // Lateral suave
+            if (pos[i * 3 + 1] < -0.5) {
+                pos[i * 3]     = camPos.x + (Math.random() - 0.5) * 120;
+                pos[i * 3 + 1] = camPos.y + 35;
+                pos[i * 3 + 2] = camPos.z + (Math.random() - 0.5) * 120;
+            }
+        }
+        (this.points.geometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
+    }
+}
+
+const snowflakes = new SnowflakeSystem(2000);
+
+// ---- BIOMA NIEVE: FUNCIONES ----
+function applySnowBiome() {
+    currentBiome = Biome.SNOW;
+
+    // Suelo nevado
+    (floor.material as THREE.MeshStandardMaterial).color.setHex(0xb8cfe0);
+    (floor.material as THREE.MeshStandardMaterial).needsUpdate = true;
+
+    // Niebla celeste más densa
+    scene.fog = new THREE.FogExp2(0x1a3a5a, 0.007);
+    scene.background = new THREE.Color(0x0a1a2a);
+
+    // Luz ambiental en azul frío
+    ambientLight.color.setHex(0x4488cc);
+    ambientLight.intensity = 0.9;
+
+    // Césped: tintar de blanco azulado
+    (grassInstanced.material as THREE.MeshStandardMaterial).color.setHex(0x99bbcc);
+
+    // Árboles: tintar de nieve
+    trees.forEach(tree => {
+        tree.traverse(child => {
+            if ((child as THREE.Mesh).isMesh) {
+                const m = child as THREE.Mesh;
+                const mat = m.material as THREE.MeshStandardMaterial;
+                if (mat && mat.color) {
+                    const hex = mat.color.getHex();
+                    if (hex === 0x1b3022 || hex === 0x3e2723) return; // no troncos ni piñas
+                    mat.color.setHex(0xc8dff0); // tintar copa de nieve
+                    mat.needsUpdate = true;
+                }
+            }
+        });
+    });
+
+    // Activar copos de nieve
+    snowflakes.enable();
+}
+
+function transitionToSnowBiome() {
+    // Mostrar barra de carga CELESTE
+    const ls = document.getElementById('loading-screen');
+    const lb = document.getElementById('load-bar');
+    const lt = ls?.querySelector('.loading-text') as HTMLElement;
+    if (ls) {
+        ls.style.display = 'flex';
+        ls.style.background = 'linear-gradient(to bottom, #0a1a3a, #051020)';
+    }
+    if (lb) lb.style.background = '#00aaff';
+    let prog = 0;
+    const iv = setInterval(() => {
+        prog += 2;
+        if (lb) lb.style.width = `${prog}%`;
+        if (lt) lt.innerText = `❄ BIG SNOWFALL APPROACHES... ${prog}%`;
+        if (lt) lt.style.color = '#88ccff';
+        if (prog >= 100) {
+            clearInterval(iv);
+            applySnowBiome();
+            if (ls) ls.style.display = 'none';
+            // Abrir tienda normalmente
+            openShop();
+        }
+    }, 30);
+}
 
 // ---- HIT MARKER ----
 function showHitMarker(isHeadshot: boolean = false) {
@@ -5005,17 +5399,30 @@ function animate() {
             }
         }
 
+        // ❄ Aplicar debuff de lentitud por nieve
+        if (playerSlowDebuff > 0) {
+            playerSlowDebuff -= delta;
+            if (playerSlowDebuff <= 0) {
+                playerSlowDebuff = 0;
+                const overlay = document.getElementById('slow-overlay');
+                if (overlay) overlay.style.opacity = '0';
+            }
+        }
+
         handleShooting(time);
 
         // Lógica de resistencia (Stamina)
         const isMoving = moveForward || moveBackward || moveLeft || moveRight;
         if (isSprinting && isMoving && playerStamina > 0 && camera.position.y <= 1.7) {
-            speed = sprintSpeed * walkSpeedMultiplier;
+            // Al aplicar slow, el sprint se fuerza a velocidad de caminata
+            const slowFactor = playerSlowDebuff > 0 ? 0.5 : 1.0;
+            speed = sprintSpeed * walkSpeedMultiplier * slowFactor;
             playerStamina -= 20 * delta;
             if (playerStamina < 0) playerStamina = 0;
             updateStatsHUD();
         } else {
-            speed = walkSpeed * walkSpeedMultiplier;
+            const slowFactor = playerSlowDebuff > 0 ? 0.5 : 1.0;
+            speed = walkSpeed * walkSpeedMultiplier * slowFactor;
             if (playerStamina < MAX_STAMINA && camera.position.y <= 1.7) {
                 playerStamina += 10 * delta;
                 if (playerStamina > MAX_STAMINA) playerStamina = MAX_STAMINA;
@@ -5185,6 +5592,13 @@ function animate() {
         bloodParticles.update(delta);
         flameParticles.update(delta);
         jetpackParticles.update(delta);
+        snowImpactParticles.update(delta);
+        snowflakes.update(delta, camera.position);
+        // Actualizar bolas de nieve
+        for (let i = snowballProjectiles.length - 1; i >= 0; i--) {
+            snowballProjectiles[i].update(delta);
+            if (snowballProjectiles[i].isDead) snowballProjectiles.splice(i, 1);
+        }
         multiplayerUpdate(); // Phase 12: sync position to server
 
         // Interpolación suave de jugadores remotos cada frame (independiente de la tasa de red)
