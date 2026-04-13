@@ -1933,6 +1933,10 @@ class SoundManager {
         this.playTrack('/game.mp3', 0.08);
     }
 
+    startSnowMusic() {
+        this.playTrack('/InviernoDefinitivo.m4a.mp4', 0.08);
+    }
+
     startWinMusic() {
         this.playTrack('/win.mp3', 0.1);
     }
@@ -1947,7 +1951,7 @@ class SoundManager {
         if (this.ctx.state === 'suspended') this.ctx.resume();
 
         this.bgAudio = new Audio(path);
-        this.bgAudio.loop = (path === '/lobby.mp3' || path === '/game.mp3');
+        this.bgAudio.loop = (path === '/lobby.mp3' || path === '/game.mp3' || path === '/InviernoDefinitivo.m4a.mp4');
         this.bgAudio.volume = volume;
         this.bgAudio.play().catch(() => {
             console.log('Audio blocked or file missing:', path);
@@ -5090,6 +5094,9 @@ function applySnowBiome() {
 
     // Activar copos de nieve
     snowflakes.enable();
+
+    // Cambiar música
+    soundManager.startSnowMusic();
 }
 
 function transitionToSnowBiome() {
@@ -5229,8 +5236,26 @@ const shopItems = [
 function updateShopCards() {
     shopItems.forEach(item => {
         const cost = item.cost;
+        // Actualizar el precio en todas las tarjetas (desktop y mobile)
         [document.getElementById(`buy-${item.id}`), document.getElementById(`mb-buy-${item.id}`)].forEach(el => {
-            if (el) playerCoins < cost ? el.classList.add('cant-afford') : el.classList.remove('cant-afford');
+            if (!el) return;
+            // Asequibilidad
+            cost > playerCoins ? el.classList.add('cant-afford') : el.classList.remove('cant-afford');
+            // Precio visual — animar si el precio subió
+            const priceEl = el.querySelector('.card-price') as HTMLElement | null;
+            if (priceEl) {
+                const prev = parseInt(priceEl.innerText.replace(/[^0-9]/g, ''), 10);
+                priceEl.innerText = `$${cost.toLocaleString()}`;
+                if (prev > 0 && cost > prev) {
+                    // Flash rojo-naranja para indicar que subió
+                    priceEl.style.transition = 'color 0s';
+                    priceEl.style.color = '#ff6600';
+                    setTimeout(() => {
+                        priceEl.style.transition = 'color 0.6s';
+                        priceEl.style.color = '';
+                    }, 50);
+                }
+            }
         });
     });
 }
