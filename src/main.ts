@@ -2453,8 +2453,10 @@ const collidables: THREE.Object3D[] = [];        // lo mismo + torsos de enemigo
 const collisionRaycaster = new THREE.Raycaster();
 const collisionDirections = [
     new THREE.Vector3(1, 0, 0), new THREE.Vector3(-1, 0, 0),
-    new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1)
-    // Reducido de 8 a 4 direcciones para mejorar el RENDIMIENTO
+    new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1),
+    // 4 Direcciones diagonales para colisión perfecta en las esquinas de los edificios
+    new THREE.Vector3(1, 0, 1).normalize(), new THREE.Vector3(-1, 0, 1).normalize(),
+    new THREE.Vector3(1, 0, -1).normalize(), new THREE.Vector3(-1, 0, -1).normalize()
 ];
 
 // ---- TERRENO Y CÉSPED ----
@@ -2696,6 +2698,8 @@ function createBlackMarketBuilding() {
     roof.position.y = 5.25;
     roof.castShadow = true;
     building.add(roof);
+    collidables.push(roof);
+    playerCollidables.push(roof);
 
     // Sign (Glowing)
     const signGeo = new THREE.BoxGeometry(3.5, 1.2, 0.2);
@@ -2722,18 +2726,21 @@ function createTower() {
     const base = new THREE.Mesh(new THREE.BoxGeometry(6, 8, 6), stoneMat);
     base.position.y = 4;
     tower.add(base);
+    collidables.push(base);
     playerCollidables.push(base);
 
     // Middle tier
     const mid = new THREE.Mesh(new THREE.BoxGeometry(4, 6, 4), stoneMat);
     mid.position.y = 11;
     tower.add(mid);
+    collidables.push(mid);
     playerCollidables.push(mid);
 
     // Top tier
     const top = new THREE.Mesh(new THREE.BoxGeometry(3, 4, 3), stoneMat);
     top.position.y = 16;
     tower.add(top);
+    collidables.push(top);
     playerCollidables.push(top);
 
     // Beacon light
@@ -2750,13 +2757,13 @@ function createTower() {
     return tower;
 }
 
-// Casa: cuerpo visual + 4 paredes invisibles de colisión en el perímetro.
+// Casa: el cuerpo y tejado visibles son las colisiones.
 function createHouse() {
     const house = new THREE.Group();
     const wallMat = new THREE.MeshLambertMaterial({ color: 0x4e342e });
     const roofMat = new THREE.MeshLambertMaterial({ color: 0x212121 });
 
-    // Cuerpo principal de la casa (solo visual, la colisión la dan las paredes invisibles)
+    // Cuerpo principal de la casa
     const base = new THREE.Mesh(new THREE.BoxGeometry(5, 4, 5), wallMat);
     base.position.y = 2;  // centro en Y=2 => pies en y=0, techo en y=4
     base.castShadow = true;
@@ -2769,38 +2776,6 @@ function createHouse() {
     roof.rotation.y = Math.PI / 4;
     roof.castShadow = true;
     house.add(roof);
-
-    // ── 4 paredes de colisión invisibles alrededor del perímetro ──
-    // Más anchas/altas que el cuerpo para que el raycaster siempre las detecte.
-    const invisMat = new THREE.MeshBasicMaterial({ visible: false });
-    const wallH = 5;   // altura total de la pared de colisión
-    const wallW = 6;   // ancho (supera los 5 unidades del body para capturar esquinas)
-    const wallD = 0.3; // grosor mínimo para que el raycast lo intercepte
-    const offset = 2.7; // mitad del body (2.5) + medio grosor (0.15)
-
-    // Frente (+Z)
-    const wFront = new THREE.Mesh(new THREE.BoxGeometry(wallW, wallH, wallD), invisMat);
-    wFront.position.set(0, wallH / 2, offset);
-    wFront.name = 'house_coll';
-    house.add(wFront);
-
-    // Atrás (-Z)
-    const wBack = new THREE.Mesh(new THREE.BoxGeometry(wallW, wallH, wallD), invisMat);
-    wBack.position.set(0, wallH / 2, -offset);
-    wBack.name = 'house_coll';
-    house.add(wBack);
-
-    // Derecha (+X)
-    const wRight = new THREE.Mesh(new THREE.BoxGeometry(wallD, wallH, wallW), invisMat);
-    wRight.position.set(offset, wallH / 2, 0);
-    wRight.name = 'house_coll';
-    house.add(wRight);
-
-    // Izquierda (-X)
-    const wLeft = new THREE.Mesh(new THREE.BoxGeometry(wallD, wallH, wallW), invisMat);
-    wLeft.position.set(-offset, wallH / 2, 0);
-    wLeft.name = 'house_coll';
-    house.add(wLeft);
 
     return house;
 }
@@ -2820,10 +2795,9 @@ for (let i = 0; i < 10; i++) {
     house.updateMatrixWorld(true);
     scene.add(house);
 
-    // Solo registrar las paredes de colisión invisibles (name = 'house_coll')
-    // El cuerpo visual ya no se usa como colisionador para evitar falsos negativos en las esquinas.
+    // Empujar todas las mallas de la casa a las colisiones
     house.children.forEach(c => {
-        if (c instanceof THREE.Mesh && c.name === 'house_coll') {
+        if (c instanceof THREE.Mesh) {
             collidables.push(c);
             playerCollidables.push(c);
         }
@@ -5098,7 +5072,7 @@ function animate() {
         const collisionY = camera.position.y - 1.0; 
         const oldPosZ = camera.position.z;
         controls.moveForward(-velocity.z * delta);
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < collisionDirections.length; i++) {
             // Verificar colisión tanto en el nivel del pecho como al nivel de los pies (0.5)
             collisionRaycaster.set(new THREE.Vector3(camera.position.x, collisionY, camera.position.z), collisionDirections[i]);
             const hitPecho = collisionRaycaster.intersectObjects(playerCollidables, true).some(h => h.distance < 0.6);
@@ -5112,7 +5086,7 @@ function animate() {
 
         const oldPosX = camera.position.x;
         controls.moveRight(-velocity.x * delta);
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < collisionDirections.length; i++) {
             collisionRaycaster.set(new THREE.Vector3(camera.position.x, collisionY, camera.position.z), collisionDirections[i]);
             const hitPecho = collisionRaycaster.intersectObjects(playerCollidables, true).some(h => h.distance < 0.6);
             collisionRaycaster.set(new THREE.Vector3(camera.position.x, 0.5, camera.position.z), collisionDirections[i]);
