@@ -2927,13 +2927,13 @@ const ENEMY_DATA: Record<EnemyType, EnemyStats> = {
     [EnemyType.BOSS_SENTINEL]:     { health: 2000, speed: 1.2, damage: 20, shirtColor: 0x222222, skinColor: 0x555555, size: 2.2, attackRange: 18.0, attackCooldown: 250,  reward: 1000, name: "SENTINEL" },
     [EnemyType.BOSS_FINAL_ROBOT]:  { health: 6000, speed: 4.5, damage: 40, shirtColor: 0x000000, skinColor: 0x555555, size: 4.5, attackRange: 15.0, attackCooldown: 300,  reward: 5000, name: "ULTIMATE MECHA-ZOMBIE" },
     // ===== NIEVE =====
-    [EnemyType.SNOW_ZOMBIE]:       { health: 110,  speed: 2.0, damage: 12, shirtColor: 0x4a5568, skinColor: 0xb0c4de, size: 1.0, attackRange: 1.5,  attackCooldown: 1000, reward: 25,   name: "SNOW ZOMBIE",    slowDuration: 2.0 },
-    [EnemyType.SNOW_FAST]:         { health: 55,   speed: 4.2, damage: 8,  shirtColor: 0x334455, skinColor: 0x8899aa, size: 0.8, attackRange: 1.2,  attackCooldown: 450,  reward: 40,   name: "SNOW RUNNER",   slowDuration: 1.5 },
-    [EnemyType.REINDEER_ZOMBIE]:   { health: 130,  speed: 2.8, damage: 14, shirtColor: 0x4a3728, skinColor: 0xb0c4de, size: 1.1, attackRange: 1.8,  attackCooldown: 1100, reward: 60,   name: "REINDEER ZOMBIE",slowDuration: 2.5 },
-    [EnemyType.SNOWMAN]:           { health: 180,  speed: 1.6, damage: 10, shirtColor: 0xcc2200, skinColor: 0xf0f8ff, size: 1.2, attackRange: 18.0, attackCooldown: 2200, reward: 90,   name: "SNOWMAN",       slowDuration: 3.0 },
-    [EnemyType.BOSS_SNOW_GOLIATH]: { health: 2800, speed: 1.5, damage: 55, shirtColor: 0x2a3040, skinColor: 0x8ab4d4, size: 2.8, attackRange: 2.8,  attackCooldown: 1300, reward: 700,  name: "SNOW GOLIATH",  slowDuration: 3.5 },
-    [EnemyType.BOSS_GIANT_SNOWMAN]:{ health: 3500, speed: 1.2, damage: 15, shirtColor: 0x990000, skinColor: 0xf0f8ff, size: 3.5, attackRange: 20.0, attackCooldown: 1800, reward: 1200, name: "GIANT SNOWMAN",  slowDuration: 4.0 },
-    [EnemyType.BOSS_BLIZZARD_KING]:{ health: 8000, speed: 3.5, damage: 50, shirtColor: 0x001133, skinColor: 0xaaddff, size: 5.0, attackRange: 18.0, attackCooldown: 280,  reward: 8000, name: "BLIZZARD KING",  slowDuration: 5.0 },
+    [EnemyType.SNOW_ZOMBIE]:       { health: 220,  speed: 2.0, damage: 12, shirtColor: 0x4a5568, skinColor: 0xb0c4de, size: 1.0, attackRange: 1.5,  attackCooldown: 1000, reward: 25,   name: "SNOW ZOMBIE",    slowDuration: 2.0 },
+    [EnemyType.SNOW_FAST]:         { health: 110,  speed: 4.2, damage: 8,  shirtColor: 0x334455, skinColor: 0x8899aa, size: 0.8, attackRange: 1.2,  attackCooldown: 450,  reward: 40,   name: "SNOW RUNNER",   slowDuration: 1.5 },
+    [EnemyType.REINDEER_ZOMBIE]:   { health: 260,  speed: 2.8, damage: 14, shirtColor: 0x4a3728, skinColor: 0xb0c4de, size: 1.1, attackRange: 1.8,  attackCooldown: 1100, reward: 60,   name: "REINDEER ZOMBIE",slowDuration: 2.5 },
+    [EnemyType.SNOWMAN]:           { health: 340,  speed: 1.6, damage: 10, shirtColor: 0xcc2200, skinColor: 0xf0f8ff, size: 1.2, attackRange: 22.0, attackCooldown: 2200, reward: 90,   name: "SNOWMAN",       slowDuration: 3.0 },
+    [EnemyType.BOSS_SNOW_GOLIATH]: { health: 5500, speed: 1.5, damage: 55, shirtColor: 0x2a3040, skinColor: 0x8ab4d4, size: 2.8, attackRange: 2.8,  attackCooldown: 1300, reward: 700,  name: "SNOW GOLIATH",  slowDuration: 3.5 },
+    [EnemyType.BOSS_GIANT_SNOWMAN]:{ health: 7000, speed: 1.2, damage: 15, shirtColor: 0x990000, skinColor: 0xf0f8ff, size: 3.5, attackRange: 22.0, attackCooldown: 1800, reward: 1200, name: "GIANT SNOWMAN",  slowDuration: 4.0 },
+    [EnemyType.BOSS_BLIZZARD_KING]:{ health: 16000,speed: 3.5, damage: 50, shirtColor: 0x001133, skinColor: 0xaaddff, size: 5.0, attackRange: 22.0, attackCooldown: 280,  reward: 8000, name: "BLIZZARD KING",  slowDuration: 5.0 },
 };
 
 class Enemy {
@@ -3335,10 +3335,17 @@ class Enemy {
             });
         }
 
-        this.isFlinching = true;
-        this.flinchTimer = 0.12;
+        // Solo los no-jefes se paralizan brevemente al recibir daño
+        const isBoss = (this.type === EnemyType.BOSS_GOLIATH || this.type === EnemyType.BOSS_SENTINEL
+            || this.type === EnemyType.BOSS_FINAL_ROBOT || this.type === EnemyType.BOSS_SNOW_GOLIATH
+            || this.type === EnemyType.BOSS_GIANT_SNOWMAN || this.type === EnemyType.BOSS_BLIZZARD_KING);
 
-        // Flash all parts white
+        if (!isBoss) {
+            this.isFlinching = true;
+            this.flinchTimer = 0.12;
+        }
+
+        // Flash all parts white (siempre, incluso para jefes)
         for (const part of this.bodyParts) {
             (part.mesh.material as THREE.MeshStandardMaterial).color.setHex(0xffffff);
         }
@@ -3347,9 +3354,11 @@ class Enemy {
         const safePush = pushDir.clone();
         safePush.y = 0;
         
-        // Jefes finales no tienen retroceso
-        const isBoss = (this.type === EnemyType.BOSS_GOLIATH || this.type === EnemyType.BOSS_SENTINEL || this.type === EnemyType.BOSS_FINAL_ROBOT);
-        if (!isBoss) {
+        // Jefes: sin retroceso ni parálisis
+        const isBossKnockback = (this.type === EnemyType.BOSS_GOLIATH || this.type === EnemyType.BOSS_SENTINEL
+            || this.type === EnemyType.BOSS_FINAL_ROBOT || this.type === EnemyType.BOSS_SNOW_GOLIATH
+            || this.type === EnemyType.BOSS_GIANT_SNOWMAN || this.type === EnemyType.BOSS_BLIZZARD_KING);
+        if (!isBossKnockback) {
             this.mesh.position.add(safePush);
         }
         
@@ -3800,15 +3809,19 @@ class WaveManager {
         const biomeWave = this.currentWave <= 10 ? this.currentWave : this.currentWave - 10;
         const biomeName = this.currentWave <= 10 ? 'FOREST' : 'SNOWY';
 
-        const isFinalWave = (this.currentWave === this.maxWaves);
+        const isFinalWave    = (this.currentWave === this.maxWaves);
         const isBiomeBossWave = (biomeWave === 10);
 
         if (isBiomeBossWave) {
             this.enemiesToSpawn = 1;
             this.spawnRate = 3000;
         } else {
-            this.enemiesToSpawn = 6 + (biomeWave * 4);
-            this.spawnRate = Math.max(400, 2000 - (biomeWave * 140));
+            // Nieve: +60% más enemigos que el bosque en la misma wave relativa
+            const baseCount = 6 + (biomeWave * 4);
+            this.enemiesToSpawn = currentBiome === Biome.SNOW
+                ? Math.round(baseCount * 1.6)
+                : baseCount;
+            this.spawnRate = Math.max(350, 2000 - (biomeWave * 140));
         }
 
         const wc = document.getElementById('wave-complete');
@@ -3830,22 +3843,30 @@ class WaveManager {
 
     spawnWeaponDrop(wave: number) {
         if (wave === 1) {
-            // Wave 1: Laser Gun (Index 1) celeste (eliminado jetpack duplicado verde)
             activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(-15, 0, -10), 1, 'weapon', 0x00ffff));
         } else if (wave === 2) {
-            // Wave 2: Rocket Launcher (Index 2) rojo
             activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(20, 0, -25), 2, 'weapon', 0xff0000));
         } else if (wave === 3) {
-            // Wave 3: Mini Gun (Index 3) amarillo
             activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(-5, 0, -35), 3, 'weapon', 0xffff00));
         } else if (wave === 4) {
-            // Wave 4: Fire Gun (Index 4) naranja
             activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(-20, 0, -45), 4, 'weapon', 0xffaa00));
         } else if (wave >= 5) {
-            // Higher waves: drop ammo & fuel refills
-            activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(-5, 0, 10), 0, 'ammo', 0xaaaaaa));
+            // Si el juguete ya existe en el mapa, solo aplicar el efecto (sin visual duplicado)
+            const hasAmmo  = activeWeaponDrops.some(d => d.dropType === 'ammo'  && d.active);
+            const hasFuel  = activeWeaponDrops.some(d => d.dropType === 'fuel'  && d.active);
+            if (!hasAmmo) {
+                activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(-5, 0, 10), 0, 'ammo', 0xaaaaaa));
+            } else {
+                // Aplicar silenciosamente el efecto de ammo sin spawnar
+                weapons.forEach(w => { w.ammoCurrent = w.magSize; w.ammoReserve = Math.min(w.ammoReserve + w.magSize * 2, w.magSize * 8); });
+            }
             if (hasJetpack) {
-                activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(5, 0, 10), 0, 'fuel', 0xaa00ff));
+                if (!hasFuel) {
+                    activeWeaponDrops.push(new WeaponDrop(new THREE.Vector3(5, 0, 10), 0, 'fuel', 0xaa00ff));
+                } else {
+                    // Aplicar silenciosamente recarga de combustible
+                    playerJetpackFuel = Math.min(playerJetpackFuel + MAX_FUEL * 0.5, MAX_FUEL);
+                }
             }
         }
     }
@@ -5220,6 +5241,8 @@ function tryBuy(itemKey: string) {
     if (playerCoins >= item.cost) {
         playerCoins -= item.cost;
         item.action();
+        // Escalar el precio x1.2 por cada compra (sin exceder x8 el valor original)
+        item.cost = Math.round(item.cost * 1.2);
         updateStatsHUD();
         if (shopCoinsEl) shopCoinsEl.innerText = playerCoins.toString();
         const scm = document.getElementById('shop-coins-mobile');
