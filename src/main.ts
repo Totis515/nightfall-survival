@@ -1673,6 +1673,7 @@ const loadingText = document.querySelector('.loading-text') as HTMLElement;
 let playerHealth = 100;
 let playerStamina = 100;
 let staminaExhausted = false;
+let staminaCooldown = 0;
 let playerJetpackFuel = 0;
 let playerFireDebuff = 0; // 🔥 Debuff de fuego progresivo
 let hasJetpack = false;
@@ -1952,7 +1953,10 @@ class SoundManager {
 
         this.bgAudio = new Audio(path);
         this.bgAudio.loop = (path === '/lobby.mp3' || path === '/game.mp3' || path === '/InviernoDefinitivo.m4a.mp4');
-        this.bgAudio.volume = volume;
+        // Usar variables globales/sliders en DOM para aplicar volumen
+        const mV = parseInt((document.getElementById('opt-master-vol') as HTMLInputElement)?.value || '80') / 100;
+        const mscV = parseInt((document.getElementById('opt-music-vol') as HTMLInputElement)?.value || '60') / 100;
+        this.bgAudio.volume = volume * mV * mscV;
         this.bgAudio.play().catch(() => {
             console.log('Audio blocked or file missing:', path);
         });
@@ -2186,8 +2190,8 @@ class JetpackPickup {
     }
 }
 const jetpacks: JetpackPickup[] = [];
-// Jetpack cerca del spawn del jugador (0,0,0) para que sea fácil de encontrar al inicio
-jetpacks.push(new JetpackPickup(new THREE.Vector3(8, 0, 8)));
+// Jetpack en el spawn
+jetpacks.push(new JetpackPickup(new THREE.Vector3(0, 0, 0)));
 
 const playerInventory: number[] = [0];
 let currentWeaponIndex = 0;
@@ -2812,8 +2816,8 @@ for (let i = 0; i < 10; i++) {
         }
     });
 
-    // Añadimos cilindro perfecto para la base de la casa (cubo 5x5 -> radio suave 3.5, altura 4)
-    collisionCylinders.push({ x: house.position.x, z: house.position.z, radius: 3.5, height: 4.0 });
+    // Verdaderas colisiones: sólo dependemos de playerCollidables (raycasting) para forma cuadrada
+    // (Se eliminó collisionCylinders.push para las casas)
 }
 
 // Añadir el edificio del Black Market en una posición FIJA que coincida con el marcador del cielo
@@ -2821,8 +2825,7 @@ const BM_X = 30, BM_Z = -40; // coincide con la posición de shopMarker definida
 const blackMarket = createBlackMarketBuilding();
 blackMarket.position.set(BM_X, 0, BM_Z);
 scene.add(blackMarket);
-// BlackMarket cilindro: base 8x6 -> radio suave 4.8, altura 5
-collisionCylinders.push({ x: BM_X, z: BM_Z, radius: 4.8, height: 5.0 });
+// BlackMarket cilindro eliminado para permitir colisión rectangular real
 
 // Etiqueta de texto 3D flotante "BLACK MARKET" sobre el edificio
 const bmCanvas = document.createElement('canvas');
@@ -2852,7 +2855,7 @@ for (let i = 0; i < 8; i++) {
     car.rotation.y = Math.random() * Math.PI;
     scene.add(car);
     // Coche cilindro: base 2x4 -> radio aprox 2.5, altura 1.0 (sólo cubre la base)
-    collisionCylinders.push({ x: car.position.x, z: car.position.z, radius: 2.5, height: 1.0 });
+    // Colisión basada en playerCollidables únicamente
 }
 
 // Distribuir vallas
@@ -2928,8 +2931,8 @@ const ENEMY_DATA: Record<EnemyType, EnemyStats> = {
     [EnemyType.ZOMBIE_ON_FIRE]:    { health: 90,   speed: 2.5, damage: 5,  shirtColor: 0xdd4400, skinColor: 0xffaa00, size: 1.0, attackRange: 1.5,  attackCooldown: 900,  reward: 40,   name: "ZOMBIE ON FIRE" },
     [EnemyType.ROBOT]:             { health: 250,  speed: 2.5, damage: 15, shirtColor: 0x444444, skinColor: 0x888888, size: 1.1, attackRange: 15.0, attackCooldown: 2000, reward: 100,  name: "ROBOT" },
     [EnemyType.BOSS_GOLIATH]:      { health: 1200, speed: 1.8, damage: 45, shirtColor: 0x1a1a1a, skinColor: 0x2d3d1d, size: 2.5, attackRange: 2.5,  attackCooldown: 1200, reward: 500,  name: "GOLIATH" },
-    [EnemyType.BOSS_SENTINEL]:     { health: 2000, speed: 1.2, damage: 20, shirtColor: 0x222222, skinColor: 0x555555, size: 2.2, attackRange: 18.0, attackCooldown: 250,  reward: 1000, name: "SENTINEL" },
-    [EnemyType.BOSS_FINAL_ROBOT]:  { health: 6000, speed: 4.5, damage: 40, shirtColor: 0x000000, skinColor: 0x555555, size: 4.5, attackRange: 15.0, attackCooldown: 300,  reward: 5000, name: "ULTIMATE MECHA-ZOMBIE" },
+    [EnemyType.BOSS_SENTINEL]:     { health: 1400, speed: 1.2, damage: 20, shirtColor: 0x222222, skinColor: 0x555555, size: 2.2, attackRange: 18.0, attackCooldown: 250,  reward: 1000, name: "SENTINEL" },
+    [EnemyType.BOSS_FINAL_ROBOT]:  { health: 4500, speed: 4.5, damage: 40, shirtColor: 0x000000, skinColor: 0x555555, size: 4.5, attackRange: 15.0, attackCooldown: 300,  reward: 5000, name: "ULTIMATE MECHA-ZOMBIE" },
     // ===== NIEVE =====
     [EnemyType.SNOW_ZOMBIE]:       { health: 220,  speed: 2.0, damage: 12, shirtColor: 0x4a5568, skinColor: 0xb0c4de, size: 1.0, attackRange: 1.5,  attackCooldown: 1000, reward: 25,   name: "SNOW ZOMBIE",    slowDuration: 2.0 },
     [EnemyType.SNOW_FAST]:         { health: 110,  speed: 4.2, damage: 8,  shirtColor: 0x334455, skinColor: 0x8899aa, size: 0.8, attackRange: 1.2,  attackCooldown: 450,  reward: 40,   name: "SNOW RUNNER",   slowDuration: 1.5 },
@@ -2954,6 +2957,7 @@ class Enemy {
     isDead: boolean = false;
     isFlinching: boolean = false;
     flinchTimer: number = 0;
+    flashTimer: number = 0;
     spawnY: number = -2.0;
     spawnTime: number = 2.0;
     spawnTimer: number = 0;
@@ -3347,6 +3351,8 @@ class Enemy {
         if (!isBoss) {
             this.isFlinching = true;
             this.flinchTimer = 0.12;
+        } else {
+            this.flashTimer = 0.12;
         }
 
         // Flash all parts white (siempre, incluso para jefes)
@@ -3425,6 +3431,16 @@ class Enemy {
                 }
             }
             return;
+        }
+
+        if (this.flashTimer > 0) {
+            this.flashTimer -= delta;
+            if (this.flashTimer <= 0) {
+                this.flashTimer = 0;
+                for (const part of this.bodyParts) {
+                    (part.mesh.material as THREE.MeshStandardMaterial).color.setHex(part.color);
+                }
+            }
         }
 
         // Lógica de red: Si NO somos el host, solo interpolar a la red y comprobar ataques locales
@@ -4589,7 +4605,7 @@ getEl('btn-mobile-jump')?.addEventListener('touchstart', (e) => {
     // Maneja el salto o el uso del jetpack al tocar el botón de salto.
     // Si el jugador no tiene jetpack y tiene suficiente resistencia, realiza un salto normal.
     // Si el jugador tiene jetpack, activa el modo jetpack.
-    if (camera.position.y <= 1.61 && playerStamina > 15 && !hasJetpack) {
+    if (camera.position.y <= 1.61 && playerStamina > 15 && !hasJetpack && staminaCooldown <= 0) {
         velocity.y += 20;
         playerStamina -= 15;
         updateStatsHUD();
@@ -5173,7 +5189,7 @@ const onKeyDown = (event: KeyboardEvent) => {
         case 'ArrowRight': case 'KeyD': moveRight = true; break;
         case 'Space':
             // Saltos más lentos y activación del Jetpack si está disponible
-            if (camera.position.y <= 1.61 && playerStamina > 15 && !hasJetpack) {
+            if (camera.position.y <= 1.61 && playerStamina > 15 && !hasJetpack && staminaCooldown <= 0) {
                 velocity.y += 20; // Salto más lento y flotante
                 playerStamina -= 15;
                 updateStatsHUD();
@@ -5266,8 +5282,8 @@ function tryBuy(itemKey: string) {
     if (playerCoins >= item.cost) {
         playerCoins -= item.cost;
         item.action();
-        // Escalar el precio x1.2 por cada compra (sin exceder x8 el valor original)
-        item.cost = Math.round(item.cost * 1.2);
+        // Escalar el precio x1.1
+        item.cost = Math.round(item.cost * 1.1);
         updateStatsHUD();
         if (shopCoinsEl) shopCoinsEl.innerText = playerCoins.toString();
         const scm = document.getElementById('shop-coins-mobile');
@@ -5459,19 +5475,27 @@ function animate() {
 
         handleShooting(time);
 
-        // Lógica de resistencia (Stamina)
+        if (staminaCooldown > 0) {
+            staminaCooldown -= delta;
+            isSprinting = false; // Block sprinting visually & logically
+        }
+
         const isMoving = moveForward || moveBackward || moveLeft || moveRight;
-        if (isSprinting && isMoving && playerStamina > 0 && camera.position.y <= 1.7) {
+        if (isSprinting && isMoving && playerStamina > 0 && camera.position.y <= 1.7 && staminaCooldown <= 0) {
             // Al aplicar slow, el sprint se fuerza a velocidad de caminata
             const slowFactor = playerSlowDebuff > 0 ? 0.5 : 1.0;
             speed = sprintSpeed * walkSpeedMultiplier * slowFactor;
             playerStamina -= 20 * delta;
-            if (playerStamina < 0) playerStamina = 0;
+            if (playerStamina <= 0) {
+                playerStamina = 0;
+                staminaCooldown = 2.0; // 2 seconds penalty
+                isSprinting = false;
+            }
             updateStatsHUD();
         } else {
             const slowFactor = playerSlowDebuff > 0 ? 0.5 : 1.0;
             speed = walkSpeed * walkSpeedMultiplier * slowFactor;
-            if (playerStamina < MAX_STAMINA && camera.position.y <= 1.7) {
+            if (staminaCooldown <= 0 && playerStamina < MAX_STAMINA && camera.position.y <= 1.7) {
                 playerStamina += 10 * delta;
                 if (playerStamina > MAX_STAMINA) playerStamina = MAX_STAMINA;
                 updateStatsHUD();
