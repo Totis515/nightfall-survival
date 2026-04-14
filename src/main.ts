@@ -1038,6 +1038,35 @@ function connectMultiplayer() {
                 const wm = rArmRef.getObjectByName('weapon_mesh');
                 if (wm) rArmRef.remove(wm);
             }
+
+            // Crear Canvas 3D Sprite para el aviso "Q"
+            let qLabel = p.group.getObjectByName('q_revive_label') as THREE.Sprite;
+            if (!qLabel) {
+                const canvas = document.createElement('canvas');
+                canvas.width = 128; canvas.height = 128;
+                const ctx = canvas.getContext('2d')!;
+                ctx.fillStyle = '#0a0a0a';
+                ctx.beginPath();
+                ctx.arc(64, 64, 60, 0, Math.PI*2);
+                ctx.fill();
+                ctx.strokeStyle = '#00ffcc';
+                ctx.lineWidth = 10;
+                ctx.stroke();
+                ctx.fillStyle = '#00ffcc';
+                ctx.font = 'bold 70px Impact';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('Q', 64, 64);
+                
+                const mat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), depthTest: false, depthWrite: false });
+                qLabel = new THREE.Sprite(mat);
+                qLabel.name = 'q_revive_label';
+                // Because group is rotated Math.PI/2 around X axis, local Y points back. Local Z points UP.
+                qLabel.position.set(0, 0, 1.2); 
+                qLabel.scale.set(0.8, 0.8, 1);
+                p.group.add(qLabel);
+            }
+            qLabel.visible = true;
         }
     });
 
@@ -1070,6 +1099,8 @@ function connectMultiplayer() {
                 p.group.rotation.set(0, p.group.rotation.y, 0);
                 p.group.position.y = 0.95; // Restaurar altura
                 healingParticles.spawn(p.group.position, 15);
+                const qLabel = p.group.getObjectByName('q_revive_label') as THREE.Sprite;
+                if (qLabel) qLabel.visible = false;
             }
         }
     });
@@ -2332,16 +2363,20 @@ function takeDamage(amount: number) {
 
     if (playerHealth <= 0) {
         playerHealth = 0;
-        if (!isDowned) {
-            isDowned = true;
-            downedTimer = 8.0;
-            const ds = document.getElementById('downed-screen');
-            if (ds) ds.style.display = 'flex';
-            if (socket?.connected) socket.emit('player-downed', { name: myUsername });
-            
-            // Effect to orient the camera like falling down
-            camera.rotation.z = Math.PI / 2;
-            camera.position.y = 0.5;
+        if (isMultiplayer && (socket as any)?.connected) {
+            if (!isDowned) {
+                isDowned = true;
+                downedTimer = 8.0;
+                const ds = document.getElementById('downed-screen');
+                if (ds) ds.style.display = 'flex';
+                (socket as any).emit('player-downed', { name: myUsername });
+                
+                // Effect to orient the camera like falling down
+                camera.rotation.z = Math.PI / 2;
+                camera.position.y = 0.5;
+            }
+        } else {
+            gameOver();
         }
     }
 }
@@ -3881,6 +3916,10 @@ class WaveManager {
         soundManager.startGameMusic();
         this.currentWave++;
 
+        if (this.currentWave === 1 && !hasJetpack) {
+            jetpacks.push(new JetpackPickup(new THREE.Vector3(0, 0, 5)));
+        }
+
         this.spawnWeaponDrop(this.currentWave);
 
         // Número de wave relativo al bioma (1-10 en cada bioma)
@@ -4548,6 +4587,13 @@ function startGame() {
     uiLayer.style.display = 'block';         // Mostrar el HUD del juego
     crosshair.style.display = 'block';       // Mostrar la mira de apuntado
     prevTime = performance.now();            // Resetear el tiempo para evitar un delta enorme
+
+    // Ocultar cualquier botón "Kick" del lobby a los demás jugadores
+    remotePlayers.forEach(rp => {
+        const kl = rp.group.getObjectByName('kick_label') as THREE.Sprite;
+        if (kl) kl.visible = false;
+    });
+
     // waveManager.startNextWave() ya fue llamada al final de la carga (progress >= 100)
 }
 
@@ -5542,7 +5588,7 @@ function animate() {
         }
 
         // Muerte de Jugador: Revivir a otro
-        if (isRevivingKey && isMultiplayer) {
+        if (isMultiplayer) {
             let closestDowned: { id: string, distSq: number } | null = null;
             remotePlayers.forEach((rp, id) => {
                 if ((rp as any).isDowned) {
@@ -5556,27 +5602,33 @@ function animate() {
             });
 
             if (closestDowned) {
-                reviveTargetId = (closestDowned as any).id;
-                speed = 0; velocity.x = 0; velocity.z = 0; // Freeze while healing
-                reviveProgress += delta;
-                
-                // Disparo de efecto inicial por red a todos (en progreso)
-                if (reviveProgress <= delta * 2) {
-                    if (socket?.connected) socket.emit('player-reviving', { targetId: reviveTargetId });
-                }
-
                 const rpEl = document.getElementById('revive-prompt');
-                if (rpEl) {
-                    rpEl.style.display = 'flex';
+                if (rpEl) rpEl.style.display = 'flex';
+
+                if (isRevivingKey) {
+                    reviveTargetId = (closestDowned as any).id;
+                    speed = 0; velocity.x = 0; velocity.z = 0; // Freeze while healing
+                    reviveProgress += delta;
+                    
+                    // Disparo de efecto inicial por red a todos (en progreso)
+                    if (reviveProgress <= delta * 2) {
+                        if ((socket as any)?.connected) (socket as any).emit('player-reviving', { targetId: reviveTargetId });
+                    }
+
                     const fill = document.getElementById('revive-bar-fill');
                     if (fill) fill.style.width = Math.min((reviveProgress / 3.0) * 100, 100) + '%';
-                }
 
-                if (reviveProgress >= 3.0) {
-                    if (socket?.connected) socket.emit('player-revived', { targetId: reviveTargetId });
+                    if (reviveProgress >= 3.0) {
+                        if ((socket as any)?.connected) (socket as any).emit('player-revived', { targetId: reviveTargetId });
+                        reviveProgress = 0;
+                        reviveTargetId = null;
+                        if (rpEl) rpEl.style.display = 'none';
+                    }
+                } else {
                     reviveProgress = 0;
                     reviveTargetId = null;
-                    if (rpEl) rpEl.style.display = 'none';
+                    const fill = document.getElementById('revive-bar-fill');
+                    if (fill) fill.style.width = '0%';
                 }
             } else {
                 reviveProgress = 0;
@@ -5584,11 +5636,6 @@ function animate() {
                 const rpEl = document.getElementById('revive-prompt');
                 if (rpEl) rpEl.style.display = 'none';
             }
-        } else {
-            reviveProgress = 0;
-            reviveTargetId = null;
-            const rpEl = document.getElementById('revive-prompt');
-            if (rpEl) rpEl.style.display = 'none';
         }
 
         // 🔥 Aplicar debuff de fuego progresivo
