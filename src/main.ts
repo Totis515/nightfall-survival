@@ -1074,7 +1074,7 @@ function connectMultiplayer() {
         const p = remotePlayers.get(data.targetId);
         if (p) {
             healingParticles.spawn(p.group.position, 2);
-        } else if (data.targetId === socket.id) {
+        } else if (data.targetId === myId) {
             // Soy yo siendo curado
             const pos = camera.position.clone();
             pos.y -= 1.0;
@@ -1084,7 +1084,7 @@ function connectMultiplayer() {
 
     socket.on('player-revived', (data: { targetId: string, reviverId: string }) => {
         // Alguien fue revivido. ¿Soy yo?
-        if (data.targetId === socket.id) {
+        if (data.targetId === myId) {
             isDowned = false;
             playerHealth = 50; // Revive con el 50%
             updateStatsHUD();
@@ -1098,6 +1098,7 @@ function connectMultiplayer() {
                 (p as any).isDowned = false;
                 p.group.rotation.set(0, p.group.rotation.y, 0);
                 p.group.position.y = 0.95; // Restaurar altura
+
                 healingParticles.spawn(p.group.position, 15);
                 const qLabel = p.group.getObjectByName('q_revive_label') as THREE.Sprite;
                 if (qLabel) qLabel.visible = false;
@@ -2335,7 +2336,6 @@ function updateStatsHUD() {
             v.style.boxShadow = `inset 0 0 ${i * 100}px rgba(255,0,0,${i})`;
         } else v.style.opacity = '0';
     }
-    if (playerHealth <= 0 && gameStarted) gameOver();
 }
 
 function takeDamage(amount: number) {
@@ -4111,9 +4111,11 @@ class WaveManager {
         for (let i = this.activeEnemies.length - 1; i >= 0; i--) {
             const en = this.activeEnemies[i];
             
-            let closestPos = playerPos;
-            let targetIsLocal = true;
-            if (isMultiplayer && isHost && allPlayers.length > 1) {
+            // Default target is the first fully alive player found in allPlayers
+            let closestPos = allPlayers[0];
+            let targetIsLocal = (closestPos === playerPos);
+            
+            if (allPlayers.length > 1) {
                 let minDist = Infinity;
                 for (const p of allPlayers) {
                     const d = en.mesh.position.distanceToSquared(p);
