@@ -1024,9 +1024,10 @@ function connectMultiplayer() {
         }
     });
 
-    socket.on('player-died', (data: { id: string, name: string }) => {
+    socket.on('player-downed', (data: { id: string, name: string }) => {
         const p = remotePlayers.get(data.id);
         if (p) {
+            (p as any).isDowned = true;
             // Pose de muerto: rotar todo el grupo 90° para tumbarlo de espaldas
             p.group.rotation.set(Math.PI / 2, p.group.rotation.y, 0);
             p.group.position.y = 0.15; // Pegado al suelo, antes estaba muy alto (0.95)
@@ -1037,11 +1038,46 @@ function connectMultiplayer() {
                 const wm = rArmRef.getObjectByName('weapon_mesh');
                 if (wm) rArmRef.remove(wm);
             }
+        }
+    });
+
+    socket.on('player-reviving', (data: { targetId: string, reviverId: string }) => {
+        const p = remotePlayers.get(data.targetId);
+        if (p) {
+            healingParticles.spawn(p.group.position, 2);
+        } else if (data.targetId === socket.id) {
+            // Soy yo siendo curado
+            const pos = camera.position.clone();
+            pos.y -= 1.0;
+            healingParticles.spawn(pos, 2);
+        }
+    });
+
+    socket.on('player-revived', (data: { targetId: string, reviverId: string }) => {
+        // Alguien fue revivido. ¿Soy yo?
+        if (data.targetId === socket.id) {
+            isDowned = false;
+            playerHealth = 50; // Revive con el 50%
+            updateStatsHUD();
+            camera.rotation.z = 0; // Restaurar rotación cámara original
+            camera.position.y = 1.6;
+            const ds = document.getElementById('downed-screen');
+            if (ds) ds.style.display = 'none';
+        } else {
+            const p = remotePlayers.get(data.targetId);
+            if (p) {
+                (p as any).isDowned = false;
+                p.group.rotation.set(0, p.group.rotation.y, 0);
+                p.group.position.y = 0.95; // Restaurar altura
+                healingParticles.spawn(p.group.position, 15);
+            }
+        }
+    });
+
+    socket.on('player-died-final', (data: { id: string, name: string }) => {
+        const p = remotePlayers.get(data.id);
+        if (p) {
             // Quitar etiquetas flotantes
-            const lbl = p.group.getObjectByName('name_label');
-            if (lbl) p.group.remove(lbl);
-            const wlbl = p.group.getObjectByName('weapon_label');
-            if (wlbl) p.group.remove(wlbl);
 
             // Eliminar del mapa activo => enemigos dejan de perseguir
             remotePlayers.delete(data.id);
@@ -1674,6 +1710,14 @@ let playerHealth = 100;
 let playerStamina = 100;
 let staminaExhausted = false;
 let staminaCooldown = 0;
+let isDowned = false;
+let downedTimer = 8.0;
+let isRevivingKey = false;
+let reviveProgress = 0.0;
+let reviveTargetId: string | null = null;
+const environmentBoxes: THREE.Box3[] = [];
+let playerJetpackFuel = 0;
+let staminaCooldown = 0;
 let playerJetpackFuel = 0;
 let playerFireDebuff = 0; // 🔥 Debuff de fuego progresivo
 let hasJetpack = false;
@@ -1931,7 +1975,11 @@ class SoundManager {
     }
 
     startGameMusic() {
-        this.playTrack('/game.mp3', 0.08);
+        if (currentBiome === Biome.SNOW) {
+            this.playTrack('/InviernoDefinitivo.m4a.mp4', 0.08);
+        } else {
+            this.playTrack('/game.mp3', 0.08);
+        }
     }
 
     startSnowMusic() {
@@ -2284,7 +2332,17 @@ function takeDamage(amount: number) {
 
     if (playerHealth <= 0) {
         playerHealth = 0;
-        gameOver();
+        if (!isDowned) {
+            isDowned = true;
+            downedTimer = 8.0;
+            const ds = document.getElementById('downed-screen');
+            if (ds) ds.style.display = 'flex';
+            if (socket?.connected) socket.emit('player-downed', { name: myUsername });
+            
+            // Effect to orient the camera like falling down
+            camera.rotation.z = Math.PI / 2;
+            camera.position.y = 0.5;
+        }
     }
 }
 
@@ -2934,13 +2992,13 @@ const ENEMY_DATA: Record<EnemyType, EnemyStats> = {
     [EnemyType.BOSS_SENTINEL]:     { health: 1400, speed: 1.2, damage: 20, shirtColor: 0x222222, skinColor: 0x555555, size: 2.2, attackRange: 18.0, attackCooldown: 250,  reward: 1000, name: "SENTINEL" },
     [EnemyType.BOSS_FINAL_ROBOT]:  { health: 4500, speed: 4.5, damage: 40, shirtColor: 0x000000, skinColor: 0x555555, size: 4.5, attackRange: 15.0, attackCooldown: 300,  reward: 5000, name: "ULTIMATE MECHA-ZOMBIE" },
     // ===== NIEVE =====
-    [EnemyType.SNOW_ZOMBIE]:       { health: 220,  speed: 2.0, damage: 12, shirtColor: 0x4a5568, skinColor: 0xb0c4de, size: 1.0, attackRange: 1.5,  attackCooldown: 1000, reward: 25,   name: "SNOW ZOMBIE",    slowDuration: 2.0 },
-    [EnemyType.SNOW_FAST]:         { health: 110,  speed: 4.2, damage: 8,  shirtColor: 0x334455, skinColor: 0x8899aa, size: 0.8, attackRange: 1.2,  attackCooldown: 450,  reward: 40,   name: "SNOW RUNNER",   slowDuration: 1.5 },
-    [EnemyType.REINDEER_ZOMBIE]:   { health: 260,  speed: 2.8, damage: 14, shirtColor: 0x4a3728, skinColor: 0xb0c4de, size: 1.1, attackRange: 1.8,  attackCooldown: 1100, reward: 60,   name: "REINDEER ZOMBIE",slowDuration: 2.5 },
-    [EnemyType.SNOWMAN]:           { health: 340,  speed: 1.6, damage: 10, shirtColor: 0xcc2200, skinColor: 0xf0f8ff, size: 1.2, attackRange: 22.0, attackCooldown: 2200, reward: 90,   name: "SNOWMAN",       slowDuration: 3.0 },
-    [EnemyType.BOSS_SNOW_GOLIATH]: { health: 5500, speed: 1.5, damage: 55, shirtColor: 0x2a3040, skinColor: 0x8ab4d4, size: 2.8, attackRange: 2.8,  attackCooldown: 1300, reward: 700,  name: "SNOW GOLIATH",  slowDuration: 3.5 },
-    [EnemyType.BOSS_GIANT_SNOWMAN]:{ health: 7000, speed: 1.2, damage: 15, shirtColor: 0x990000, skinColor: 0xf0f8ff, size: 3.5, attackRange: 22.0, attackCooldown: 1800, reward: 1200, name: "GIANT SNOWMAN",  slowDuration: 4.0 },
-    [EnemyType.BOSS_BLIZZARD_KING]:{ health: 16000,speed: 3.5, damage: 50, shirtColor: 0x001133, skinColor: 0xaaddff, size: 5.0, attackRange: 22.0, attackCooldown: 280,  reward: 8000, name: "BLIZZARD KING",  slowDuration: 5.0 },
+    [EnemyType.SNOW_ZOMBIE]:       { health: 300,  speed: 2.0, damage: 12, shirtColor: 0x4a5568, skinColor: 0xb0c4de, size: 1.0, attackRange: 1.5,  attackCooldown: 1000, reward: 25,   name: "SNOW ZOMBIE",    slowDuration: 2.0 },
+    [EnemyType.SNOW_FAST]:         { health: 150,  speed: 4.2, damage: 8,  shirtColor: 0x334455, skinColor: 0x8899aa, size: 0.8, attackRange: 1.2,  attackCooldown: 450,  reward: 40,   name: "SNOW RUNNER",   slowDuration: 1.5 },
+    [EnemyType.REINDEER_ZOMBIE]:   { health: 350,  speed: 2.8, damage: 14, shirtColor: 0x4a3728, skinColor: 0xb0c4de, size: 1.1, attackRange: 1.8,  attackCooldown: 1100, reward: 60,   name: "REINDEER ZOMBIE",slowDuration: 2.5 },
+    [EnemyType.SNOWMAN]:           { health: 400,  speed: 1.6, damage: 10, shirtColor: 0xcc2200, skinColor: 0xf0f8ff, size: 1.2, attackRange: 22.0, attackCooldown: 2200, reward: 90,   name: "SNOWMAN",       slowDuration: 3.0 },
+    [EnemyType.BOSS_SNOW_GOLIATH]: { health: 7000, speed: 1.5, damage: 55, shirtColor: 0x2a3040, skinColor: 0x8ab4d4, size: 2.8, attackRange: 2.8,  attackCooldown: 1300, reward: 700,  name: "SNOW GOLIATH",  slowDuration: 3.5 },
+    [EnemyType.BOSS_GIANT_SNOWMAN]:{ health: 9000, speed: 1.2, damage: 15, shirtColor: 0x990000, skinColor: 0xf0f8ff, size: 3.5, attackRange: 22.0, attackCooldown: 1800, reward: 1200, name: "GIANT SNOWMAN",  slowDuration: 4.0 },
+    [EnemyType.BOSS_BLIZZARD_KING]:{ health: 22000,speed: 3.5, damage: 50, shirtColor: 0x001133, skinColor: 0xaaddff, size: 5.0, attackRange: 22.0, attackCooldown: 280,  reward: 8000, name: "BLIZZARD KING",  slowDuration: 5.0 },
 };
 
 class Enemy {
@@ -3996,12 +4054,15 @@ class WaveManager {
         // Actualizar enemigos actuales
         // Solo inclui jugadores VIVOS como objetivos
         const allPlayers: THREE.Vector3[] = [];
-        if (playerHealth > 0) allPlayers.push(playerPos);
+        if (playerHealth > 0 && !isDowned) allPlayers.push(playerPos);
 
         if (isMultiplayer && isHost) {
             // Solo los jugadores remotos vivos (en remotePlayers) son objetivos válidos
             remotePlayers.forEach(rp => {
-                allPlayers.push(rp.group.position);
+                const rpIsDowned = (rp as any).isDowned || false;
+                if (!rpIsDowned) {
+                    allPlayers.push(rp.group.position);
+                }
             });
         }
 
@@ -5025,6 +5086,7 @@ const flameParticles = new GenericParticleSystem(500, { color: 0xffaa00, size: 0
 const jetpackParticles = new GenericParticleSystem(300, { color: 0xff6600, size: 0.5, gravity: 15, lifeBase: 0.2, spread: 0.5, blending: THREE.AdditiveBlending });
 // Partículas de impacto de nieve (blancas y suaves)
 const snowImpactParticles = new GenericParticleSystem(400, { color: 0xddeeff, size: 0.22, gravity: 8, lifeBase: 0.6, spread: 0.8 });
+const healingParticles = new GenericParticleSystem(400, { color: 0x00ffcc, size: 0.3, gravity: -8, lifeBase: 0.6, spread: 2.5, blending: THREE.AdditiveBlending });
 
 // ---- SISTEMA DE COPOS DE NIEVE ----
 class SnowflakeSystem {
@@ -5135,6 +5197,15 @@ function transitionToSnowBiome() {
             clearInterval(iv);
             applySnowBiome();
             if (ls) ls.style.display = 'none';
+
+            // Entregamos un Jetpack nuevo y esparcimos munición como reabastecimiento en la Wave 11
+            if (!hasJetpack) {
+                jetpacks.push(new JetpackPickup(new THREE.Vector3(0, 0, 5)));
+            }
+            for (let i = 0; i < 4; i++) {
+                ammoPickups.push(new AmmoPickup(new THREE.Vector3(-10 + Math.random() * 20, 0, -10 + Math.random() * 20)));
+            }
+
             // Abrir tienda normalmente
             openShop();
         }
@@ -5199,6 +5270,7 @@ const onKeyDown = (event: KeyboardEvent) => {
             break;
         case 'ShiftLeft': case 'ShiftRight': isSprinting = true; break;
         case 'KeyR': reloadWeapon(); break;
+        case 'KeyQ': isRevivingKey = true; break;
         // Teclas rápidas de armas
         case 'Digit1': if (playerInventory.includes(0)) switchWeapon(0); break;
         case 'Digit2': if (playerInventory.includes(1)) switchWeapon(1); break;
@@ -5217,6 +5289,7 @@ const onKeyUp = (event: KeyboardEvent) => {
         case 'ArrowRight': case 'KeyD': moveRight = false; break;
         case 'Space': isJetpacking = false; break;
         case 'ShiftLeft': case 'ShiftRight': isSprinting = false; break;
+        case 'KeyQ': isRevivingKey = false; break;
     }
 };
 
@@ -5282,8 +5355,8 @@ function tryBuy(itemKey: string) {
     if (playerCoins >= item.cost) {
         playerCoins -= item.cost;
         item.action();
-        // Escalar el precio x1.1
-        item.cost = Math.round(item.cost * 1.1);
+        // Escalar el precio +$100 fijos por nivel comprado
+        item.cost += 100;
         updateStatsHUD();
         if (shopCoinsEl) shopCoinsEl.innerText = playerCoins.toString();
         const scm = document.getElementById('shop-coins-mobile');
@@ -5447,7 +5520,77 @@ function animate() {
             if (pids.length > 0) spectatingPlayerId = pids[0];
             else spectatingPlayerId = null;
         }
-    } else if ((controls.isLocked === true || isMobile) && gameStarted && playerHealth > 0) {
+    } else if ((controls.isLocked === true || isMobile) && gameStarted) {
+        if (isDowned) {
+            downedTimer -= delta;
+            const dtEl = document.getElementById('downed-timer');
+            if (dtEl) dtEl.innerText = downedTimer.toFixed(1);
+            if (downedTimer <= 0) {
+                isDowned = false;
+                const ds = document.getElementById('downed-screen');
+                if (ds) ds.style.display = 'none';
+                if (socket?.connected) socket.emit('player-died-final', { name: myUsername });
+                gameOver();
+            } else {
+                speed = 0; velocity.x = 0; velocity.z = 0; // Lock movement
+                velocity.y -= 9.8 * 8.0 * delta; // Gravity only
+                camera.position.y += (velocity.y * delta);
+                if (camera.position.y <= 0.5) camera.position.y = 0.5;
+            }
+            // Skip the rest of normal loop controls
+            return; 
+        }
+
+        // Muerte de Jugador: Revivir a otro
+        if (isRevivingKey && isMultiplayer) {
+            let closestDowned: { id: string, distSq: number } | null = null;
+            remotePlayers.forEach((rp, id) => {
+                if ((rp as any).isDowned) {
+                    const d = camera.position.distanceToSquared(rp.group.position);
+                    if (d < 16) { // ~4 meters
+                        if (!closestDowned || d < closestDowned.distSq) {
+                            closestDowned = { id, distSq: d };
+                        }
+                    }
+                }
+            });
+
+            if (closestDowned) {
+                reviveTargetId = (closestDowned as any).id;
+                speed = 0; velocity.x = 0; velocity.z = 0; // Freeze while healing
+                reviveProgress += delta;
+                
+                // Disparo de efecto inicial por red a todos (en progreso)
+                if (reviveProgress <= delta * 2) {
+                    if (socket?.connected) socket.emit('player-reviving', { targetId: reviveTargetId });
+                }
+
+                const rpEl = document.getElementById('revive-prompt');
+                if (rpEl) {
+                    rpEl.style.display = 'flex';
+                    const fill = document.getElementById('revive-bar-fill');
+                    if (fill) fill.style.width = Math.min((reviveProgress / 3.0) * 100, 100) + '%';
+                }
+
+                if (reviveProgress >= 3.0) {
+                    if (socket?.connected) socket.emit('player-revived', { targetId: reviveTargetId });
+                    reviveProgress = 0;
+                    reviveTargetId = null;
+                    if (rpEl) rpEl.style.display = 'none';
+                }
+            } else {
+                reviveProgress = 0;
+                reviveTargetId = null;
+                const rpEl = document.getElementById('revive-prompt');
+                if (rpEl) rpEl.style.display = 'none';
+            }
+        } else {
+            reviveProgress = 0;
+            reviveTargetId = null;
+            const rpEl = document.getElementById('revive-prompt');
+            if (rpEl) rpEl.style.display = 'none';
+        }
+
         // 🔥 Aplicar debuff de fuego progresivo
         if (playerFireDebuff > 0) {
             playerFireDebuff -= delta;
@@ -5601,6 +5744,30 @@ function animate() {
             }
         }
 
+        // Lógica de colisión estricta AABB paralela a cilindros
+        const px = camera.position.x;
+        const pz = camera.position.z;
+        const py = camera.position.y - 1.6;
+        for (const box of environmentBoxes) {
+            // Expandir hitbox virtualmente 0.5 unidades por cada cara
+            const minX = box.min.x - 0.5;
+            const maxX = box.max.x + 0.5;
+            const minZ = box.min.z - 0.5;
+            const maxZ = box.max.z + 0.5;
+            // No limitamos py superior para no bloquear caer sobre cajas
+            if (px > minX && px < maxX && pz > minZ && pz < maxZ && py < box.max.y) {
+                const dx1 = px - minX;
+                const dx2 = maxX - px;
+                const dz1 = pz - minZ;
+                const dz2 = maxZ - pz;
+                const min = Math.min(dx1, dx2, dz1, dz2);
+                if (min === dx1) camera.position.x = minX;
+                else if (min === dx2) camera.position.x = maxX;
+                else if (min === dz1) camera.position.z = minZ;
+                else if (min === dz2) camera.position.z = maxZ;
+            }
+        }
+
         // Movimiento vertical
         camera.position.y += (velocity.y * delta);
 
@@ -5665,6 +5832,7 @@ function animate() {
         flameParticles.update(delta);
         jetpackParticles.update(delta);
         snowImpactParticles.update(delta);
+        healingParticles.update(delta);
         snowflakes.update(delta, camera.position);
         // Actualizar bolas de nieve
         for (let i = snowballProjectiles.length - 1; i >= 0; i--) {

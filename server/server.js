@@ -254,16 +254,40 @@ io.on('connection', (socket) => {
         socket.to(code).emit('game-resumed');
     });
 
-    // ── PLAYER DEATH ──────────────────────────────────────────────
-    socket.on('player-died', (data) => {
+    // ── PLAYER DEATH / DOWNED MECHANICS ───────────────────────────
+    socket.on('player-downed', (data) => {
+        const code = socket.data.roomCode;
+        if (!code || !rooms[code]) return;
+        if (rooms[code].players[socket.id]) {
+            rooms[code].players[socket.id].isDowned = true;
+        }
+        io.to(code).emit('player-downed', { id: socket.id, name: data.name });
+    });
+
+    socket.on('player-reviving', (data) => {
+        const code = socket.data.roomCode;
+        if (!code || !rooms[code]) return;
+        socket.to(code).emit('player-reviving', { targetId: data.targetId, reviverId: socket.id });
+    });
+
+    socket.on('player-revived', (data) => {
+        const code = socket.data.roomCode;
+        if (!code || !rooms[code]) return;
+        if (rooms[code].players[data.targetId]) {
+            rooms[code].players[data.targetId].isDowned = false;
+        }
+        io.to(code).emit('player-revived', { targetId: data.targetId, reviverId: socket.id });
+    });
+
+    socket.on('player-died-final', (data) => {
         const code = socket.data.roomCode;
         if (!code || !rooms[code]) return;
         if (rooms[code].players[socket.id]) {
             rooms[code].players[socket.id].isDead = true;
         }
-        io.to(code).emit('player-died', { id: socket.id, name: data.name });
+        io.to(code).emit('player-died-final', { id: socket.id, name: data.name });
 
-        // MIGRAR HOST SI EL HOST MUERE
+        // MIGRAR HOST SI EL HOST MUERE DEFINITIVAMENTE
         if (rooms[code].hostId === socket.id) {
             const remaining = Object.values(rooms[code].players).filter(p => !p.isDead && p.id !== socket.id);
             if (remaining.length > 0) {
