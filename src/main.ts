@@ -2573,8 +2573,30 @@ for (let i = 0; i < pos.count; i++) {
     }
 }
 floorGeo.computeVertexNormals();
+// Crear textura procedural para que el piso nunca se vea como un vacío transparente
+const floorCanvas = document.createElement('canvas');
+floorCanvas.width = 512; floorCanvas.height = 512;
+const floorCtx = floorCanvas.getContext('2d')!;
+// Fill solid base (muted brownish earth)
+floorCtx.fillStyle = '#221a15';
+floorCtx.fillRect(0, 0, 512, 512);
+// Draw noise
+for (let i = 0; i < 4000; i++) {
+    const r = Math.random();
+    floorCtx.fillStyle = r > 0.5 ? '#1f1611' : '#292019';
+    floorCtx.fillRect(Math.random() * 512, Math.random() * 512, 4, 4);
+    if (r > 0.95) {
+        floorCtx.fillStyle = '#110d0a';
+        floorCtx.fillRect(Math.random() * 512, Math.random() * 512, 8, 8);
+    }
+}
+const floorTex = new THREE.CanvasTexture(floorCanvas);
+floorTex.wrapS = THREE.RepeatWrapping;
+floorTex.wrapT = THREE.RepeatWrapping;
+floorTex.repeat.set(120, 120);
+
 const floorMat = new THREE.MeshStandardMaterial({
-    color: 0x221a15, // Muted brownish earth
+    map: floorTex,
     roughness: 0.9,
     metalness: 0.1,
     flatShading: true
@@ -3917,7 +3939,8 @@ class WaveManager {
         this.currentWave++;
 
         if (this.currentWave === 1 && !hasJetpack) {
-            jetpacks.push(new JetpackPickup(new THREE.Vector3(0, 0, 5)));
+            // Spawnear el jetpack un poco más lejos para que el jugador tenga que caminar a recogerlo
+            jetpacks.push(new JetpackPickup(new THREE.Vector3(-4, 0.5, 4)));
         }
 
         this.spawnWeaponDrop(this.currentWave);
@@ -5098,8 +5121,8 @@ class GenericParticleSystem {
 
                 this.lifetimes[i] -= delta;
 
-                // Muere si toca el suelo O si se le acaba el tiempo
-                if (this.positions[i * 3 + 1] <= 0.05 || this.lifetimes[i] <= 0) {
+                // Muere si toca el suelo O si se le acaba el tiempo (y=0.4 evita que traspase las colinas del low poly terrain)
+                if (this.positions[i * 3 + 1] <= 0.4 || this.lifetimes[i] <= 0) {
                     this.lifetimes[i] = 0;
                     this.positions[i * 3 + 1] = -100; // Ocultar inmediatamente
                     this.velocities[i].set(0, 0, 0);  // Detener
@@ -5187,9 +5210,30 @@ const snowflakes = new SnowflakeSystem(2000);
 function applySnowBiome() {
     currentBiome = Biome.SNOW;
 
-    // Suelo nevado
-    (floor.material as THREE.MeshStandardMaterial).color.setHex(0xb8cfe0);
-    (floor.material as THREE.MeshStandardMaterial).needsUpdate = true;
+    // Suelo nevado (Textura procedural)
+    const floorCanvas2 = document.createElement('canvas');
+    floorCanvas2.width = 512; floorCanvas2.height = 512;
+    const floorCtx2 = floorCanvas2.getContext('2d')!;
+    floorCtx2.fillStyle = '#b8cfe0';
+    floorCtx2.fillRect(0, 0, 512, 512);
+    for (let i = 0; i < 4000; i++) {
+        const r = Math.random();
+        floorCtx2.fillStyle = r > 0.5 ? '#b0c7d8' : '#c3d8e8';
+        floorCtx2.fillRect(Math.random() * 512, Math.random() * 512, 5, 5);
+        if (r > 0.95) {
+            floorCtx2.fillStyle = '#9cb6ca';
+            floorCtx2.fillRect(Math.random() * 512, Math.random() * 512, 10, 10);
+        }
+    }
+    const floorTex2 = new THREE.CanvasTexture(floorCanvas2);
+    floorTex2.wrapS = THREE.RepeatWrapping;
+    floorTex2.wrapT = THREE.RepeatWrapping;
+    floorTex2.repeat.set(120, 120);
+
+    const mSnow = floor.material as THREE.MeshStandardMaterial;
+    mSnow.map = floorTex2;
+    mSnow.color.setHex(0xffffff); // El color base se resetea a blanco para mostrar mapa
+    mSnow.needsUpdate = true;
 
     // Niebla celeste más densa
     scene.fog = new THREE.FogExp2(0x1a3a5a, 0.007);
