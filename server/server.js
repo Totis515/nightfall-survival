@@ -306,6 +306,25 @@ io.on('connection', (socket) => {
         console.log(`[VICTORY] Room ${code} won!`);
     });
 
+    // ── BIOME CHANGE (host → server → ALL players) ───────────────
+    socket.on('biome-change', (data) => {
+        const code = socket.data.roomCode;
+        if (!code || !rooms[code]) return;
+        if (rooms[code].hostId !== socket.id) return; // Solo el host puede cambiar bioma
+        rooms[code].currentBiome = data.biome;
+        socket.to(code).emit('biome-change', { biome: data.biome });
+        console.log(`[BIOME] Room ${code} changing to ${data.biome}`);
+    });
+
+    // ── MUSIC CHANGE (host → server → ALL players) ───────────────
+    socket.on('music-change', (data) => {
+        const code = socket.data.roomCode;
+        if (!code || !rooms[code]) return;
+        if (rooms[code].hostId !== socket.id) return; // Solo el host puede cambiar musica
+        socket.to(code).emit('music-change', { track: data.track });
+        console.log(`[MUSIC] Room ${code} switching track to ${data.track}`);
+    });
+
     // ── KICK PLAYER (host only) ──────────────────────────────────
     socket.on('kick-player', (data) => {
         const code = socket.data.roomCode;

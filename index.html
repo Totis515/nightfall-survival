@@ -471,11 +471,8 @@
         /* VICTORY SCREEN */
         #victory-screen {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle, rgba(0, 100, 255, 0.8) 0%, rgba(0, 0, 50, 0.95) 100%);
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 50% 80%, rgba(255,80,0,0.6) 0%, rgba(10,0,0,0.97) 60%);
             display: none;
             flex-direction: column;
             align-items: center;
@@ -483,8 +480,47 @@
             z-index: 100;
             color: #fff;
             text-align: center;
+            overflow: hidden;
         }
-
+        #victory-screen::before {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 200px;
+            background: linear-gradient(to top, rgba(255,60,0,0.5), transparent);
+            animation: lavaPulse 2s ease-in-out infinite alternate;
+        }
+        @keyframes lavaPulse {
+            from { opacity: 0.4; }
+            to   { opacity: 1.0; }
+        }
+        .victory-world-title {
+            font-size: 110px;
+            font-family: 'Impact', sans-serif;
+            letter-spacing: 12px;
+            text-transform: uppercase;
+            background: linear-gradient(to bottom, #ffffff, #ffcc00, #ff4400);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: victoryGlow 1.5s infinite alternate;
+            position: relative; z-index: 1;
+        }
+        .victory-subtitle {
+            font-size: 30px;
+            color: #ffcc88;
+            font-family: 'Impact', sans-serif;
+            letter-spacing: 6px;
+            text-shadow: 0 0 20px #ff4400;
+            position: relative; z-index: 1;
+        }
+        .victory-desc {
+            font-size: 16px;
+            color: #aaa;
+            font-family: monospace;
+            margin: 20px 0 40px;
+            position: relative; z-index: 1;
+        }
         .victory-title {
             font-size: 90px;
             color: #fff;
@@ -495,17 +531,45 @@
             letter-spacing: 15px;
             animation: victoryGlow 2s infinite alternate;
         }
-
         @keyframes victoryGlow {
-            from {
-                text-shadow: 0 0 20px #00ffff;
-                transform: scale(1);
-            }
-
-            to {
-                text-shadow: 0 0 50px #0088ff, 0 0 80px #00ffff;
-                transform: scale(1.05);
-            }
+            from { text-shadow: 0 0 20px #ff4400; transform: scale(1); }
+            to   { text-shadow: 0 0 60px #ff6600, 0 0 100px #ffaa00; transform: scale(1.04); }
+        }
+        /* BOSS HP BAR */
+        #boss-bar-container {
+            position: absolute;
+            top: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 480px;
+            text-align: center;
+            z-index: 25;
+            display: none;
+        }
+        #boss-bar-name {
+            font-family: 'Impact', sans-serif;
+            font-size: 18px;
+            letter-spacing: 4px;
+            color: #ff3300;
+            text-shadow: 0 0 10px #ff0000;
+            margin-bottom: 4px;
+        }
+        #boss-bar-bg {
+            width: 100%;
+            height: 16px;
+            background: rgba(0,0,0,0.8);
+            border: 2px solid #ff3300;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(255,50,0,0.6);
+        }
+        #boss-bar-fill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(to right, #cc0000, #ff4400, #ff8800);
+            box-shadow: 0 0 10px #ff4400;
+            transition: width 0.12s ease-out;
+            border-radius: 6px;
         }
 
         #interact-prompt {
@@ -1722,11 +1786,20 @@
     </div>
 
     <div id="victory-screen">
-        <h1 class="victory-title">VICTORY</h1>
-        <p style="font-size: 24px; color: #00ffff; margin-bottom: 30px;">THE BLIZZARD HAS BEEN CONQUERED</p>
-        <p style="font-size: 18px; color: #aaa; margin-bottom: 40px; font-family: monospace;">You survived all 20 waves across 2 biomes — Forest and Snow.</p>
+        <div class="victory-world-title">THE WORLD IS SAFE</div>
+        <div class="victory-subtitle">★ NIGHTFALL SURVIVAL COMPLETE ★</div>
+        <p class="victory-desc">
+            You conquered all 30 waves across 3 biomes &mdash; Forest, Snow and Lava.<br>
+            The Purple Dragon has fallen. Humanity lives on.
+        </p>
         <button class="menu-btn" id="btn-victory-return"
-            style="background: #00ffff; color: #000; box-shadow: 0 0 20px #00ffff;">Return to lobby</button>
+            style="background: linear-gradient(135deg,#ff4400,#ff8800); color:#fff; box-shadow: 0 0 30px #ff4400; font-size:22px; padding:16px 60px; letter-spacing:4px;">RETURN TO LOBBY</button>
+    </div>
+
+    <!-- BOSS HP BAR -->
+    <div id="boss-bar-container">
+        <div id="boss-bar-name">BOSS</div>
+        <div id="boss-bar-bg"><div id="boss-bar-fill"></div></div>
     </div>
 
     <!-- PAUSE SCREEN: Aparece al presionar ESC durante la partida -->

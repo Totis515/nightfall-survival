@@ -1749,8 +1749,6 @@ let reviveProgress = 0.0;
 let reviveTargetId: string | null = null;
 const environmentBoxes: THREE.Box3[] = [];
 let playerJetpackFuel = 0;
-let staminaCooldown = 0;
-let playerJetpackFuel = 0;
 let playerFireDebuff = 0; // 🔥 Debuff de fuego progresivo
 let hasJetpack = false;
 let playerCoins = 0;
@@ -2087,12 +2085,21 @@ class Laser {
         if (dist < 1.0) {
             lastAttackerName = this.shooterName;
             takeDamage(15);
+            // Si es proyectil de fuego de dragón — aplicar ceguera
+            if ((this as any)._isFireBlind) {
+                playerFireDebuff = 3.5;
+                // Flash naranja-rojo en pantalla
+                const fireFlash = document.createElement('div');
+                fireFlash.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(255,80,0,0.55);pointer-events:none;z-index:200;transition:opacity 0.6s;';
+                document.body.appendChild(fireFlash);
+                setTimeout(() => { fireFlash.style.opacity = '0'; setTimeout(() => fireFlash.remove(), 600); }, 80);
+            }
             this.isDead = true;
             return;
         }
 
         // Colisión con el entorno (verificación simple de altura Y o límites)
-        if (this.mesh.position.y < 0 || Math.abs(this.mesh.position.x) > 60 || Math.abs(this.mesh.position.z) > 60) {
+        if (this.mesh.position.y < 0 || Math.abs(this.mesh.position.x) > 150 || Math.abs(this.mesh.position.z) > 150) {
             this.isDead = true;
         }
     }
@@ -3028,7 +3035,7 @@ for (let i = 0; i < 15; i++) {
 }
 
 // ---- BIOMA ----
-enum Biome { FOREST = 0, SNOW = 1 }
+enum Biome { FOREST = 0, SNOW = 1, LAVA = 2 }
 let currentBiome: Biome = Biome.FOREST;
 let playerSlowDebuff = 0; // segundos de ralentización por ataque nevado
 
@@ -3050,7 +3057,15 @@ enum EnemyType {
     SNOWMAN,            // Hombre de nieve — lanza bolas de nieve
     BOSS_SNOW_GOLIATH,  // Gigante nevado (Wave 15)
     BOSS_GIANT_SNOWMAN, // Snowman Gigante (Wave 18)
-    BOSS_BLIZZARD_KING  // Rey de la Ventisca — fusión zombie+snowman (Wave 20)
+    BOSS_BLIZZARD_KING, // Rey de la Ventisca — fusión zombie+snowman (Wave 20)
+    // ===== BIOMA LAVA =====
+    LAVA_ZOMBIE,        // Zombie de lava — te ciega al golpearte
+    RED_DRAGON,         // Dragón rojo — ranged fire que ciega
+    MAGMA_GIANT,        // Gigante de magma — mucha vida, cuerpo de esferas
+    BOSS_LAVA_GOLIATH,  // Goliath de lava — gigante (Wave 25)
+    BOSS_LAVA_DRAGON,   // Dragón de lava gigante — ranged (Wave 28)
+    BOSS_MAGMA_TITAN,   // Titán de magma — enorme (Wave 28)
+    BOSS_PURPLE_DRAGON  // Dragón Morado FINAL — vuela, ráfagas de fuego (Wave 30)
 }
 
 interface EnemyStats {
@@ -3085,6 +3100,14 @@ const ENEMY_DATA: Record<EnemyType, EnemyStats> = {
     [EnemyType.BOSS_SNOW_GOLIATH]: { health: 7000, speed: 1.5, damage: 55, shirtColor: 0x2a3040, skinColor: 0x8ab4d4, size: 2.8, attackRange: 2.8,  attackCooldown: 1300, reward: 700,  name: "SNOW GOLIATH",  slowDuration: 3.5 },
     [EnemyType.BOSS_GIANT_SNOWMAN]:{ health: 9000, speed: 1.2, damage: 15, shirtColor: 0x990000, skinColor: 0xf0f8ff, size: 3.5, attackRange: 22.0, attackCooldown: 1800, reward: 1200, name: "GIANT SNOWMAN",  slowDuration: 4.0 },
     [EnemyType.BOSS_BLIZZARD_KING]:{ health: 22000,speed: 3.5, damage: 50, shirtColor: 0x001133, skinColor: 0xaaddff, size: 5.0, attackRange: 22.0, attackCooldown: 280,  reward: 8000, name: "BLIZZARD KING",  slowDuration: 5.0 },
+    // ===== LAVA =====
+    [EnemyType.LAVA_ZOMBIE]:       { health: 600,  speed: 2.3, damage: 25, shirtColor: 0x8b1a00, skinColor: 0xff4400, size: 1.0, attackRange: 1.5,  attackCooldown: 900,  reward: 60,   name: "LAVA ZOMBIE" },
+    [EnemyType.RED_DRAGON]:        { health: 450,  speed: 3.5, damage: 20, shirtColor: 0x660000, skinColor: 0xcc2200, size: 1.3, attackRange: 25.0, attackCooldown: 2200, reward: 120,  name: "RED DRAGON" },
+    [EnemyType.MAGMA_GIANT]:       { health: 1000, speed: 1.4, damage: 35, shirtColor: 0x4a1000, skinColor: 0xff6600, size: 1.8, attackRange: 2.0,  attackCooldown: 1400, reward: 180,  name: "MAGMA GIANT" },
+    [EnemyType.BOSS_LAVA_GOLIATH]: { health: 15000,speed: 1.8, damage: 70, shirtColor: 0x3d0000, skinColor: 0xff2200, size: 3.0, attackRange: 3.0,  attackCooldown: 1200, reward: 1500, name: "LAVA GOLIATH" },
+    [EnemyType.BOSS_LAVA_DRAGON]:  { health: 18000,speed: 3.0, damage: 40, shirtColor: 0x550000, skinColor: 0xdd0000, size: 3.5, attackRange: 28.0, attackCooldown: 1800, reward: 2000, name: "LAVA DRAGON" },
+    [EnemyType.BOSS_MAGMA_TITAN]:  { health: 25000,speed: 1.3, damage: 90, shirtColor: 0x2a0800, skinColor: 0xff5500, size: 4.0, attackRange: 4.0,  attackCooldown: 1600, reward: 3000, name: "MAGMA TITAN" },
+    [EnemyType.BOSS_PURPLE_DRAGON]:{ health: 60000,speed: 4.0, damage: 60, shirtColor: 0x220044, skinColor: 0x8800cc, size: 5.5, attackRange: 35.0, attackCooldown: 400,  reward: 10000,name: "PURPLE DRAGON" },
 };
 
 class Enemy {
@@ -3428,6 +3451,246 @@ class Enemy {
             }
         }
 
+        // ===== MODELOS LAVA =====
+        const isLavaType = (
+            this.type === EnemyType.LAVA_ZOMBIE ||
+            this.type === EnemyType.RED_DRAGON ||
+            this.type === EnemyType.MAGMA_GIANT ||
+            this.type === EnemyType.BOSS_LAVA_GOLIATH ||
+            this.type === EnemyType.BOSS_LAVA_DRAGON ||
+            this.type === EnemyType.BOSS_MAGMA_TITAN ||
+            this.type === EnemyType.BOSS_PURPLE_DRAGON
+        );
+
+        // LAVA_ZOMBIE / BOSS_LAVA_GOLIATH — humanoide con brillo de lava
+        if (this.type === EnemyType.LAVA_ZOMBIE || this.type === EnemyType.BOSS_LAVA_GOLIATH) {
+            const s = stats.size;
+            const lavaMat = new THREE.MeshStandardMaterial({ color: stats.skinColor, emissive: new THREE.Color(0xff2200), emissiveIntensity: 0.6, roughness: 0.4 });
+            const darkMat = new THREE.MeshLambertMaterial({ color: stats.shirtColor });
+            while (this.mesh.children.length) this.mesh.remove(this.mesh.children[0]);
+            this.bodyParts = [];
+            // Piernas
+            for (const lx of [-0.22, 0.22]) {
+                const leg = new THREE.Mesh(new THREE.BoxGeometry(0.28*s, 0.7*s, 0.28*s), darkMat);
+                leg.position.set(lx*s, 0.35*s, 0); this.mesh.add(leg);
+            }
+            // Torso
+            const torsoL = new THREE.Mesh(new THREE.BoxGeometry(0.7*s, 0.8*s, 0.45*s), lavaMat);
+            torsoL.position.y = 1.0*s; this.mesh.add(torsoL);
+            (this as any)._torso = torsoL; collidables.push(torsoL);
+            this.bodyParts.push({ mesh: torsoL, color: stats.skinColor });
+            // Brazos
+            for (const ax of [-0.55, 0.55]) {
+                const arm = new THREE.Mesh(new THREE.BoxGeometry(0.25*s, 0.65*s, 0.25*s), lavaMat);
+                arm.position.set(ax*s, 0.95*s, 0); this.mesh.add(arm);
+            }
+            // Cabeza
+            const headL = new THREE.Mesh(new THREE.BoxGeometry(0.48*s, 0.48*s, 0.48*s), lavaMat);
+            headL.position.y = 1.65*s; this.mesh.add(headL);
+            (this as any)._head = headL; collidables.push(headL);
+            this.bodyParts.push({ mesh: headL, color: stats.skinColor });
+            // Ojos naranjas brillantes
+            const eyeMatL = new THREE.MeshBasicMaterial({ color: 0xff8800 });
+            for (const ex of [-0.12, 0.12]) {
+                const e = new THREE.Mesh(new THREE.PlaneGeometry(0.12*s, 0.09*s), eyeMatL);
+                e.position.set(ex*s, 0.05*s, 0.245*s); headL.add(e);
+            }
+            // Grietas de lava en el torso (líneas naranjas)
+            const crackMat = new THREE.MeshBasicMaterial({ color: 0xff6600 });
+            for (let c = 0; c < 4; c++) {
+                const crack = new THREE.Mesh(new THREE.BoxGeometry(0.04*s, 0.02*s, 0.46*s), crackMat);
+                crack.position.set((Math.random()-0.5)*0.5*s, (Math.random()-0.5)*0.3*s + 1.0*s, 0);
+                crack.rotation.z = Math.random() * Math.PI;
+                this.mesh.add(crack);
+            }
+            // Punto de luz que emite calor
+            const heatLight = new THREE.PointLight(0xff4400, 1.5*s, 4*s);
+            heatLight.position.y = 1.0*s;
+            this.mesh.add(heatLight);
+        }
+
+        // RED_DRAGON / BOSS_LAVA_DRAGON — cuerpo cónico con alas y cola
+        if (this.type === EnemyType.RED_DRAGON || this.type === EnemyType.BOSS_LAVA_DRAGON) {
+            while (this.mesh.children.length) this.mesh.remove(this.mesh.children[0]);
+            this.bodyParts = [];
+            const s = stats.size;
+            const dragonMat = new THREE.MeshStandardMaterial({ color: stats.skinColor, emissive: new THREE.Color(0xcc1100), emissiveIntensity: 0.5, roughness: 0.5, metalness: 0.3 });
+            const darkDraMat = new THREE.MeshLambertMaterial({ color: stats.shirtColor });
+            // Cuerpo
+            const body = new THREE.Mesh(new THREE.CylinderGeometry(0.5*s, 0.7*s, 1.4*s, 8), dragonMat);
+            body.position.y = 0.9*s; this.mesh.add(body);
+            (this as any)._torso = body; collidables.push(body);
+            this.bodyParts.push({ mesh: body, color: stats.skinColor });
+            // Cuello
+            const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.22*s, 0.4*s, 0.8*s, 6), dragonMat);
+            neck.position.set(0, 1.75*s, 0.3*s); neck.rotation.x = -0.3;
+            this.mesh.add(neck);
+            // Cabeza
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.55*s, 0.4*s, 0.7*s), dragonMat);
+            head.position.set(0, 2.15*s, 0.6*s); this.mesh.add(head);
+            (this as any)._head = head; collidables.push(head);
+            this.bodyParts.push({ mesh: head, color: stats.skinColor });
+            // Mandíbula
+            const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.5*s, 0.15*s, 0.6*s), darkDraMat);
+            jaw.position.set(0, -0.28*s, 0); head.add(jaw);
+            // Cuernos
+            for (const hx of [-0.18, 0.18]) {
+                const horn = new THREE.Mesh(new THREE.ConeGeometry(0.07*s, 0.4*s, 5), darkDraMat);
+                horn.position.set(hx*s, 0.28*s, -0.15*s); horn.rotation.x = -0.4;
+                head.add(horn);
+            }
+            // Ojos rojo brillante
+            const eyeD = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            for (const ex of [-0.14, 0.14]) {
+                const e = new THREE.Mesh(new THREE.SphereGeometry(0.07*s, 6, 6), eyeD);
+                e.position.set(ex*s, 0.06*s, 0.36*s); head.add(e);
+            }
+            // Alas (planos triangulados)
+            for (const wx of [-1, 1]) {
+                const wingGeo = new THREE.BufferGeometry();
+                const wVerts = new Float32Array([0,0,0, wx*2.2*s,-0.3*s,-1.0*s, wx*1.5*s,0.3*s,0.5*s]);
+                const wIdx = new Uint16Array([0,1,2]);
+                wingGeo.setAttribute('position', new THREE.BufferAttribute(wVerts, 3));
+                wingGeo.setIndex(new THREE.BufferAttribute(wIdx, 1));
+                wingGeo.computeVertexNormals();
+                const wingMat = new THREE.MeshLambertMaterial({ color: 0x550000, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
+                const wing = new THREE.Mesh(wingGeo, wingMat);
+                wing.position.set(wx*0.6*s, 1.0*s, 0);
+                this.mesh.add(wing);
+            }
+            // Cola
+            const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.08*s, 0.35*s, 1.8*s, 6), dragonMat);
+            tail.position.set(0, 0.5*s, -1.1*s); tail.rotation.x = 0.6;
+            this.mesh.add(tail);
+            // Luz roja
+            const dl = new THREE.PointLight(0xff2200, 2.0*s, 5*s);
+            dl.position.y = 1.5*s; this.mesh.add(dl);
+        }
+
+        // MAGMA_GIANT / BOSS_MAGMA_TITAN — esferas de magma apiladas
+        if (this.type === EnemyType.MAGMA_GIANT || this.type === EnemyType.BOSS_MAGMA_TITAN) {
+            while (this.mesh.children.length) this.mesh.remove(this.mesh.children[0]);
+            this.bodyParts = [];
+            const s = stats.size;
+            const magmaMat = new THREE.MeshStandardMaterial({ color: 0xff4400, emissive: new THREE.Color(0xff2200), emissiveIntensity: 0.8, roughness: 0.3 });
+            const darkMagma = new THREE.MeshLambertMaterial({ color: 0x330a00 });
+            // Base grande
+            const base = new THREE.Mesh(new THREE.SphereGeometry(0.75*s, 10, 10), magmaMat);
+            base.position.y = 0.75*s; this.mesh.add(base);
+            (this as any)._torso = base; collidables.push(base);
+            this.bodyParts.push({ mesh: base, color: 0xff4400 });
+            // Media
+            const mid = new THREE.Mesh(new THREE.SphereGeometry(0.58*s, 10, 10), magmaMat);
+            mid.position.y = 1.75*s; this.mesh.add(mid);
+            this.bodyParts.push({ mesh: mid, color: 0xff4400 });
+            // Cabeza
+            const headM = new THREE.Mesh(new THREE.SphereGeometry(0.42*s, 10, 10), magmaMat);
+            headM.position.y = 2.55*s; this.mesh.add(headM);
+            (this as any)._head = headM; collidables.push(headM);
+            this.bodyParts.push({ mesh: headM, color: 0xff4400 });
+            // Ojos amarillos brillantes
+            const eyeM = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+            for (const ex of [-0.14, 0.14]) {
+                const e = new THREE.Mesh(new THREE.SphereGeometry(0.09*s, 6, 6), eyeM);
+                e.position.set(ex*s, 0.1*s, 0.4*s); headM.add(e);
+            }
+            // Brazos rocosos
+            for (const ax of [-1.1, 1.1]) {
+                const arm = new THREE.Mesh(new THREE.SphereGeometry(0.3*s, 8, 8), darkMagma);
+                arm.position.set(ax*s, 1.5*s, 0);
+                this.mesh.add(arm); this.bodyParts.push({ mesh: arm, color: 0x330a00 });
+                const fist = new THREE.Mesh(new THREE.SphereGeometry(0.22*s, 8, 8), magmaMat);
+                fist.position.set(ax*s, 0.9*s, 0);
+                this.mesh.add(fist);
+            }
+            // Fisuras magma
+            for (let f = 0; f < 6; f++) {
+                const fissure = new THREE.Mesh(new THREE.BoxGeometry(0.05*s, 0.05*s, 0.6*s), new THREE.MeshBasicMaterial({ color: 0xffcc00 }));
+                fissure.position.set((Math.random()-0.5)*s, (0.5+Math.random())*s, 0);
+                fissure.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+                this.mesh.add(fissure);
+            }
+            const ml = new THREE.PointLight(0xff6600, 3.0*s, 7*s);
+            ml.position.y = 1.5*s; this.mesh.add(ml);
+        }
+
+        // BOSS_PURPLE_DRAGON — dragón morado gigante que vuela
+        if (this.type === EnemyType.BOSS_PURPLE_DRAGON) {
+            while (this.mesh.children.length) this.mesh.remove(this.mesh.children[0]);
+            this.bodyParts = [];
+            const s = stats.size;
+            const purpMat = new THREE.MeshStandardMaterial({ color: 0x6600bb, emissive: new THREE.Color(0x440088), emissiveIntensity: 0.7, roughness: 0.4, metalness: 0.4 });
+            const darkPurp = new THREE.MeshLambertMaterial({ color: 0x220044 });
+            // Cuerpo principal
+            const body = new THREE.Mesh(new THREE.SphereGeometry(1.0*s, 10, 10), purpMat);
+            body.scale.set(1.3, 0.9, 1.6); this.mesh.add(body);
+            body.position.y = 1.5*s;
+            (this as any)._torso = body; collidables.push(body);
+            this.bodyParts.push({ mesh: body, color: 0x6600bb });
+            // Cuello
+            const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.4*s, 0.7*s, 1.2*s, 8), purpMat);
+            neck.position.set(0, 2.8*s, 0.8*s); neck.rotation.x = -0.4; this.mesh.add(neck);
+            // Cabeza grande
+            const head = new THREE.Mesh(new THREE.BoxGeometry(1.0*s, 0.8*s, 1.2*s), purpMat);
+            head.position.set(0, 3.5*s, 1.6*s); this.mesh.add(head);
+            (this as any)._head = head; collidables.push(head);
+            this.bodyParts.push({ mesh: head, color: 0x6600bb });
+            // Mandíbula
+            const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.9*s, 0.25*s, 1.1*s), darkPurp);
+            jaw.position.set(0, -0.5*s, 0); head.add(jaw);
+            // Cuernos múltiples
+            for (let h = 0; h < 3; h++) {
+                for (const hx of [-0.35, 0.35]) {
+                    const horn = new THREE.Mesh(new THREE.ConeGeometry(0.1*s, 0.7*s - h*0.15*s, 5), darkPurp);
+                    horn.position.set(hx*s*(1-h*0.2), (0.5+h*0.3)*s, -0.3*s); horn.rotation.x = -0.3;
+                    head.add(horn);
+                }
+            }
+            // Ojos morados brillantes (emissive)
+            const eyePurp = new THREE.MeshBasicMaterial({ color: 0xdd00ff });
+            for (const ex of [-0.27, 0.27]) {
+                const e = new THREE.Mesh(new THREE.SphereGeometry(0.14*s, 8, 8), eyePurp);
+                e.position.set(ex*s, 0.1*s, 0.62*s); head.add(e);
+            }
+            // Alas GRANDES — 4 segmentos en capas
+            for (const wx of [-1, 1]) {
+                for (let seg = 0; seg < 2; seg++) {
+                    const wGeo = new THREE.BufferGeometry();
+                    const off = seg * 0.8*s;
+                    const wV = new Float32Array([0,0,0, wx*(3.5-seg)*s, (-0.4-seg*0.2)*s, (-0.8+off)*s, wx*(2.5-seg*0.5)*s, 0.6*s, (0.6+off)*s]);
+                    wGeo.setAttribute('position', new THREE.BufferAttribute(wV, 3));
+                    wGeo.setIndex(new THREE.BufferAttribute(new Uint16Array([0,1,2]), 1));
+                    wGeo.computeVertexNormals();
+                    const wMat = new THREE.MeshLambertMaterial({ color: seg===0 ? 0x440099 : 0x220055, side: THREE.DoubleSide, transparent: true, opacity: 0.9 });
+                    const w = new THREE.Mesh(wGeo, wMat);
+                    w.position.set(wx*1.0*s, 1.5*s, 0); this.mesh.add(w);
+                }
+            }
+            // Cola larga
+            const tailPieces = [1.0, 0.75, 0.5, 0.35];
+            let tailZ = -1.5*s;
+            for (const tr of tailPieces) {
+                const tp = new THREE.Mesh(new THREE.SphereGeometry(tr*0.6*s, 8, 8), purpMat);
+                tp.position.set(0, 1.2*s, tailZ);
+                this.mesh.add(tp); tailZ -= tr*0.9*s;
+            }
+            // Patas draconicas
+            for (const lx of [-0.9, 0.9]) {
+                const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.22*s, 0.15*s, 0.8*s, 6), purpMat);
+                leg.position.set(lx*s, 0.9*s, 0.3*s); this.mesh.add(leg);
+                const claw = new THREE.Mesh(new THREE.ConeGeometry(0.15*s, 0.4*s, 5), darkPurp);
+                claw.position.set(0, -0.6*s, 0); claw.rotation.z = lx > 0 ? 0.3 : -0.3;
+                leg.add(claw);
+            }
+            // Luz morada épica
+            const pl = new THREE.PointLight(0xaa00ff, 5, 18*s);
+            pl.position.y = 2*s; this.mesh.add(pl);
+            // El BOSS PURPLE vuela — su Y oscilará en el update loop
+            (this as any)._flyPhase = Math.random() * Math.PI * 2;
+            (this as any)._baseY = 6.0; // Altura base de vuelo
+            this.mesh.position.y = 6.0;
+        }
+
         // SNOW_ZOMBIE / SNOW_FAST — ojos cyan brillante en lugar de rojo
         const isSnowZombie = (this.type === EnemyType.SNOW_ZOMBIE || this.type === EnemyType.SNOW_FAST
             || this.type === EnemyType.BOSS_SNOW_GOLIATH);
@@ -3490,13 +3753,32 @@ class Enemy {
         // Solo los no-jefes se paralizan brevemente al recibir daño
         const isBoss = (this.type === EnemyType.BOSS_GOLIATH || this.type === EnemyType.BOSS_SENTINEL
             || this.type === EnemyType.BOSS_FINAL_ROBOT || this.type === EnemyType.BOSS_SNOW_GOLIATH
-            || this.type === EnemyType.BOSS_GIANT_SNOWMAN || this.type === EnemyType.BOSS_BLIZZARD_KING);
+            || this.type === EnemyType.BOSS_GIANT_SNOWMAN || this.type === EnemyType.BOSS_BLIZZARD_KING
+            || this.type === EnemyType.BOSS_LAVA_GOLIATH || this.type === EnemyType.BOSS_LAVA_DRAGON
+            || this.type === EnemyType.BOSS_MAGMA_TITAN || this.type === EnemyType.BOSS_PURPLE_DRAGON);
 
         if (!isBoss) {
             this.isFlinching = true;
             this.flinchTimer = 0.12;
         } else {
             this.flashTimer = 0.12;
+            // Actualizar Boss HP Bar
+            const bossContainer = document.getElementById('boss-bar-container');
+            const bossBarFill = document.getElementById('boss-bar-fill');
+            const bossBarName = document.getElementById('boss-bar-name');
+            const stats = ENEMY_DATA[this.type];
+            if (bossContainer && bossBarFill && bossBarName) {
+                bossContainer.style.display = 'block';
+                bossBarName.innerText = `☠ ${stats.name} ☠`;
+                const pct = Math.max(0, (this.health / stats.health) * 100);
+                bossBarFill.style.width = `${pct}%`;
+                // Cambiar color según vida restante
+                if (pct > 60) bossBarFill.style.background = 'linear-gradient(to right, #cc0000, #ff4400, #ff8800)';
+                else if (pct > 30) bossBarFill.style.background = 'linear-gradient(to right, #880000, #cc2200, #ff4400)';
+                else bossBarFill.style.background = 'linear-gradient(to right, #440000, #880000, #cc0000)';
+                // Ocultar si muere
+                if (this.health <= 0) setTimeout(() => { if (bossContainer) bossContainer.style.display = 'none'; }, 500);
+            }
         }
 
         // Flash all parts white (siempre, incluso para jefes)
@@ -3680,9 +3962,19 @@ class Enemy {
             const bossScale = ENEMY_DATA[this.type].size + Math.sin(time * 0.002) * 0.05;
             this.mesh.scale.setScalar(bossScale);
         }
-        
-        // Efecto visual de fuego para ZOMBIE_ON_FIRE
-        if (this.type === EnemyType.ZOMBIE_ON_FIRE) {
+
+        // BOSS_PURPLE_DRAGON vuela: su Y oscila sinusoidalmente
+        if (this.type === EnemyType.BOSS_PURPLE_DRAGON) {
+            (this as any)._flyPhase = ((this as any)._flyPhase || 0) + delta * 0.8;
+            const baseY = (this as any)._baseY || 6.0;
+            this.mesh.position.y = baseY + Math.sin((this as any)._flyPhase) * 2.5;
+        }
+
+        // Efecto visual de fuego para ZOMBIE_ON_FIRE y lava enemies
+        const isLavaEmitter = (this.type === EnemyType.ZOMBIE_ON_FIRE
+            || this.type === EnemyType.LAVA_ZOMBIE || this.type === EnemyType.MAGMA_GIANT
+            || this.type === EnemyType.BOSS_LAVA_GOLIATH || this.type === EnemyType.BOSS_MAGMA_TITAN);
+        if (isLavaEmitter) {
             if (this.isAlive && Math.random() > 0.5) {
                 const firePos = this.mesh.position.clone();
                 firePos.y += Math.random() * 1.5;
@@ -3712,10 +4004,34 @@ class Enemy {
             spawnPos.y += 1.8 * stats.size;
             const dir = new THREE.Vector3().subVectors(camera.position, spawnPos).normalize();
             snowballProjectiles.push(new SnowballProjectile(spawnPos, dir, stats.slowDuration ?? 3.0));
+        } else if (this.type === EnemyType.RED_DRAGON || this.type === EnemyType.BOSS_LAVA_DRAGON
+            || this.type === EnemyType.BOSS_PURPLE_DRAGON) {
+            // Proyectil de fuego con ceguera — el Purple Dragon dispara rafaga de 6
+            const numShots = this.type === EnemyType.BOSS_PURPLE_DRAGON ? 6 : 1;
+            const spawnPos = this.mesh.position.clone();
+            spawnPos.y += 2.5 * stats.size;
+            for (let s = 0; s < numShots; s++) {
+                const spread = new THREE.Vector3(
+                    (Math.random() - 0.5) * (numShots > 1 ? 0.25 : 0.05),
+                    (Math.random() - 0.5) * (numShots > 1 ? 0.15 : 0.02),
+                    0
+                );
+                const dir = new THREE.Vector3().subVectors(camera.position, spawnPos).normalize().add(spread).normalize();
+                enemyProjectiles.push(new Laser(spawnPos.clone(), dir, stats.name));
+                // Lava/fuego: la parte naranja-roja identifica que ciega al impacto
+                const proj = enemyProjectiles[enemyProjectiles.length - 1];
+                (proj as any)._isFireBlind = true;
+                proj.mesh.material = new THREE.MeshBasicMaterial({ color: this.type === EnemyType.BOSS_PURPLE_DRAGON ? 0xcc00ff : 0xff4400 });
+            }
+            soundManager.playBeep();
         } else {
             // Cuerpo a cuerpo
             lastAttackerName = stats.name;
-            if (this.type === EnemyType.ZOMBIE_ON_FIRE) playerFireDebuff = 3.0;
+            if (this.type === EnemyType.ZOMBIE_ON_FIRE || this.type === EnemyType.LAVA_ZOMBIE
+                || this.type === EnemyType.MAGMA_GIANT || this.type === EnemyType.BOSS_LAVA_GOLIATH
+                || this.type === EnemyType.BOSS_MAGMA_TITAN) {
+                playerFireDebuff = 3.5; // Cegar con fuego
+            }
             // Slow debuff para enemigos nevados
             if (stats.slowDuration && stats.slowDuration > 0) {
                 playerSlowDebuff = Math.max(playerSlowDebuff, stats.slowDuration);
@@ -3955,7 +4271,7 @@ class WaveManager {
     spawnRate: number = 2000; // ms
     activeEnemies: Enemy[] = [];
     isBreak: boolean = false; // Verdadero entre oleadas
-    maxWaves: number = 20; // 10 Forest + 10 Snowy
+    maxWaves: number = 30; // 10 Forest + 10 Snowy + 10 Lava
     isGameOver: boolean = false;
     isNetworkClient: boolean = false; // set to true if multiplayer and NOT host
     syncTimer: number = 0;
@@ -3975,21 +4291,27 @@ class WaveManager {
         this.spawnWeaponDrop(this.currentWave);
 
         // Número de wave relativo al bioma (1-10 en cada bioma)
-        const biomeWave = this.currentWave <= 10 ? this.currentWave : this.currentWave - 10;
-        const biomeName = this.currentWave <= 10 ? 'FOREST' : 'SNOWY';
+        const biomeWave = this.currentWave <= 10 ? this.currentWave
+            : this.currentWave <= 20 ? this.currentWave - 10
+            : this.currentWave - 20;
+        const biomeName = this.currentWave <= 10 ? 'FOREST'
+            : this.currentWave <= 20 ? 'SNOWY'
+            : 'LAVA';
 
-        const isFinalWave    = (this.currentWave === this.maxWaves);
+        const isFinalWave     = (this.currentWave === this.maxWaves);
         const isBiomeBossWave = (biomeWave === 10);
 
         if (isBiomeBossWave) {
             this.enemiesToSpawn = 1;
             this.spawnRate = 3000;
         } else {
-            // Nieve: +60% más enemigos que el bosque en la misma wave relativa
             const baseCount = 6 + (biomeWave * 4);
-            this.enemiesToSpawn = currentBiome === Biome.SNOW
-                ? Math.round(baseCount * 1.6)
-                : baseCount;
+            // Lava: +120% — Nieve: +60% — Bosque: base
+            this.enemiesToSpawn = currentBiome === Biome.LAVA
+                ? Math.round(baseCount * 2.2)
+                : currentBiome === Biome.SNOW
+                    ? Math.round(baseCount * 1.6)
+                    : baseCount;
             this.spawnRate = Math.max(350, 2000 - (biomeWave * 140));
         }
 
@@ -4000,10 +4322,10 @@ class WaveManager {
         if (hordeEl) hordeEl.innerText = `Enemies: 0 (To Spawn: ${this.enemiesToSpawn})`;
         if (stageEl) {
             if (isFinalWave) {
-                stageEl.innerHTML = `<span style="font-size:0.7em;color:#aaddff">${biomeName}</span><br>FINAL WAVE: BOSS`;
-                stageEl.style.color = '#aaddff';
+                stageEl.innerHTML = `<span style="font-size:0.7em;color:#ff6600">LAVA</span><br>FINAL WAVE: BOSS`;
+                stageEl.style.color = '#ff6600';
             } else {
-                const biomeColor = this.currentWave <= 10 ? '#ff3333' : '#88ccff';
+                const biomeColor = this.currentWave <= 10 ? '#ff3333' : this.currentWave <= 20 ? '#88ccff' : '#ff6600';
                 stageEl.innerHTML = `<span style="font-size:0.7em;color:${biomeColor};">${biomeName}</span><br>WAVE ${biomeWave}`;
                 stageEl.style.color = biomeColor;
             }
@@ -4067,12 +4389,12 @@ class WaveManager {
             return;
         }
 
-        // Transición de bioma al completar Wave 10
+        // Transición de bioma al completar Wave 10 (Forest → Snow)
         if (this.currentWave === 10) {
             if (isMultiplayer && isHost && socket?.connected) {
                 socket.emit('wave-complete', { wave: this.currentWave });
+                socket.emit('biome-change', { biome: 'snow' });
             }
-            const biomeWave = this.currentWave;
             const wcWave = document.getElementById('wc-wave');
             const wc = document.getElementById('wave-complete');
             if (wc) wc.style.display = 'flex';
@@ -4085,12 +4407,33 @@ class WaveManager {
             return;
         }
 
+        // Transición de bioma al completar Wave 20 (Snow → Lava)
+        if (this.currentWave === 20) {
+            if (isMultiplayer && isHost && socket?.connected) {
+                socket.emit('wave-complete', { wave: this.currentWave });
+                socket.emit('biome-change', { biome: 'lava' });
+            }
+            const wcWave = document.getElementById('wc-wave');
+            const wc = document.getElementById('wave-complete');
+            if (wc) wc.style.display = 'flex';
+            if (wcWave) wcWave.innerText = `SNOW BIOME CLEARED! THE VOLCANO AWAKENS...`;
+            setTimeout(() => {
+                if (wc) wc.style.display = 'none';
+                transitionToLavaBiome();
+            }, 2000);
+            if (stageEl) stageEl.innerHTML = `<span style="font-size:0.8em;color:#ff6600">BIOME CHANGE...</span>`;
+            return;
+        }
+
         if (isMultiplayer && isHost && socket?.connected) {
             socket.emit('wave-complete', { wave: this.currentWave });
         }
 
-        const biomeWave = this.currentWave <= 10 ? this.currentWave : this.currentWave - 10;
-        const biomeName = this.currentWave <= 10 ? 'FOREST' : 'SNOWY';
+        const biomeWave = this.currentWave <= 10 ? this.currentWave
+            : this.currentWave <= 20 ? this.currentWave - 10
+            : this.currentWave - 20;
+        const biomeName = this.currentWave <= 10 ? 'FOREST'
+            : this.currentWave <= 20 ? 'SNOWY' : 'LAVA';
         const wc = document.getElementById('wave-complete');
         const wcWave = document.getElementById('wc-wave');
         if (wc) wc.style.display = 'flex';
@@ -4221,9 +4564,38 @@ class WaveManager {
 
         let type = EnemyType.STANDARD;
         const r = Math.random();
-        const bw = this.currentWave <= 10 ? this.currentWave : this.currentWave - 10; // biome-wave
+        const bw = this.currentWave <= 10 ? this.currentWave
+            : this.currentWave <= 20 ? this.currentWave - 10
+            : this.currentWave - 20; // biome-wave (1-10 per biome)
 
-        if (currentBiome === Biome.SNOW) {
+        if (currentBiome === Biome.LAVA) {
+            // ===== BIOMA LAVA: Waves 21-30 =====
+            if (bw === 10) { // Wave 30 — Dragón Morado Final
+                type = EnemyType.BOSS_PURPLE_DRAGON;
+            } else if (bw === 8) { // Wave 28 — Doble boss
+                type = r > 0.5 ? EnemyType.BOSS_LAVA_DRAGON : EnemyType.BOSS_MAGMA_TITAN;
+            } else if (bw === 5) { // Wave 25 — Goliath de lava
+                type = r > 0.7 ? EnemyType.BOSS_LAVA_GOLIATH
+                     : r > 0.4 ? EnemyType.MAGMA_GIANT
+                     : EnemyType.LAVA_ZOMBIE;
+            } else if (bw === 9) { // Wave 29
+                type = r > 0.5 ? EnemyType.RED_DRAGON
+                     : r > 0.25 ? EnemyType.MAGMA_GIANT
+                     : EnemyType.LAVA_ZOMBIE;
+            } else if (bw === 7) { // Wave 27
+                type = r > 0.6 ? EnemyType.MAGMA_GIANT
+                     : r > 0.3 ? EnemyType.RED_DRAGON
+                     : EnemyType.LAVA_ZOMBIE;
+            } else if (bw >= 3) {
+                type = r > 0.6 ? EnemyType.RED_DRAGON
+                     : r > 0.3 ? EnemyType.MAGMA_GIANT
+                     : EnemyType.LAVA_ZOMBIE;
+            } else if (bw === 2) {
+                type = r > 0.6 ? EnemyType.RED_DRAGON : EnemyType.LAVA_ZOMBIE;
+            } else { // bw === 1
+                type = EnemyType.LAVA_ZOMBIE;
+            }
+        } else if (currentBiome === Biome.SNOW) {
             // ===== BIOMA NIEVE: Waves 11-20 =====
             if (bw === 10) { // Wave 20
                 type = EnemyType.BOSS_BLIZZARD_KING;
@@ -5327,10 +5699,200 @@ function transitionToSnowBiome() {
                 ammoPickups.push(new AmmoPickup(new THREE.Vector3(-10 + Math.random() * 20, 0, -10 + Math.random() * 20)));
             }
 
+            // Host notifica cambio de música a clientes
+            if (isMultiplayer && isHost && socket?.connected) {
+                socket.emit('music-change', { track: 'snow' });
+            }
+
             // Abrir tienda normalmente
             openShop();
         }
     }, 30);
+}
+
+// ===================================================================
+// ====  LAVA BIOME — FUNCIONES PRINCIPALES  =========================
+// ===================================================================
+
+let volcanoMesh: THREE.Group | null = null;
+
+function createVolcano() {
+    const vol = new THREE.Group();
+    const baseMat = new THREE.MeshLambertMaterial({ color: 0x2a0800 });
+    const lavaGlowMat = new THREE.MeshBasicMaterial({ color: 0xff4400 });
+    const base = new THREE.Mesh(new THREE.ConeGeometry(28, 55, 8, 4), baseMat);
+    base.position.y = 27;
+    vol.add(base);
+    const crater = new THREE.Mesh(new THREE.CylinderGeometry(8, 12, 5, 8), new THREE.MeshLambertMaterial({ color: 0x111100 }));
+    crater.position.y = 56;
+    vol.add(crater);
+    const lavaPool = new THREE.Mesh(new THREE.CircleGeometry(7, 8), lavaGlowMat);
+    lavaPool.rotation.x = -Math.PI / 2;
+    lavaPool.position.y = 59;
+    vol.add(lavaPool);
+    const volcLight = new THREE.PointLight(0xff3300, 8, 80);
+    volcLight.position.y = 58;
+    vol.add(volcLight);
+    for (let c = 0; c < 6; c++) {
+        const ang = (c / 6) * Math.PI * 2;
+        const rock = new THREE.Mesh(
+            new THREE.CylinderGeometry(2 + Math.random()*2, 4 + Math.random()*2, 10 + Math.random()*15, 6),
+            baseMat
+        );
+        rock.position.set(Math.cos(ang)*22, (10 + Math.random()*8), Math.sin(ang)*22);
+        vol.add(rock);
+    }
+    vol.position.set(-120, 0, -90);
+    scene.add(vol);
+    return vol;
+}
+
+class Meteor {
+    mesh: THREE.Group;
+    velocity: THREE.Vector3;
+    isDead: boolean = false;
+    private trailTimer: number = 0;
+
+    constructor(targetPos: THREE.Vector3) {
+        this.mesh = new THREE.Group();
+        const geo = new THREE.DodecahedronGeometry(3, 0);
+        const mat = new THREE.MeshStandardMaterial({ color: 0x331100, emissive: new THREE.Color(0xff2200), emissiveIntensity: 0.9, roughness: 0.7 });
+        const body = new THREE.Mesh(geo, mat);
+        this.mesh.add(body);
+        const light = new THREE.PointLight(0xff4400, 4, 15);
+        body.add(light);
+        const startX = -120 + (Math.random() - 0.5) * 30;
+        const startZ = -90 + (Math.random() - 0.5) * 30;
+        this.mesh.position.set(startX, 80, startZ);
+        const dir = new THREE.Vector3(targetPos.x - startX, targetPos.y - 80, targetPos.z - startZ).normalize();
+        this.velocity = dir.multiplyScalar(35);
+        scene.add(this.mesh);
+    }
+
+    update(delta: number) {
+        if (this.isDead) return;
+        this.mesh.position.addScaledVector(this.velocity, delta);
+        this.mesh.rotation.x += delta * 2;
+        this.mesh.rotation.z += delta * 1.5;
+        // Estela de fuego periódica
+        this.trailTimer += delta;
+        if (this.trailTimer > 0.08) {
+            this.trailTimer = 0;
+            flameParticles.spawn(this.mesh.position.clone(), 4);
+        }
+        if (this.mesh.position.y <= 0.5) this.explode();
+    }
+
+    explode() {
+        if (this.isDead) return;
+        this.isDead = true;
+        const impactPos = this.mesh.position.clone();
+        flameParticles.spawn(impactPos, 70);
+        bloodParticles.spawn(impactPos, 30);
+        const boom = new THREE.PointLight(0xff6600, 14, 30);
+        boom.position.copy(impactPos);
+        boom.position.y = 1;
+        scene.add(boom);
+        setTimeout(() => scene.remove(boom), 500);
+        // Daño al jugador si está cerca (radio 8)
+        if (impactPos.distanceTo(camera.position) < 8) {
+            lastAttackerName = 'METEOR';
+            takeDamage(50);
+        }
+        scene.remove(this.mesh);
+    }
+}
+
+const activeMeteors: Meteor[] = [];
+let meteorSpawnTimer: number = 0;
+
+function applyLavaBiome() {
+    currentBiome = Biome.LAVA;
+    scene.background = new THREE.Color(0x1a0600);
+    scene.fog = new THREE.FogExp2(0x220800, 0.008);
+
+    // Suelo de lava procedural
+    const lavaCanvas = document.createElement('canvas');
+    lavaCanvas.width = 512; lavaCanvas.height = 512;
+    const lCtx = lavaCanvas.getContext('2d')!;
+    for (let cy = 0; cy < 512; cy++) {
+        for (let cx = 0; cx < 512; cx++) {
+            const n = Math.sin(cx * 0.04) * Math.cos(cy * 0.04) * 0.5 + 0.5;
+            const r = Math.floor(180 + n * 75);
+            const g = Math.floor(40 + n * 30);
+            lCtx.fillStyle = `rgb(${r},${g},0)`;
+            lCtx.fillRect(cx, cy, 1, 1);
+        }
+    }
+    const lavaTex = new THREE.CanvasTexture(lavaCanvas);
+    lavaTex.wrapS = lavaTex.wrapT = THREE.RepeatWrapping;
+    lavaTex.repeat.set(12, 12);
+    (floor.material as THREE.MeshLambertMaterial).map = lavaTex;
+    (floor.material as THREE.MeshLambertMaterial).color.setHex(0xdd3300);
+    (floor.material as THREE.MeshLambertMaterial).needsUpdate = true;
+
+    // Luz ambiental naranja
+    scene.children.forEach(c => {
+        if (c instanceof THREE.AmbientLight) { c.color.setHex(0xff4400); c.intensity = 0.6; }
+    });
+
+    // Árboles quemados
+    trees.forEach(t => {
+        t.traverse(c => {
+            if ((c as THREE.Mesh).isMesh) {
+                const mat = (c as THREE.Mesh).material as THREE.MeshLambertMaterial;
+                if (mat && mat.color) mat.color.setHex(0x1a0800);
+            }
+        });
+    });
+
+    // Volcán 3D
+    if (!volcanoMesh) volcanoMesh = createVolcano();
+
+    // Música
+    soundManager.startGameMusic();
+    if (isMultiplayer && isHost && socket?.connected) {
+        socket.emit('music-change', { track: 'lava' });
+    }
+}
+
+function transitionToLavaBiome() {
+    const ls = document.getElementById('loading-screen');
+    const lb = document.getElementById('load-bar');
+    const lt = ls?.querySelector('.loading-text') as HTMLElement;
+    if (ls) { ls.style.display = 'flex'; ls.style.background = 'linear-gradient(to bottom, #1a0500, #0a0000)'; }
+    if (lb) { lb.style.background = '#ff4400'; lb.style.boxShadow = '0 0 20px #ff4400'; }
+    let prog = 0;
+    const iv = setInterval(() => {
+        prog += 2;
+        if (lb) lb.style.width = `${prog}%`;
+        if (lt) { lt.innerText = `🌋 THE VOLCANO AWAKENS... ${prog}%`; lt.style.color = '#ff8800'; }
+        if (prog >= 100) {
+            clearInterval(iv);
+            applyLavaBiome();
+            if (ls) ls.style.display = 'none';
+            for (let i = 0; i < 5; i++) {
+                ammoPickups.push(new AmmoPickup(new THREE.Vector3(-15 + Math.random() * 30, 0, -15 + Math.random() * 30)));
+            }
+            openShop();
+        }
+    }, 30);
+}
+
+// ---- BIOME-CHANGE & MUSIC-CHANGE MULTIPLAYER LISTENERS ----
+// Solo clientes no-host reciben este evento
+if (socket) {
+    socket.on('biome-change', (data: { biome: string }) => {
+        if (isHost) return;
+        if (data.biome === 'snow') transitionToSnowBiome();
+        else if (data.biome === 'lava') transitionToLavaBiome();
+    });
+
+    socket.on('music-change', (data: { track: string }) => {
+        if (isHost) return;
+        if (data.track === 'snow') soundManager.startSnowMusic();
+        else soundManager.startGameMusic();
+    });
 }
 
 // ---- HIT MARKER ----
@@ -6014,6 +6576,23 @@ function animate() {
             if (ammoPickups[i].isPickedUp) {
                 ammoPickups.splice(i, 1);
             }
+        }
+
+        // ---- METEORITOS (solo en bioma Lava, desde Wave 25) ----
+        if (currentBiome === Biome.LAVA && waveManager.currentWave >= 25 && !waveManager.isBreak) {
+            meteorSpawnTimer += delta;
+            const interval = 8 + Math.random() * 4; // 8-12 segundos
+            if (meteorSpawnTimer >= interval) {
+                meteorSpawnTimer = 0;
+                const angle = Math.random() * Math.PI * 2;
+                const r = 15 + Math.random() * 50;
+                const landPos = new THREE.Vector3(Math.cos(angle) * r, 0, Math.sin(angle) * r);
+                activeMeteors.push(new Meteor(landPos));
+            }
+        }
+        for (let i = activeMeteors.length - 1; i >= 0; i--) {
+            activeMeteors[i].update(delta);
+            if (activeMeteors[i].isDead) activeMeteors.splice(i, 1);
         }
 
         if (!shopOpen && shopMarker) {
