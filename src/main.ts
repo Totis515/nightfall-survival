@@ -2695,16 +2695,49 @@ function createTree() {
     return tree;
 }
 
+const occupiedZones: {x: number, z: number, r: number}[] = [
+    {x: 0, z: 0, r: 8}, // Spawn Point
+    {x: -60, z: 60, r: 10}, // Main Tower
+    {x: 30, z: -40, r: 10} // Black Market
+];
+
+function getSafePosition(minRad: number, maxRad: number, objRad: number): THREE.Vector3 {
+    let pos = new THREE.Vector3();
+    let safe = false;
+    let attempts = 0;
+    while (!safe && attempts < 50) {
+        const angle = seededRandom() ? (Math.random() * Math.PI * 2) : (Math.random() * Math.PI * 2);
+        const rad = minRad + Math.random() * (maxRad - minRad);
+        const px = Math.cos(angle) * rad;
+        const pz = Math.sin(angle) * rad;
+        
+        safe = true;
+        for (const z of occupiedZones) {
+            const dx = px - z.x;
+            const dz = pz - z.z;
+            if (dx*dx + dz*dz < (z.r + objRad)*(z.r + objRad)) { safe = false; break; }
+        }
+        if (safe) {
+            pos.set(px, 0, pz);
+            occupiedZones.push({x: px, z: pz, r: objRad});
+            return pos;
+        }
+        attempts++;
+    }
+    const backupAngle = Math.random() * Math.PI * 2;
+    const backupRad = minRad + Math.random() * (maxRad - minRad);
+    return pos.set(Math.cos(backupAngle) * backupRad, 0, Math.sin(backupAngle) * backupRad);
+}
+
 const trees: THREE.Group[] = [];
 for (let i = 0; i < 60; i++) {
     const tree = createTree();
-    const angle = seededRandom() * Math.PI * 2;
-    const radius = 10 + seededRandom() * 50;
-    tree.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
-    tree.rotation.y = seededRandom() * Math.PI;
+    const pos = getSafePosition(10, 80, 2.5);
+    tree.position.copy(pos);
+    tree.rotation.y = Math.random() * Math.PI;
 
     // Random height variation
-    tree.scale.setScalar(0.8 + seededRandom() * 0.6);
+    tree.scale.setScalar(0.8 + Math.random() * 0.6);
     tree.updateMatrixWorld(true);
     scene.add(tree);
     trees.push(tree);
@@ -2729,9 +2762,8 @@ function createBush() {
 
 for (let i = 0; i < 40; i++) {
     const bush = createBush();
-    const angle = seededRandom() * Math.PI * 2;
-    const radius = 5 + seededRandom() * 80;
-    bush.position.set(Math.cos(angle) * radius, 0.4, Math.sin(angle) * radius);
+    const pos = getSafePosition(5, 85, 1.5);
+    bush.position.set(pos.x, 0.4, pos.z);
     bush.updateMatrixWorld(true);
     scene.add(bush);
 }
@@ -2916,10 +2948,9 @@ collisionCylinders.push({ x: -60, z: 60, radius: 4.0, height: 8 });
 // Añadir Casas
 for (let i = 0; i < 10; i++) {
     const house = createHouse();
-    const angle = (i / 10) * Math.PI * 2 + seededRandom();
-    const radius = 25 + seededRandom() * 35;
-    house.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
-    house.rotation.y = seededRandom() * Math.PI;
+    const pos = getSafePosition(25, 90, 6.0);
+    house.position.copy(pos);
+    house.rotation.y = Math.random() * Math.PI;
     house.updateMatrixWorld(true);
     scene.add(house);
 
@@ -2964,9 +2995,8 @@ scene.add(bmSprite);
 // Distribuir coches
 for (let i = 0; i < 8; i++) {
     const car = createRuinedCar();
-    const angle = Math.random() * Math.PI * 2;
-    const radius = 15 + Math.random() * 45;
-    car.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+    const pos = getSafePosition(15, 85, 3.5);
+    car.position.copy(pos);
     car.rotation.y = Math.random() * Math.PI;
     scene.add(car);
     // Coche cilindro: base 2x4 -> radio aprox 2.5, altura 1.0 (sólo cubre la base)
@@ -2976,9 +3006,8 @@ for (let i = 0; i < 8; i++) {
 // Distribuir vallas
 for (let i = 0; i < 15; i++) {
     const fence = createFence();
-    const angle = Math.random() * Math.PI * 2;
-    const radius = 10 + Math.random() * 50;
-    fence.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+    const pos = getSafePosition(10, 85, 2.5);
+    fence.position.copy(pos);
     fence.rotation.y = Math.random() * Math.PI;
     scene.add(fence);
 }
@@ -5075,7 +5104,7 @@ class GenericParticleSystem {
             transparent: true,
             opacity: 0.8,
             blending: config.blending || THREE.NormalBlending,
-            depthTest: false,
+            depthTest: true,
             depthWrite: false,
             sizeAttenuation: true
         });
@@ -5854,10 +5883,10 @@ function animate() {
                 const dz1 = pz - minZ;
                 const dz2 = maxZ - pz;
                 const min = Math.min(dx1, dx2, dz1, dz2);
-                if (min === dx1) camera.position.x = minX;
-                else if (min === dx2) camera.position.x = maxX;
-                else if (min === dz1) camera.position.z = minZ;
-                else if (min === dz2) camera.position.z = maxZ;
+                if (min === dx1) { camera.position.x = minX; velocity.x = 0; }
+                else if (min === dx2) { camera.position.x = maxX; velocity.x = 0; }
+                else if (min === dz1) { camera.position.z = minZ; velocity.z = 0; }
+                else if (min === dz2) { camera.position.z = maxZ; velocity.z = 0; }
             }
         }
 
