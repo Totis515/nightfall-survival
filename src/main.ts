@@ -18,6 +18,142 @@ let isMultiplayer = false;
 let isHost = false;
 
 let currentSkin = 'default';
+
+// ══════════════════════════════════════════════════════════════════
+// I18N - TRANSLATION SYSTEM
+// ══════════════════════════════════════════════════════════════════
+type Lang = 'EN' | 'ES' | 'FR';
+let currentLanguage: Lang = 'EN';
+
+const TRANSLATIONS: Record<Lang, Record<string, string>> = {
+    EN: {
+        MENU_START: "Start Game",
+        MENU_OPTIONS: "Options",
+        MENU_EXIT: "Exit",
+        WAITING_ROOM: "WAITING ROOM",
+        UI_TOTAL_ENEMIES: "TOTAL ENEMIES: ",
+        UI_FPS: "FPS: ",
+        UI_COINS: "COINS: ",
+        GO_TITLE: "YOU DIED",
+        GO_STATS: "Waves Survived: ",
+        GO_KILLED_BY: "KILLED BY: ",
+        GO_RESTART: "Restart",
+        GO_LEAVE: "✕ LEAVE ROOM",
+        RELOADING: "RELOADING...",
+        OUT_OF_AMMO: "OUT OF AMMO",
+        PRESS_E: "PRESS E TO OPEN SHOP",
+        ENEMIES_LEFT: "Enemies: {alive} (To Spawn: {spawn})",
+        WAVE: "WAVE {wave}",
+        WEAPON: "WEAPON: ",
+        NOT_ENOUGH_COINS: "NOT ENOUGH COINS!",
+        EQUIPPED: "EQUIPPED ",
+        BOUGHT: "BOUGHT ",
+        UNAVAILABLE: "WEAPON NOT AVAILABLE UNTIL WAVE ",
+        VICTORY: "THE WORLD IS SAFE",
+        "PISTOL": "PISTOL",
+        "SHOTGUN": "SHOTGUN",
+        "ASSAULT RIFLE": "ASSAULT RIFLE",
+        "DB SHOTGUN": "DB SHOTGUN",
+        "MINI GUN": "MINI GUN",
+        "LASER GUN": "LASER GUN",
+        "ROCKET LAUNCHER": "ROCKET LAUNCHER",
+        "FIRE GUN": "FLAMETHROWER"
+    },
+    ES: {
+        MENU_START: "Iniciar Juego",
+        MENU_OPTIONS: "Opciones",
+        MENU_EXIT: "Salir",
+        WAITING_ROOM: "SALA DE ESPERA",
+        UI_TOTAL_ENEMIES: "ENEMIGOS TOTALES: ",
+        UI_FPS: "FPS: ",
+        UI_COINS: "MONEDAS: ",
+        GO_TITLE: "ESTÁS MUERTO",
+        GO_STATS: "Oleadas Superadas: ",
+        GO_KILLED_BY: "ASESINADO POR: ",
+        GO_RESTART: "Reiniciar",
+        GO_LEAVE: "✕ SALIR DE SALA",
+        RELOADING: "RECARGANDO...",
+        OUT_OF_AMMO: "SIN MUNICIÓN",
+        PRESS_E: "PULSA E PARA LA TIENDA",
+        ENEMIES_LEFT: "Enemigos: {alive} (Faltan: {spawn})",
+        WAVE: "OLEADA {wave}",
+        WEAPON: "ARMA: ",
+        NOT_ENOUGH_COINS: "¡MONEDAS INSUFICIENTES!",
+        EQUIPPED: "EQUIPASTE ",
+        BOUGHT: "COMPRASTE ",
+        UNAVAILABLE: "ARMA NO DISPONIBLE HASTA OLEADA ",
+        VICTORY: "EL MUNDO ESTÁ SALVADO",
+        "PISTOL": "PISTOLA",
+        "SHOTGUN": "ESCOPETA",
+        "ASSAULT RIFLE": "FUSIL",
+        "DB SHOTGUN": "ESCOPETA DOBLE",
+        "MINI GUN": "MINIGUN",
+        "LASER GUN": "ARMA LÁSER",
+        "ROCKET LAUNCHER": "LANZACOHETES",
+        "FIRE GUN": "LANZALLAMAS"
+    },
+    FR: {
+        MENU_START: "Commencer",
+        MENU_OPTIONS: "Options",
+        MENU_EXIT: "Quitter",
+        WAITING_ROOM: "SALLE D'ATTENTE",
+        UI_TOTAL_ENEMIES: "TOTAL ENNEMIS: ",
+        UI_FPS: "FPS: ",
+        UI_COINS: "PIÈCES: ",
+        GO_TITLE: "VOUS ÊTES MORT",
+        GO_STATS: "Vagues Survécu: ",
+        GO_KILLED_BY: "TUÉ PAR: ",
+        GO_RESTART: "Recommencer",
+        GO_LEAVE: "✕ QUITTER",
+        RELOADING: "RECHARGEMENT...",
+        OUT_OF_AMMO: "SANS MUNITION",
+        PRESS_E: "APPUYEZ SUR E POUR BOUTIQUE",
+        ENEMIES_LEFT: "Ennemis: {alive} (A venir: {spawn})",
+        WAVE: "VAGUE {wave}",
+        WEAPON: "ARME: ",
+        NOT_ENOUGH_COINS: "PIÈCES INSUFFISANTES!",
+        EQUIPPED: "ÉQUIPÉ ",
+        BOUGHT: "ACHETÉ ",
+        UNAVAILABLE: "ARME INDISPONIBLE JUSQU'À VAGUE ",
+        VICTORY: "LE MONDE EST SAUVÉ",
+        "PISTOL": "PISTOLET",
+        "SHOTGUN": "FUSIL À POMPE",
+        "ASSAULT RIFLE": "FUSIL D'ASSAUT",
+        "DB SHOTGUN": "DOUBLE CANON",
+        "MINI GUN": "MINIGUN",
+        "LASER GUN": "FUSIL LASER",
+        "ROCKET LAUNCHER": "LANCE-ROQUETTES",
+        "FIRE GUN": "LANCE-FLAMMES"
+    }
+};
+
+function t(key: string, params?: Record<string, any>): string {
+    let str = TRANSLATIONS[currentLanguage][key] || key;
+    if (params) {
+        for (const p in params) {
+            str = str.replace(`{${p}}`, params[p]);
+        }
+    }
+    return str;
+}
+
+function applyTranslations() {
+    const els = document.querySelectorAll('[data-i18n]');
+    els.forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (key && TRANSLATIONS[currentLanguage][key]) {
+            // Avoid wiping child elements if we just update the text node initially, 
+            // but for our simple spans/buttons, innerText works.
+            if (el.tagName === 'SPAN' || el.tagName === 'BUTTON' || el.tagName === 'H1' || el.tagName === 'P') {
+                const prefix = (el as HTMLElement).innerText.includes(':') && !(el as HTMLElement).innerText.match(/^[A-Z\s]+:$/) ? 
+                               (el as HTMLElement).innerText.split(':')[1] : "";
+                // To be safe, just set text. For composite ones, we wrapped specific spans.
+                (el as HTMLElement).innerText = TRANSLATIONS[currentLanguage][key];
+            }
+        }
+    });
+}
+
 let lobbyLocalGroup: THREE.Group | null = null;
 let inLobby3D = false;
 let inSkinsTab = false;
@@ -2277,8 +2413,8 @@ class JetpackPickup {
     }
 }
 const jetpacks: JetpackPickup[] = [];
-// Jetpack en el spawn
-jetpacks.push(new JetpackPickup(new THREE.Vector3(0, 0, 0)));
+jetpacks.push(new JetpackPickup(new THREE.Vector3(0, -999, 0)));
+jetpacks.pop(); // Remove buggy spawn completely
 
 const playerInventory: number[] = [0];
 let currentWeaponIndex = 0;
@@ -2318,7 +2454,7 @@ function showPickupNotice(name: string) {
 
 function updateWeaponHUD() {
     const w = weapons[currentWeaponIndex];
-    if (weaponNameEl) weaponNameEl.innerText = w.name;
+    if (weaponNameEl) weaponNameEl.innerText = t(w.name);
     if (ammoCurrentEl) ammoCurrentEl.innerText = w.ammoCurrent.toString();
     if (ammoReserveEl) ammoReserveEl.innerText = w.ammoReserve.toString();
 }
@@ -3098,7 +3234,7 @@ const ENEMY_DATA: Record<EnemyType, EnemyStats> = {
     [EnemyType.REINDEER_ZOMBIE]:   { health: 350,  speed: 2.8, damage: 14, shirtColor: 0x4a3728, skinColor: 0xb0c4de, size: 1.1, attackRange: 1.8,  attackCooldown: 1100, reward: 60,   name: "REINDEER ZOMBIE",slowDuration: 2.5 },
     [EnemyType.SNOWMAN]:           { health: 400,  speed: 1.6, damage: 10, shirtColor: 0xcc2200, skinColor: 0xf0f8ff, size: 1.2, attackRange: 22.0, attackCooldown: 2200, reward: 90,   name: "SNOWMAN",       slowDuration: 3.0 },
     [EnemyType.BOSS_SNOW_GOLIATH]: { health: 7000, speed: 1.5, damage: 55, shirtColor: 0x2a3040, skinColor: 0x8ab4d4, size: 2.8, attackRange: 2.8,  attackCooldown: 1300, reward: 700,  name: "SNOW GOLIATH",  slowDuration: 3.5 },
-    [EnemyType.BOSS_GIANT_SNOWMAN]:{ health: 9000, speed: 1.2, damage: 15, shirtColor: 0x990000, skinColor: 0xf0f8ff, size: 3.5, attackRange: 22.0, attackCooldown: 1800, reward: 1200, name: "GIANT SNOWMAN",  slowDuration: 4.0 },
+    [EnemyType.BOSS_GIANT_SNOWMAN]:{ health: 4500, speed: 1.2, damage: 15, shirtColor: 0x990000, skinColor: 0xf0f8ff, size: 3.5, attackRange: 22.0, attackCooldown: 1800, reward: 1200, name: "GIANT SNOWMAN",  slowDuration: 4.0 },
     [EnemyType.BOSS_BLIZZARD_KING]:{ health: 22000,speed: 3.5, damage: 50, shirtColor: 0x001133, skinColor: 0xaaddff, size: 5.0, attackRange: 22.0, attackCooldown: 280,  reward: 8000, name: "BLIZZARD KING",  slowDuration: 5.0 },
     // ===== LAVA =====
     [EnemyType.LAVA_ZOMBIE]:       { health: 600,  speed: 2.3, damage: 25, shirtColor: 0x8b1a00, skinColor: 0xff4400, size: 1.0, attackRange: 1.5,  attackCooldown: 900,  reward: 60,   name: "LAVA ZOMBIE" },
@@ -3137,6 +3273,7 @@ class Enemy {
     private avoidVector = new THREE.Vector3(); // Para evitar colisiones
     // Guardar referencias para restaurar colores fácilmente
     bodyParts: { mesh: THREE.Mesh; color: number }[] = [];
+    overheadBarEl: HTMLElement | null = null;
 
     constructor(type: EnemyType, position: THREE.Vector3) {
         this.type = type;
@@ -3750,17 +3887,17 @@ class Enemy {
             });
         }
 
-        // Solo los no-jefes se paralizan brevemente al recibir daño
-        const isBoss = (this.type === EnemyType.BOSS_GOLIATH || this.type === EnemyType.BOSS_SENTINEL
-            || this.type === EnemyType.BOSS_FINAL_ROBOT || this.type === EnemyType.BOSS_SNOW_GOLIATH
-            || this.type === EnemyType.BOSS_GIANT_SNOWMAN || this.type === EnemyType.BOSS_BLIZZARD_KING
-            || this.type === EnemyType.BOSS_LAVA_GOLIATH || this.type === EnemyType.BOSS_LAVA_DRAGON
-            || this.type === EnemyType.BOSS_MAGMA_TITAN || this.type === EnemyType.BOSS_PURPLE_DRAGON);
+        const isTrueBoss = (this.type === EnemyType.BOSS_FINAL_ROBOT || this.type === EnemyType.BOSS_BLIZZARD_KING || this.type === EnemyType.BOSS_PURPLE_DRAGON);
+        
+        const isGiant = (this.type === EnemyType.BOSS_GOLIATH || this.type === EnemyType.BOSS_SENTINEL ||
+                         this.type === EnemyType.BOSS_SNOW_GOLIATH || this.type === EnemyType.BOSS_GIANT_SNOWMAN ||
+                         this.type === EnemyType.BOSS_LAVA_GOLIATH || this.type === EnemyType.BOSS_LAVA_DRAGON || 
+                         this.type === EnemyType.BOSS_MAGMA_TITAN);
 
-        if (!isBoss) {
+        if (!isTrueBoss && !isGiant) {
             this.isFlinching = true;
             this.flinchTimer = 0.12;
-        } else {
+        } else if (isTrueBoss) {
             this.flashTimer = 0.12;
             // Actualizar Boss HP Bar
             const bossContainer = document.getElementById('boss-bar-container');
@@ -3769,7 +3906,7 @@ class Enemy {
             const stats = ENEMY_DATA[this.type];
             if (bossContainer && bossBarFill && bossBarName) {
                 bossContainer.style.display = 'block';
-                bossBarName.innerText = `☠ ${stats.name} ☠`;
+                bossBarName.innerText = `☠ ${t(stats.name)} ☠`;
                 const pct = Math.max(0, (this.health / stats.health) * 100);
                 bossBarFill.style.width = `${pct}%`;
                 // Cambiar color según vida restante
@@ -3778,6 +3915,27 @@ class Enemy {
                 else bossBarFill.style.background = 'linear-gradient(to right, #440000, #880000, #cc0000)';
                 // Ocultar si muere
                 if (this.health <= 0) setTimeout(() => { if (bossContainer) bossContainer.style.display = 'none'; }, 500);
+            }
+        } else if (isGiant) {
+            this.flashTimer = 0.12;
+            const stats = ENEMY_DATA[this.type];
+            if (!this.overheadBarEl) {
+                const container = document.getElementById('overhead-bars-container');
+                if (container) {
+                    this.overheadBarEl = document.createElement('div');
+                    this.overheadBarEl.className = 'overhead-hp';
+                    this.overheadBarEl.innerHTML = '<div class="overhead-hp-fill"></div>';
+                    this.overheadBarEl.style.display = 'block';
+                    container.appendChild(this.overheadBarEl);
+                }
+            }
+            if (this.overheadBarEl) {
+                const pct = Math.max(0, (this.health / stats.health) * 100);
+                (this.overheadBarEl.firstChild as HTMLElement).style.width = `${pct}%`;
+                if (this.health <= 0) {
+                    this.overheadBarEl.remove();
+                    this.overheadBarEl = null;
+                }
             }
         }
 
@@ -3806,6 +3964,10 @@ class Enemy {
     }
 
     die(fromNetwork: boolean = false) {
+        if (this.overheadBarEl) {
+            this.overheadBarEl.remove();
+            this.overheadBarEl = null;
+        }
         this.isDead = true;
         if (!fromNetwork) {
             // Only give coins + emit kill to server when killed locally
@@ -3866,6 +4028,23 @@ class Enemy {
                 for (const part of this.bodyParts) {
                     (part.mesh.material as THREE.MeshStandardMaterial).color.setHex(part.color);
                 }
+            }
+        }
+
+        // --- Overhead Bar 2D Projection ---
+        if (this.overheadBarEl) {
+            const size = ENEMY_DATA[this.type].size;
+            const overheadPos = this.mesh.position.clone();
+            overheadPos.y += (size * 1.6);
+            overheadPos.project(camera);
+            if (overheadPos.z < 1.0) { // is in front of camera explicitly
+                const x = (overheadPos.x * .5 + .5) * window.innerWidth;
+                const y = (overheadPos.y * -.5 + .5) * window.innerHeight;
+                this.overheadBarEl.style.display = 'block';
+                this.overheadBarEl.style.left = `${x}px`;
+                this.overheadBarEl.style.top = `${y}px`;
+            } else {
+                this.overheadBarEl.style.display = 'none';
             }
         }
 
@@ -4319,7 +4498,7 @@ class WaveManager {
         if (wc) wc.style.display = 'none';
 
         if (enemiesEl) enemiesEl.innerText = this.enemiesToSpawn.toString();
-        if (hordeEl) hordeEl.innerText = `Enemies: 0 (To Spawn: ${this.enemiesToSpawn})`;
+        if (hordeEl) hordeEl.innerText = t('ENEMIES_LEFT', { alive: 0, spawn: this.enemiesToSpawn });
         if (stageEl) {
             if (isFinalWave) {
                 stageEl.innerHTML = `<span style="font-size:0.7em;color:#ff6600">LAVA</span><br>FINAL WAVE: BOSS`;
@@ -4531,7 +4710,7 @@ class WaveManager {
         }
 
         if (hordeEl) {
-            hordeEl.innerText = `Enemies: ${this.enemiesAlive} (To Spawn: ${this.enemiesToSpawn})`;
+            hordeEl.innerText = t('ENEMIES_LEFT', { alive: this.enemiesAlive, spawn: this.enemiesToSpawn });
         }
 
         // Host envía posiciones de enemigos 10 veces por segundo
@@ -4795,6 +4974,26 @@ controls.addEventListener('unlock', () => {
     }
 });
 
+
+// --- LANGUAGE SELECTORS ---
+document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.lang-btn').forEach(b => {
+            (b as HTMLElement).classList.remove('active');
+            (b as HTMLButtonElement).style.background = '#222';
+            (b as HTMLButtonElement).style.color = '#aaa';
+            (b as HTMLButtonElement).style.borderColor = '#555';
+        });
+        const target = e.target as HTMLElement;
+        target.classList.add('active');
+        target.style.background = '#555';
+        target.style.color = '#fff';
+        target.style.borderColor = '#fff';
+        
+        currentLanguage = target.getAttribute('data-lang') as Lang;
+        applyTranslations();
+    });
+});
 
 // --- SINGLEPLAYER REDIRECT MOVED TO LOBBY "SOLO PLAY" BTN ---
 btnStart.addEventListener('click', () => {
@@ -5103,7 +5302,7 @@ function reloadWeapon() {
     if (w.isReloading || w.ammoCurrent === w.magSize || w.ammoReserve <= 0) return;
 
     w.isReloading = true;
-    if (weaponNameEl) weaponNameEl.innerText = "RELOADING...";
+    if (weaponNameEl) weaponNameEl.innerText = t('RELOADING');
 
     // Animate weapon down
     weaponGroup.position.y = -0.5;

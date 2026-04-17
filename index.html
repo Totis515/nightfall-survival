@@ -538,13 +538,30 @@
         /* BOSS HP BAR */
         #boss-bar-container {
             position: absolute;
-            top: 18px;
+            top: 70px;
             left: 50%;
             transform: translateX(-50%);
             width: 480px;
             text-align: center;
             z-index: 25;
             display: none;
+        }
+        #overhead-bars-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; overflow: hidden; z-index: 20;
+        }
+        .overhead-hp {
+            position: absolute;
+            width: 60px; height: 6px;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid #555;
+            transform: translate(-50%, -50%);
+            display: none;
+        }
+        .overhead-hp-fill {
+            width: 100%; height: 100%;
+            background: #ffcc00;
         }
         #boss-bar-name {
             font-family: 'Impact', sans-serif;
@@ -1323,9 +1340,14 @@
         <h2 class="subtitle">Phase 15: Big Snowfall</h2>
 
         <div id="menu-buttons">
-            <button class="menu-btn" id="btn-start">Start Game</button>
-            <button class="menu-btn" id="btn-options">Options</button>
-            <button class="menu-btn" id="btn-exit">Exit</button>
+            <button class="menu-btn" id="btn-start" data-i18n="MENU_START">Start Game</button>
+            <button class="menu-btn" id="btn-options" data-i18n="MENU_OPTIONS">Options</button>
+            <button class="menu-btn" id="btn-exit" data-i18n="MENU_EXIT">Exit</button>
+            <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+                <button class="lang-btn active" data-lang="EN" style="background:#555; border:2px solid #fff; color:#fff; padding:5px 10px; cursor:pointer;">EN</button>
+                <button class="lang-btn" data-lang="ES" style="background:#222; border:2px solid #555; color:#aaa; padding:5px 10px; cursor:pointer;">ES</button>
+                <button class="lang-btn" data-lang="FR" style="background:#222; border:2px solid #555; color:#aaa; padding:5px 10px; cursor:pointer;">FR</button>
+            </div>
         </div>
     </div>
 
@@ -1721,12 +1743,12 @@
             <p class="horde-text" id="horde-text">Enemies: 0 (To Spawn: 0)</p>
         </div>
         <div class="top-center">
-            <div class="stat-box">TOTAL ENEMIES: <span id="enemies-count">0</span></div>
+            <div class="stat-box"><span data-i18n="UI_TOTAL_ENEMIES">TOTAL ENEMIES: </span><span id="enemies-count">0</span></div>
             <div class="stat-box" style="color: #ffcc00; border-left-color: cyan;">FPS: <span id="fps-counter">0</span>
             </div>
         </div>
         <div class="top-right" style="display: flex; flex-direction: column; align-items: flex-end;">
-            <div class="stat-box" style="color: #ffcc00; border-left-color: #ffcc00;">COINS: $<span
+            <div class="stat-box" style="color: #ffcc00; border-left-color: #ffcc00;"><span data-i18n="UI_COINS">COINS: </span>$<span
                     id="coins-count">0</span></div>
             <!-- Botón de pausa para móviles: Solo símbolo, estilo premium -->
             <div id="btn-mobile-pause"
@@ -1770,18 +1792,18 @@
     </div>
 
     <div id="game-over">
-        <h1 class="game-over-title">YOU DIED</h1>
-        <p id="final-stats">Waves Survived: 0</p>
+        <h1 class="game-over-title" data-i18n="GO_TITLE">YOU DIED</h1>
+        <p id="final-stats" data-i18n="GO_STATS">Waves Survived: 0</p>
         <p id="killed-by"
-            style="color: #ff3333; font-size: 18px; font-weight: bold; margin-bottom: 25px; font-family: monospace; letter-spacing: 2px;">
+            style="color: #ff3333; font-size: 18px; font-weight: bold; margin-bottom: 25px; font-family: monospace; letter-spacing: 2px;" data-i18n="GO_KILLED_BY">
             KILLED BY: UNKNOWN</p>
 
         <!-- Standard button (Singleplayer) -->
-        <button class="menu-btn" id="btn-restart" onclick="location.reload()">Restart</button>
+        <button class="menu-btn" id="btn-restart" onclick="location.reload()" data-i18n="GO_RESTART">Restart</button>
 
         <!-- Multiplayer Death Buttons -->
         <div id="mp-death-btns" style="display:none; flex-direction:column; gap:15px;">
-            <button class="mp-btn danger" onclick="location.reload()" style="width:250px;">✕ LEAVE ROOM</button>
+            <button class="mp-btn danger" onclick="location.reload()" style="width:250px;" data-i18n="GO_LEAVE">✕ LEAVE ROOM</button>
         </div>
     </div>
 
@@ -1801,6 +1823,8 @@
         <div id="boss-bar-name">BOSS</div>
         <div id="boss-bar-bg"><div id="boss-bar-fill"></div></div>
     </div>
+    
+    <div id="overhead-bars-container"></div>
 
     <!-- PAUSE SCREEN: Aparece al presionar ESC durante la partida -->
     <div id="pause-screen">
