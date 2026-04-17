@@ -57,7 +57,99 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
         "MINI GUN": "MINI GUN",
         "LASER GUN": "LASER GUN",
         "ROCKET LAUNCHER": "ROCKET LAUNCHER",
-        "FIRE GUN": "FLAMETHROWER"
+        "FIRE GUN": "FLAMETHROWER",
+        OPT_LANGUAGE: "LANGUAGE",
+        OPT_TITLE: "OPTIONS",
+        OPT_SUBTITLE: "NIGHTFALL SURVIVAL — SETTINGS",
+        OPT_PC: "COMPUTER",
+        OPT_MOBILE: "MOBILE",
+        OPT_MASTER: "MASTER",
+        OPT_MUSIC: "MUSIC",
+        OPT_SFX: "SFX",
+        OPT_SENS: "SENSITIVITY",
+        OPT_GFX: "GRAPHICS",
+        OPT_LOW: "LOW",
+        OPT_MED: "MED",
+        OPT_HIGH: "HIGH",
+        OPT_SHOW_FPS: "SHOW FPS",
+        BACK_MENU: "BACK TO MENU",
+        LOBBY_TITLE: "WAITING ROOM",
+        LOBBY_SURVIVOR: "CHOOSE YOUR SURVIVOR",
+        LOBBY_USERNAME: "ENTER USERNAME",
+        LOBBY_CODE: "ROOM CODE",
+        LOBBY_SOLO: "SOLO PLAY",
+        LOBBY_HOST: "HOST SERVER",
+        LOBBY_JOIN: "JOIN SERVER",
+        SHOP_TITLE: "BLACK MARKET",
+        SHOP_CLOSE: "CLOSE",
+        SHOP_BALANCE: "Balance: ",
+        ITEM_HEALTH: "HEALTH",
+        ITEM_HEALTH_DESC: "Instantly restore health for $50.",
+        ITEM_AMMO: "AMMO",
+        ITEM_AMMO_DESC: "Refill all weapon ammo to maximum.",
+        ITEM_MAXHP: "VITALITY",
+        ITEM_MAXHP_DESC: "Increase MAX HP permanently by 20.",
+        ITEM_SPEED: "SPEED",
+        ITEM_SPEED_DESC: "Increase movement speed by 20%.",
+        ITEM_JETPACK: "JET INJECTOR",
+        ITEM_JETPACK_DESC: "Refill jetpack fuel to maximum.",
+        BTN_CONTINUE: "CONTINUE",
+        SERVERS_TITLE: "SERVERS",
+        SERVERS_SUB: "MAX 4 PLAYERS PER ROOM",
+        SERVERS_OR: "OR JOIN WITH CODE",
+        LOBBY_READY: "READY",
+        TAB_LOBBY: "LOBBY",
+        TAB_SKINS: "SKINS",
+        LOBBY_LEAVE: "✕ LEAVE",
+        INTERACT_SHOP: "[ E ] ENTER BLACK MARKET",
+        DOWNED_TITLE: "YOU ARE DOWN!",
+        DOWNED_SUB: "WAITING FOR REVIVAL...",
+        REVIVE_PROMPT: "HOLD 'Q' TO REVIVE",
+        VICTORY_WORLD: "THE WORLD IS SAFE",
+        VICTORY_SUB: "★ NIGHTFALL SURVIVAL COMPLETE ★",
+        VICTORY_DESC: "You conquered all 30 waves across 3 biomes — Forest, Snow and Lava.<br>The Purple Dragon has fallen. Humanity lives on.",
+        DEATH_BANNER: "PLAYER HAS DIED",
+        SKINS_LOCKER: "LOCKER",
+        LOAD_TEXT: "LOADING ELEMENTS...",
+        UI_ENEMIES: "Enemies: 0 (To Spawn: 0)",
+        SKIN_LIGHT: "LIGHT YAGAMI",
+        SKIN_GOJO: "SATORU GOJO",
+        SKIN_GOKU: "SON GOKU",
+        SKIN_ISAGI: "YOICHI ISAGI",
+        SKIN_BUGS: "BUGS BUNNY",
+        SKIN_TUNG: "TUNG TUNG SAHUR",
+        SKIN_SAILOR: "SAILOR MOON",
+        SKIN_GETO: "SUGURU GETO",
+        SKIN_POMNI: "POMNI",
+        SKIN_L: "L LAWLIET",
+        SKIN_CUPHEAD: "CUPHEAD",
+        SKIN_MARIO: "SUPER MARIO",
+        SKIN_SONIC: "SONIC",
+        SKIN_BEN: "BEN 10",
+        SKIN_CORALINE: "CORALINE",
+        SKIN_MILES: "MILES MORALES",
+        SKIN_KUNIGAMI: "RENSUKE KUNIGAMI",
+        SKIN_RICK: "RICK SANCHEZ",
+        SKIN_DOOM: "DOOM SLAYER",
+        SKIN_MORTY: "MORTY SMITH",
+        SKIN_LELOUCH: "LELOUCH LAMPEROUGE",
+        SKIN_MUGMAN: "MUGMAN",
+        SKIN_AJ: "AJ FROM F13",
+        SKIN_DEFAULT: "DEFAULT",
+        READY: "READY",
+        NOT_READY: "NOT READY",
+        SHOP_INTERACT: "[ E ] ENTER BLACK MARKET",
+        FUEL_REFILLED: "FUEL REFILLED",
+        AMMO_REFILLED: "AMMO REFILLED",
+        YOU_HOST: "YOU ARE NOW THE HOST",
+        JOINED: " JOINED!",
+        BIOME_FOREST: "FOREST",
+        BIOME_SNOW: "SNOW",
+        BIOME_LAVA: "LAVA",
+        FINAL_WAVE_BOSS: "FINAL WAVE: BOSS",
+        BIOME_CHANGE: "BIOME CHANGE...",
+        RESTORING: "RESTORING...",
+        LOADING_WAVE: "READYING WAVE {wave}... {progress}%"
     },
     ES: {
         MENU_START: "Iniciar Juego",
@@ -90,7 +182,93 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
         "MINI GUN": "MINIGUN",
         "LASER GUN": "ARMA LÁSER",
         "ROCKET LAUNCHER": "LANZACOHETES",
-        "FIRE GUN": "LANZALLAMAS"
+        "FIRE GUN": "LANZALLAMAS",
+        OPT_LANGUAGE: "IDIOMA",
+        OPT_TITLE: "OPCIONES",
+        OPT_SUBTITLE: "NIGHTFALL SURVIVAL — AJUSTES",
+        OPT_PC: "COMPUTADORA",
+        OPT_MOBILE: "MÓVIL",
+        OPT_MASTER: "GENERAL",
+        OPT_MUSIC: "MÚSICA",
+        OPT_SFX: "EFECTOS",
+        OPT_SENS: "SENSIBILIDAD",
+        OPT_GFX: "GRÁFICOS",
+        OPT_LOW: "BAJO",
+        OPT_MED: "MEDIO",
+        OPT_HIGH: "ALTO",
+        OPT_SHOW_FPS: "MOSTRAR FPS",
+        OPT_SHOW_HP: "MOSTRAR HP",
+        BACK_MENU: "VOLVER AL MENÚ",
+        LOBBY_TITLE: "SALA DE ESPERA",
+        LOBBY_SURVIVOR: "ELIGE TU SUPERVIVIENTE",
+        LOBBY_USERNAME: "INGRESA TU NOMBRE",
+        LOBBY_CODE: "CÓDIGO DE SALA",
+        LOBBY_SOLO: "JUGAR SOLO",
+        LOBBY_HOST: "CREAR SERVIDOR",
+        LOBBY_JOIN: "UNIRSE AL SERVIDOR",
+        SHOP_TITLE: "MERCADO NEGRO",
+        SHOP_CLOSE: "CERRAR",
+        SHOP_BALANCE: "Saldo: ",
+        ITEM_HEALTH: "SALUD",
+        ITEM_HEALTH_DESC: "Restaura salud instantáneamente por $50.",
+        ITEM_AMMO: "MUNICIÓN",
+        ITEM_AMMO_DESC: "Rellena armas al máximo.",
+        ITEM_MAXHP: "VITALIDAD",
+        ITEM_MAXHP_DESC: "Aumenta la salud máxima 20 pts permanentemente.",
+        ITEM_SPEED: "VELOCIDAD",
+        ITEM_SPEED_DESC: "Aumenta la velocidad de movimiento 20%.",
+        ITEM_JETPACK: "INYECTOR JETPAK",
+        ITEM_JETPACK_DESC: "Rellena el combustible al máximo.",
+        BTN_CONTINUE: "CONTINUAR",
+        SERVERS_TITLE: "SERVIDORES",
+        SERVERS_SUB: "MAX 4 JUGADORES POR SALA",
+        SERVERS_OR: "O ÚNETE POR CÓDIGO",
+        LOBBY_READY: "LISTO",
+        TAB_LOBBY: "SALA",
+        TAB_SKINS: "SKINS",
+        LOBBY_LEAVE: "✕ SALIR",
+        DEATH_BANNER: "EL JUGADOR HA MUERTO",
+        SKINS_LOCKER: "LOCKER",
+        LOAD_TEXT: "CARGANDO ELEMENTOS...",
+        UI_ENEMIES: "Enemigos: 0 (Por aparecer: 0)",
+        SKIN_LIGHT: "LIGHT YAGAMI",
+        SKIN_GOJO: "SATORU GOJO",
+        SKIN_GOKU: "SON GOKU",
+        SKIN_ISAGI: "YOICHI ISAGI",
+        SKIN_BUGS: "BUGS BUNNY",
+        SKIN_TUNG: "TUNG TUNG SAHUR",
+        SKIN_SAILOR: "SAILOR MOON",
+        SKIN_GETO: "SUGURU GETO",
+        SKIN_POMNI: "POMNI",
+        SKIN_L: "L LAWLIET",
+        SKIN_CUPHEAD: "CUPHEAD",
+        SKIN_MARIO: "SUPER MARIO",
+        SKIN_SONIC: "SONIC",
+        SKIN_BEN: "BEN 10",
+        SKIN_CORALINE: "CORALINE",
+        SKIN_MILES: "MILES MORALES",
+        SKIN_KUNIGAMI: "RENSUKE KUNIGAMI",
+        SKIN_RICK: "RICK SANCHEZ",
+        SKIN_DOOM: "DOOM SLAYER",
+        SKIN_MORTY: "MORTY SMITH",
+        SKIN_LELOUCH: "LELOUCH LAMPEROUGE",
+        SKIN_MUGMAN: "MUGMAN",
+        SKIN_AJ: "AJ FROM F13",
+        SKIN_DEFAULT: "PREDETERMINADO",
+        READY: "LISTO",
+        NOT_READY: "NO LISTO",
+        SHOP_INTERACT: "[ E ] ENTRAR AL MERCADO NEGRO",
+        FUEL_REFILLED: "COMBUSTIBLE RELLENADO",
+        AMMO_REFILLED: "MUNICIÓN RELLENADA",
+        YOU_HOST: "AHORA ERES EL ANFITRIÓN",
+        JOINED: " SE HA UNIDO!",
+        BIOME_FOREST: "BOSQUE",
+        BIOME_SNOW: "NIEVE",
+        BIOME_LAVA: "LAVA",
+        FINAL_WAVE_BOSS: "OLEADA FINAL: JEFE",
+        BIOME_CHANGE: "CAMBIO DE BIOMA...",
+        RESTORING: "RESTAURANDO...",
+        LOADING_WAVE: "PREPARANDO OLEADA {wave}... {progress}%"
     },
     FR: {
         MENU_START: "Commencer",
@@ -123,7 +301,59 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
         "MINI GUN": "MINIGUN",
         "LASER GUN": "FUSIL LASER",
         "ROCKET LAUNCHER": "LANCE-ROQUETTES",
-        "FIRE GUN": "LANCE-FLAMMES"
+        "FIRE GUN": "LANCE-FLAMMES",
+        OPT_LANGUAGE: "LANGUE",
+        OPT_TITLE: "OPTIONS",
+        OPT_SUBTITLE: "NIGHTFALL SURVIVAL — PARAMÈTRES",
+        OPT_PC: "ORDINATEUR",
+        OPT_MOBILE: "MOBILE",
+        OPT_MASTER: "GÉNÉRAL",
+        OPT_MUSIC: "MUSIQUE",
+        OPT_SFX: "BRUITS",
+        OPT_SENS: "SENSIBILITÉ",
+        OPT_GFX: "GRAPHIQUES",
+        OPT_LOW: "BAS",
+        OPT_MED: "MOY",
+        OPT_HIGH: "ÉLEVÉ",
+        OPT_SHOW_FPS: "AFFICHER FPS",
+        OPT_SHOW_HP: "AFFICHER HP",
+        BACK_MENU: "RETOUR AU MENU",
+        LOBBY_TITLE: "SALLE D'ATTENTE",
+        LOBBY_SURVIVOR: "CHOISIS TON SURVIVANT",
+        LOBBY_USERNAME: "TON NOM",
+        LOBBY_CODE: "CODE SALLE",
+        LOBBY_SOLO: "JOUER SEUL",
+        LOBBY_HOST: "CRÉER SERVEUR",
+        LOBBY_JOIN: "REJOINDRE",
+        SHOP_TITLE: "MARCHÉ NOIR",
+        SHOP_CLOSE: "FERMER",
+        SHOP_BALANCE: "Solde: ",
+        ITEM_HEALTH: "SANTÉ",
+        ITEM_HEALTH_DESC: "Restaure instantanément la santé pour $50.",
+        ITEM_AMMO: "MUNITION",
+        ITEM_AMMO_DESC: "Rapporte les armes au maximum.",
+        ITEM_MAXHP: "VITALITÉ",
+        ITEM_MAXHP_DESC: "Augmente la santé maximale de 20pts.",
+        ITEM_SPEED: "VITESSE",
+        ITEM_SPEED_DESC: "Augmente la vitesse de mouvement de 20%.",
+        ITEM_JETPACK: "INJECTEUR JET",
+        ITEM_JETPACK_DESC: "Fait le plein de carburant.",
+        BTN_CONTINUE: "CONTINUER",
+        SERVERS_TITLE: "SERVEURS",
+        SERVERS_SUB: "MAX 4 JOUEURS",
+        SERVERS_OR: "OU CODE REJOINDRE",
+        LOBBY_READY: "PRÊT",
+        TAB_LOBBY: "SALLE",
+        TAB_SKINS: "SKINS",
+        LOBBY_LEAVE: "✕ QUITTER",
+        INTERACT_SHOP: "[ E ] ENTRER SUR LE MARCHÉ NOIR",
+        DOWNED_TITLE: "TOMBÉ!",
+        DOWNED_SUB: "EN ATTENTE DE RÉANIMATION...",
+        REVIVE_PROMPT: "MAINTENIR 'Q' POUR RÉANIMER",
+        VICTORY_WORLD: "LE MONDE EST SAUVÉ",
+        VICTORY_SUB: "★ NIGHTFALL SURVIVAL TERMINÉ ★",
+        VICTORY_DESC: "Vainqueur des 30 vagues — Forêt, Neige et Lave.<br>Le Dragon Pourpre est tombé. L'humanité survit.",
+        BTN_RETURN_LOBBY: "RETOUR AU SALON"
     }
 };
 
@@ -139,19 +369,54 @@ function t(key: string, params?: Record<string, any>): string {
 
 function applyTranslations() {
     const els = document.querySelectorAll('[data-i18n]');
+    const dict = TRANSLATIONS[currentLanguage];
+    
     els.forEach(el => {
         const key = el.getAttribute('data-i18n');
-        if (key && TRANSLATIONS[currentLanguage][key]) {
-            // Avoid wiping child elements if we just update the text node initially, 
-            // but for our simple spans/buttons, innerText works.
-            if (el.tagName === 'SPAN' || el.tagName === 'BUTTON' || el.tagName === 'H1' || el.tagName === 'P') {
-                const prefix = (el as HTMLElement).innerText.includes(':') && !(el as HTMLElement).innerText.match(/^[A-Z\s]+:$/) ? 
-                               (el as HTMLElement).innerText.split(':')[1] : "";
-                // To be safe, just set text. For composite ones, we wrapped specific spans.
-                (el as HTMLElement).innerText = TRANSLATIONS[currentLanguage][key];
+        if (key && dict[key]) {
+            // Using innerHTML for descriptions that might have <br> or 🏆 or skin names
+            if (key === 'VICTORY_DESC' || key === 'VICTORY_SUB' || key.startsWith('SKIN_')) {
+                el.innerHTML = dict[key];
+            } else {
+                (el as HTMLElement).innerText = dict[key];
             }
         }
     });
+
+    // Inputs placeholders
+    const uiInput = document.getElementById('username-input') as HTMLInputElement;
+    if (uiInput) uiInput.placeholder = dict.LOBBY_USERNAME + '...';
+    const rcInput = document.getElementById('room-code-input') as HTMLInputElement;
+    if (rcInput) rcInput.placeholder = dict.LOBBY_CODE;
+
+    // Advanced nested replacements (Shop + Titles)
+    const setQueryText = (selector: string, key: string) => {
+        const els = document.querySelectorAll(selector);
+        els.forEach(el => { (el as HTMLElement).innerText = dict[key] || ''; });
+    };
+
+    setQueryText('#buy-health .card-name, #mb-buy-health .card-name', 'ITEM_HEALTH');
+    setQueryText('#buy-health .card-desc, #mb-buy-health .card-desc', 'ITEM_HEALTH_DESC');
+    setQueryText('#buy-ammo .card-name, #mb-buy-ammo .card-name', 'ITEM_AMMO');
+    setQueryText('#buy-ammo .card-desc, #mb-buy-ammo .card-desc', 'ITEM_AMMO_DESC');
+    setQueryText('#buy-maxhp .card-name, #mb-buy-maxhp .card-name', 'ITEM_MAXHP');
+    setQueryText('#buy-maxhp .card-desc, #mb-buy-maxhp .card-desc', 'ITEM_MAXHP_DESC');
+    setQueryText('#buy-speed .card-name, #mb-buy-speed .card-name', 'ITEM_SPEED');
+    setQueryText('#buy-speed .card-desc, #mb-buy-speed .card-desc', 'ITEM_SPEED_DESC');
+    setQueryText('#buy-jetpack .card-name, #mb-buy-jetpack .card-name', 'ITEM_JETPACK');
+    setQueryText('#buy-jetpack .card-desc, #mb-buy-jetpack .card-desc', 'ITEM_JETPACK_DESC');
+    
+    // Shop Headers & Close Buttons
+    const shopH2s = document.querySelectorAll('#shop-menu h2, #shop-menu-mobile h2');
+    shopH2s.forEach(el => el.innerHTML = `🛑 ${dict.SHOP_TITLE}`);
+    const shopCloses = document.querySelectorAll('#shop-close, #shop-close-mobile');
+    shopCloses.forEach(el => (el as HTMLElement).innerText = dict.SHOP_CLOSE);
+
+    // Update balances manually
+    const b1 = document.getElementById('shop-balance');
+    if (b1) b1.childNodes[0].nodeValue = dict.SHOP_BALANCE + '$';
+    const b2 = document.getElementById('shop-balance-mobile');
+    if (b2) b2.childNodes[0].nodeValue = dict.SHOP_BALANCE;
 }
 
 let lobbyLocalGroup: THREE.Group | null = null;
@@ -916,7 +1181,8 @@ function createNameLabel(username: string, platform: string = 'PC', isReady: boo
     // El nombre solo, sin emoji, centrado
     ctx.fillText(`${username.toUpperCase()}`, 150, 45);
 
-    const readyText = isReady ? 'READY' : 'NOT READY';
+    const dict = TRANSLATIONS[currentLanguage];
+    const readyText = isReady ? dict.READY : dict.NOT_READY;
     // Muestra estado de listo y plataforma
     if (!gameStarted) {
         if (isReady) {
@@ -1008,7 +1274,7 @@ function connectMultiplayer() {
         if (!gameStarted) {
             rearrangeLobbySlots();
         } else {
-            showPickupNotice(`${p.username} JOINED!`);
+            showPickupNotice(p.username + t('JOINED'));
         }
     });
     socket.on('player-moved', (data: { id: string; x: number; y: number; z: number; rotY: number; weaponIdx?: number }) => {
@@ -1879,7 +2145,7 @@ let playerStamina = 100;
 let staminaExhausted = false;
 let staminaCooldown = 0;
 let isDowned = false;
-let downedTimer = 8.0;
+let downedTimer = 60.0;
 let isRevivingKey = false;
 let reviveProgress = 0.0;
 let reviveTargetId: string | null = null;
@@ -2509,7 +2775,7 @@ function takeDamage(amount: number) {
         if (isMultiplayer && (socket as any)?.connected) {
             if (!isDowned) {
                 isDowned = true;
-                downedTimer = 8.0;
+                downedTimer = 60.0;
                 const ds = document.getElementById('downed-screen');
                 if (ds) ds.style.display = 'flex';
                 (socket as any).emit('player-downed', { name: myUsername });
@@ -4501,11 +4767,12 @@ class WaveManager {
         if (hordeEl) hordeEl.innerText = t('ENEMIES_LEFT', { alive: 0, spawn: this.enemiesToSpawn });
         if (stageEl) {
             if (isFinalWave) {
-                stageEl.innerHTML = `<span style="font-size:0.7em;color:#ff6600">LAVA</span><br>FINAL WAVE: BOSS`;
+                stageEl.innerHTML = `<span style="font-size:0.7em;color:#ff6600">${t('BIOME_LAVA')}</span><br>${t('FINAL_WAVE_BOSS')}`;
                 stageEl.style.color = '#ff6600';
             } else {
                 const biomeColor = this.currentWave <= 10 ? '#ff3333' : this.currentWave <= 20 ? '#88ccff' : '#ff6600';
-                stageEl.innerHTML = `<span style="font-size:0.7em;color:${biomeColor};">${biomeName}</span><br>WAVE ${biomeWave}`;
+                const biomeKey = this.currentWave <= 10 ? 'BIOME_FOREST' : this.currentWave <= 20 ? 'BIOME_SNOW' : 'BIOME_LAVA';
+                stageEl.innerHTML = `<span style="font-size:0.7em;color:${biomeColor};">${t(biomeKey)}</span><br>${t('WAVE', { wave: biomeWave })}`;
                 stageEl.style.color = biomeColor;
             }
         }
@@ -4582,7 +4849,7 @@ class WaveManager {
                 if (wc) wc.style.display = 'none';
                 transitionToSnowBiome();
             }, 2000);
-            if (stageEl) stageEl.innerHTML = `<span style="font-size:0.8em;color:#aaddff">BIOME CHANGE...</span>`;
+            if (stageEl) stageEl.innerHTML = `<span style="font-size:0.8em;color:#aaddff">${t('BIOME_CHANGE')}</span>`;
             return;
         }
 
@@ -4600,7 +4867,7 @@ class WaveManager {
                 if (wc) wc.style.display = 'none';
                 transitionToLavaBiome();
             }, 2000);
-            if (stageEl) stageEl.innerHTML = `<span style="font-size:0.8em;color:#ff6600">BIOME CHANGE...</span>`;
+            if (stageEl) stageEl.innerHTML = `<span style="font-size:0.8em;color:#ff6600">${t('BIOME_CHANGE')}</span>`;
             return;
         }
 
@@ -4623,7 +4890,7 @@ class WaveManager {
             openShop();
         }, 1500);
 
-        if (stageEl) stageEl.innerText = `RESTORING...`;
+        if (stageEl) stageEl.innerText = t('RESTORING');
     }
 
     victory() {
@@ -6337,7 +6604,7 @@ function startNextWaveWithLoading() {
         progress += 3;
         if (loadBar) loadBar.style.width = `${progress}%`;
         const txt = loadingScreen.querySelector('.loading-text') as HTMLElement;
-        if (txt) txt.innerText = `READYING WAVE ${nextWaveNum}... ${progress}%`;
+        if (txt) txt.innerText = t('LOADING_WAVE', { wave: nextWaveNum, progress: progress });
         if (progress >= 100) {
             clearInterval(interval);
             loadingScreen.style.display = 'none';
@@ -6375,7 +6642,7 @@ function animate() {
 
     frameCount++;
     if (time - lastFpsTime >= 1000) {
-        if (fpsEl && gameStarted) fpsEl.innerText = frameCount.toString();
+        if (fpsEl && gameStarted) fpsEl.innerText = t('UI_FPS') + frameCount.toString();
         frameCount = 0;
         lastFpsTime = time;
     }
