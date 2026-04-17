@@ -5294,7 +5294,8 @@ let sfxVolume = 1.0;
 function applyVolumes() {
     // Music volume = master * music slider
     if (soundManager.bgAudio) {
-        soundManager.bgAudio.volume = masterVolume * musicVolume;
+        // Boosted music volume to 200% (x2) as requested
+        soundManager.bgAudio.volume = Math.min(masterVolume * musicVolume * 2, 1.0);
     }
     // SFX volume stored for future use in sound playback
     (soundManager as any).sfxVolume = masterVolume * sfxVolume;
@@ -6504,8 +6505,10 @@ function tryBuy(itemKey: string) {
     if (playerCoins >= item.cost) {
         playerCoins -= item.cost;
         item.action();
-        // Escalar el precio +$100 fijos por nivel comprado
-        item.cost += 100;
+        // Escalar el precio +$100 fijos por nivel comprado (excepto salud que siempre es 50)
+        if (item.id !== 'health') {
+            item.cost += 100;
+        }
         updateStatsHUD();
         if (shopCoinsEl) shopCoinsEl.innerText = playerCoins.toString();
         const scm = document.getElementById('shop-coins-mobile');
