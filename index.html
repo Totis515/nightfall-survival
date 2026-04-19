@@ -1122,13 +1122,13 @@
         ═══════════════════════════════════════════════════ */
         #game-mode-card {
             position: fixed;
-            bottom: 30px;
+            bottom: 45px;
             right: 30px;
-            width: 160px;
-            background: rgba(8, 4, 20, 0.88);
-            border: 2px solid rgba(160, 100, 255, 0.5);
+            width: 220px;
+            background: rgba(15, 2, 2, 0.9);
+            border: 2px solid rgba(255, 170, 0, 0.6);
             border-radius: 14px;
-            box-shadow: 0 0 30px rgba(120, 60, 200, 0.35), inset 0 0 20px rgba(0,0,0,0.5);
+            box-shadow: 0 0 30px rgba(255, 60, 0, 0.35), inset 0 0 20px rgba(0,0,0,0.8);
             backdrop-filter: blur(12px);
             overflow: hidden;
             z-index: 500;
@@ -1139,18 +1139,18 @@
             transition: border-color 0.3s, box-shadow 0.3s;
         }
         #game-mode-card:hover {
-            border-color: rgba(170, 110, 255, 0.8);
-            box-shadow: 0 0 40px rgba(140, 80, 220, 0.5), inset 0 0 20px rgba(0,0,0,0.5);
+            border-color: rgba(255, 200, 50, 0.9);
+            box-shadow: 0 0 40px rgba(255, 80, 20, 0.5), inset 0 0 20px rgba(0,0,0,0.8);
         }
         #gmc-change-btn {
             width: 100%;
             padding: 9px 0 8px;
-            background: linear-gradient(135deg, rgba(120,60,200,0.7), rgba(60,20,100,0.9));
+            background: linear-gradient(135deg, rgba(200,60,20,0.8), rgba(80,10,10,0.95));
             border: none;
-            border-bottom: 1px solid rgba(160,100,255,0.4);
-            color: #cc88ff;
+            border-bottom: 2px solid rgba(255,170,0,0.5);
+            color: #ffdd66;
             font-family: 'Impact', sans-serif;
-            font-size: 11px;
+            font-size: 13px;
             letter-spacing: 2px;
             cursor: pointer;
             text-align: center;
@@ -1158,50 +1158,54 @@
             text-transform: uppercase;
         }
         #gmc-change-btn:hover {
-            background: linear-gradient(135deg, rgba(160,80,255,0.85), rgba(80,30,150,0.95));
-            color: #eeccff;
+            background: linear-gradient(135deg, rgba(255,80,20,0.9), rgba(120,20,20,0.95));
+            color: #ffffaa;
+            text-shadow: 0 0 8px #ffcc00;
         }
         #gmc-change-btn.host-hidden {
             display: none;
         }
         #gmc-image {
             width: 100%;
-            height: 134px;
+            height: 140px;
             object-fit: cover;
             display: block;
-            border-bottom: 1px solid rgba(160,100,255,0.25);
+            border-bottom: 2px solid rgba(255,170,0,0.3);
         }
         #gmc-info {
             width: 100%;
-            padding: 10px 12px 12px;
+            padding: 12px 12px 14px;
             box-sizing: border-box;
             text-align: center;
+            background: linear-gradient(180deg, transparent, rgba(30,5,5,0.8));
         }
         #gmc-mode-label {
             font-family: 'Impact', sans-serif;
-            font-size: 15px;
+            font-size: 16px;
             letter-spacing: 2px;
-            color: #00ffcc;
-            text-shadow: 0 0 8px #00ffcc66;
+            color: #ffcc00;
+            text-shadow: 0 0 8px #ffaa0088, 2px 2px 0px #880000;
         }
         #gmc-waves-label {
             font-family: 'Impact', sans-serif;
-            font-size: 11px;
+            font-size: 13px;
             letter-spacing: 1.5px;
-            color: #aa88ff;
-            margin-top: 3px;
+            color: #ff8866;
+            margin-top: 4px;
+            text-shadow: 1px 1px 0px #000;
         }
         #gmc-party-badge {
             display: none;
-            margin-top: 5px;
-            background: linear-gradient(135deg, #ff6600, #ffaa00);
+            margin-top: 6px;
+            background: linear-gradient(135deg, #ff3300, #ffaa00);
             border-radius: 20px;
-            padding: 2px 10px;
+            padding: 3px 10px;
             font-family: 'Impact', sans-serif;
-            font-size: 10px;
+            font-size: 11px;
             letter-spacing: 1.5px;
             color: #fff;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+            box-shadow: 0 0 8px rgba(255,100,0,0.6);
         }
 
         /* ═══════════════════════════════════════════════════
@@ -1224,52 +1228,63 @@
         }
         #game-mode-modal.visible { display: flex; }
         .gm-modal-box {
-            background: linear-gradient(160deg, #0e0820 0%, #180d30 60%, #0a0518 100%);
-            border: 2px solid rgba(160,100,255,0.6);
+            background: linear-gradient(160deg, #1e0505 0%, #0d0000 60%, #110000 100%);
+            border: 3px solid rgba(255,180,0,0.6);
             border-radius: 20px;
-            padding: 36px 40px 32px;
-            width: 520px;
-            max-width: 94vw;
-            box-shadow: 0 0 80px rgba(130,60,220,0.45), 0 0 20px rgba(0,0,0,0.8);
+            padding: 40px 48px 36px;
+            width: 580px;
+            max-width: 96vw;
+            box-shadow: 0 0 80px rgba(255,40,0,0.4), inset 0 0 30px rgba(0,0,0,0.9), 0 20px 40px rgba(0,0,0,0.8);
             display: flex;
             flex-direction: column;
             gap: 28px;
             position: relative;
         }
+        .gm-modal-box::after {
+            content:'';
+            position: absolute;
+            top: 2px; left: 2px; right: 2px; bottom: 2px;
+            border: 1px solid rgba(255,40,0,0.3);
+            border-radius: 16px;
+            pointer-events: none;
+        }
         .gm-modal-title {
             font-family: 'Impact', sans-serif;
-            font-size: 26px;
+            font-size: 32px;
             letter-spacing: 4px;
-            color: #cc88ff;
+            color: #ffcc00;
             text-align: center;
-            text-shadow: 0 0 20px #8844cc;
+            text-shadow: 0 0 20px #ff0000, 3px 3px 0px #550000;
             margin: 0;
+            z-index: 2;
         }
         .gm-section {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
+            z-index: 2;
         }
         .gm-section-label {
             font-family: 'Impact', sans-serif;
-            font-size: 11px;
+            font-size: 13px;
             letter-spacing: 3px;
-            color: #7755aa;
+            color: #ffaa66;
             text-transform: uppercase;
+            text-shadow: 1px 1px 2px #000;
         }
         .gm-pills {
             display: flex;
-            gap: 10px;
+            gap: 12px;
             flex-wrap: wrap;
         }
         .gm-pill {
-            padding: 10px 22px;
-            border-radius: 50px;
-            border: 2px solid rgba(160,100,255,0.4);
-            background: rgba(80,40,140,0.3);
-            color: #9977cc;
+            padding: 12px 24px;
+            border-radius: 5px;
+            border: 2px solid rgba(255,80,0,0.4);
+            background: linear-gradient(135deg, rgba(60,10,10,0.8), rgba(20,0,0,0.9));
+            color: #ffaa88;
             font-family: 'Impact', sans-serif;
-            font-size: 14px;
+            font-size: 16px;
             letter-spacing: 2px;
             cursor: pointer;
             transition: all 0.2s;
@@ -1277,84 +1292,102 @@
             user-select: none;
             flex: 1;
             text-align: center;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+            transform: skewX(-10deg);
+        }
+        .gm-pill > div {
+            transform: skewX(10deg);
         }
         .gm-pill:hover {
-            border-color: rgba(180,120,255,0.7);
-            color: #cc99ff;
-            background: rgba(100,50,180,0.4);
+            border-color: rgba(255,180,0,0.7);
+            color: #ffcc00;
+            background: linear-gradient(135deg, rgba(80,20,10,0.8), rgba(40,10,10,0.9));
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 0 15px rgba(255,100,0,0.4);
         }
         .gm-pill.active {
-            border-color: #a066ff;
-            background: linear-gradient(135deg, rgba(120,60,200,0.7), rgba(80,30,150,0.8));
-            color: #eeccff;
-            text-shadow: 0 0 10px #cc88ff;
-            box-shadow: 0 0 18px rgba(160,80,255,0.4);
+            border-color: #ffcc00;
+            background: linear-gradient(135deg, rgba(200,60,20,1), rgba(120,20,10,1));
+            color: #ffffff;
+            text-shadow: 0 0 10px #ffaa00;
+            box-shadow: 0 0 20px rgba(255,120,0,0.6), inset 0 0 15px rgba(255,200,0,0.3);
         }
         .gm-pill.disabled {
-            opacity: 0.4;
+            opacity: 0.3;
             pointer-events: none;
             cursor: not-allowed;
+            border-color: #551111;
         }
         .gm-pill.wave-pill {
             flex: none;
-            width: calc(25% - 8px);
-            padding: 10px 0;
+            width: calc(25% - 9px);
+            padding: 12px 0;
         }
         .gm-toggle-btn {
-            padding: 12px 24px;
-            border-radius: 50px;
-            border: 2px solid rgba(255,140,0,0.35);
-            background: rgba(40,20,10,0.5);
-            color: #996633;
+            padding: 14px 24px;
+            border-radius: 5px;
+            border: 2px solid rgba(255,60,0,0.35);
+            background: rgba(40,0,0,0.6);
+            color: #ff8866;
             font-family: 'Impact', sans-serif;
-            font-size: 14px;
+            font-size: 15px;
             letter-spacing: 2px;
             cursor: pointer;
             transition: all 0.2s;
             text-align: center;
             user-select: none;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.9);
+            transform: skewX(-10deg);
+        }
+        .gm-toggle-btn > span {
+            display: block;
+            transform: skewX(10deg);
         }
         .gm-toggle-btn.on {
-            border-color: #ff8800;
-            background: linear-gradient(135deg, rgba(180,80,0,0.5), rgba(120,50,0,0.6));
-            color: #ffcc66;
-            text-shadow: 0 0 10px #ff880066;
-            box-shadow: 0 0 18px rgba(255,120,0,0.35);
+            border-color: #ffcc00;
+            background: linear-gradient(135deg, rgba(230,80,0,0.8), rgba(150,30,0,0.9));
+            color: #ffffff;
+            text-shadow: 0 0 10px #ffaa00;
+            box-shadow: 0 0 20px rgba(255,120,0,0.5), inset 0 0 10px rgba(255,255,255,0.2);
         }
         .gm-divider {
-            height: 1px;
-            background: linear-gradient(to right, transparent, rgba(130,70,200,0.4), transparent);
+            height: 2px;
+            background: linear-gradient(to right, transparent, rgba(255,100,0,0.5), transparent);
+            z-index: 2;
         }
         #btn-gm-save {
-            padding: 14px 0;
-            border-radius: 50px;
-            border: 2px solid #00ffcc;
-            background: transparent;
-            color: #00ffcc;
+            padding: 16px 0;
+            border-radius: 5px;
+            border: 3px solid #ffcc00;
+            background: rgba(20,5,0,0.8);
+            color: #ffcc00;
             font-family: 'Impact', sans-serif;
-            font-size: 18px;
-            letter-spacing: 3px;
+            font-size: 20px;
+            letter-spacing: 4px;
             cursor: pointer;
             transition: all 0.25s;
-            text-shadow: 0 0 10px #00ffcc66;
-            box-shadow: 0 0 18px rgba(0,255,204,0.15);
+            text-shadow: 0 0 12px #ffaa00, 2px 2px 0px #000;
+            box-shadow: 0 0 25px rgba(255,100,0,0.3), inset 0 0 15px rgba(0,0,0,0.9);
+            z-index: 2;
         }
         #btn-gm-save:hover {
-            background: rgba(0,255,204,0.12);
-            box-shadow: 0 0 30px rgba(0,255,204,0.35);
+            background: linear-gradient(90deg, rgba(80,20,0,0.9), rgba(150,40,0,1), rgba(80,20,0,0.9));
+            color: #ffffff;
+            box-shadow: 0 0 40px rgba(255,150,0,0.6), inset 0 0 10px #ffcc00;
         }
         #btn-gm-close {
             position: absolute;
-            top: 14px; right: 18px;
+            top: 20px; right: 24px;
             background: none;
             border: none;
-            color: #7755aa;
-            font-size: 22px;
+            color: #ffaa66;
+            font-size: 26px;
             cursor: pointer;
             line-height: 1;
-            transition: color 0.2s;
+            transition: color 0.2s, text-shadow 0.2s;
+            z-index: 5;
+            text-shadow: 2px 2px 0px #000;
         }
-        #btn-gm-close:hover { color: #cc88ff; }
+        #btn-gm-close:hover { color: #ffcc00; text-shadow: 0 0 10px #ffaa00; }
 
         .mp-title {
             font-size: 38px;
@@ -1766,7 +1799,7 @@
             <!-- Host-only "Change Mode" button -->
             <button id="gmc-change-btn" class="host-hidden" data-i18n="CHANGE_MODE">CHANGE MODE</button>
             <!-- Biome art image -->
-            <img id="gmc-image" src="/gamemode_biomes.png" alt="game mode biomes" />
+            <img id="gmc-image" src="/lowpoly_mode_banner.png" alt="game mode biomes" />
             <!-- Info panel -->
             <div id="gmc-info">
                 <div id="gmc-mode-label" data-i18n="MODE_SURVIVAL">SURVIVAL</div>
@@ -1787,8 +1820,12 @@
                 <div class="gm-section">
                     <div class="gm-section-label" data-i18n="SELECT_MODE">SELECT MODE</div>
                     <div class="gm-pills">
-                        <div class="gm-pill active" id="pill-survival" data-mode="survival" data-i18n="MODE_SURVIVAL">SURVIVAL</div>
-                        <div class="gm-pill disabled" id="pill-eve" data-mode="eve" data-i18n="MODE_EVE">EVE <span style="font-size:9px;letter-spacing:1px;opacity:0.6;"><br>COMING SOON</span></div>
+                        <div class="gm-pill active" id="pill-survival" data-mode="survival">
+                            <div data-i18n="MODE_SURVIVAL">SURVIVAL</div>
+                        </div>
+                        <div class="gm-pill disabled" id="pill-eve" data-mode="eve">
+                            <div><span data-i18n="MODE_EVE">EVE</span> <span style="font-size:9px;letter-spacing:1px;opacity:0.6;"><br>COMING SOON</span></div>
+                        </div>
                     </div>
                 </div>
 
@@ -1797,7 +1834,9 @@
                 <!-- Section 2: Party Mode -->
                 <div class="gm-section">
                     <div class="gm-section-label" data-i18n="PARTY_MODE_LABEL">PARTY MODE</div>
-                    <button id="btn-party-toggle" class="gm-toggle-btn" data-i18n="PARTY_MODE_OFF">🎊 PARTY MODE: OFF</button>
+                    <button id="btn-party-toggle" class="gm-toggle-btn">
+                        <span data-i18n="PARTY_MODE_OFF">🎊 PARTY MODE: OFF</span>
+                    </button>
                 </div>
 
                 <div class="gm-divider"></div>
@@ -1806,10 +1845,10 @@
                 <div class="gm-section">
                     <div class="gm-section-label" data-i18n="WAVES_LABEL">NUMBER OF WAVES</div>
                     <div class="gm-pills">
-                        <div class="gm-pill wave-pill" data-waves="10">10</div>
-                        <div class="gm-pill wave-pill" data-waves="20">20</div>
-                        <div class="gm-pill wave-pill" data-waves="30">30</div>
-                        <div class="gm-pill wave-pill active" data-waves="40">40</div>
+                        <div class="gm-pill wave-pill" data-waves="10"><div>10</div></div>
+                        <div class="gm-pill wave-pill" data-waves="20"><div>20</div></div>
+                        <div class="gm-pill wave-pill" data-waves="30"><div>30</div></div>
+                        <div class="gm-pill wave-pill active" data-waves="40"><div>40</div></div>
                     </div>
                 </div>
 
