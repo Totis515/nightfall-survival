@@ -146,6 +146,7 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
         BIOME_FOREST: "FOREST",
         BIOME_SNOW: "SNOW",
         BIOME_LAVA: "LAVA",
+        BIOME_CASTLE: "CASTLE",
         FINAL_WAVE_BOSS: "FINAL WAVE: BOSS",
         BIOME_CHANGE: "BIOME CHANGE...",
         RESTORING: "RESTORING...",
@@ -265,6 +266,7 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
         BIOME_FOREST: "BOSQUE",
         BIOME_SNOW: "NIEVE",
         BIOME_LAVA: "LAVA",
+        BIOME_CASTLE: "CASTILLO",
         FINAL_WAVE_BOSS: "OLEADA FINAL: JEFE",
         BIOME_CHANGE: "CAMBIO DE BIOMA...",
         RESTORING: "RESTAURANDO...",
@@ -2418,6 +2420,10 @@ class SoundManager {
         this.playTrack('/InviernoDefinitivo.m4a.mp4', 0.08);
     }
 
+    startCastleMusic() {
+        this.playTrack('/HibridaMoC.m4a.mp4', 0.08);
+    }
+
     startWinMusic() {
         this.playTrack('/win.mp3', 0.1);
     }
@@ -2432,11 +2438,15 @@ class SoundManager {
         if (this.ctx.state === 'suspended') this.ctx.resume();
 
         this.bgAudio = new Audio(path);
-        this.bgAudio.loop = (path === '/lobby.mp3' || path === '/game.mp3' || path === '/InviernoDefinitivo.m4a.mp4');
-        // Usar variables globales/sliders en DOM para aplicar volumen
+        this.bgAudio.loop = [
+            '/lobby.mp3', '/game.mp3',
+            '/InviernoDefinitivo.m4a.mp4',
+            '/HibridaMoC.m4a.mp4'
+        ].includes(path);
+        // Obtener volumen de sliders — musicVolume ahora es 0-200, donde 100=normal
         const mV = parseInt((document.getElementById('opt-master-vol') as HTMLInputElement)?.value || '80') / 100;
         const mscV = parseInt((document.getElementById('opt-music-vol') as HTMLInputElement)?.value || '60') / 100;
-        this.bgAudio.volume = volume * mV * mscV;
+        this.bgAudio.volume = Math.min(volume * mV * mscV, 1.0);
         this.bgAudio.play().catch(() => {
             console.log('Audio blocked or file missing:', path);
         });
@@ -3437,7 +3447,7 @@ for (let i = 0; i < 15; i++) {
 }
 
 // ---- BIOMA ----
-enum Biome { FOREST = 0, SNOW = 1, LAVA = 2 }
+enum Biome { FOREST = 0, SNOW = 1, LAVA = 2, CASTLE = 3 }
 let currentBiome: Biome = Biome.FOREST;
 let playerSlowDebuff = 0; // segundos de ralentización por ataque nevado
 
@@ -3467,7 +3477,16 @@ enum EnemyType {
     BOSS_LAVA_GOLIATH,  // Goliath de lava — gigante (Wave 25)
     BOSS_LAVA_DRAGON,   // Dragón de lava gigante — ranged (Wave 28)
     BOSS_MAGMA_TITAN,   // Titán de magma — enorme (Wave 28)
-    BOSS_PURPLE_DRAGON  // Dragón Morado FINAL — vuela, ráfagas de fuego (Wave 30)
+    BOSS_PURPLE_DRAGON, // Dragón Morado FINAL — vuela, ráfagas de fuego (Wave 30)
+    // ===== BIOMA CASTILLO =====
+    ARMORED_ZOMBIE,      // Zombie pequeño con armadura gris/roja con manchas de sangre
+    ARMORED_ZOMBIE_LARGE,// Zombie normal con armadura gris/roja — más resistente
+    VAMPIRE,             // Vampiro — capa oscura, ranged (drena vida)
+    BAT,                 // Murciélago — vuela, pequeño, rápido, muerde
+    DINOSAUR,            // Dinosaurio gigante — lento, enorme HP
+    BOSS_GIANT_ARMORED,  // Zombie Armado Gigante (Wave 35)
+    BOSS_GIANT_DINO,     // Dinosaurio Gigante (Wave 38)
+    BOSS_ZOMBIE_OVERLORD // Mega Zombie — Espada en llamas + alas de fuego (FINAL Wave 40)
 }
 
 interface EnemyStats {
@@ -3510,6 +3529,15 @@ const ENEMY_DATA: Record<EnemyType, EnemyStats> = {
     [EnemyType.BOSS_LAVA_DRAGON]:  { health: 18000,speed: 3.0, damage: 40, shirtColor: 0x550000, skinColor: 0xdd0000, size: 3.5, attackRange: 28.0, attackCooldown: 1800, reward: 2000, name: "LAVA DRAGON" },
     [EnemyType.BOSS_MAGMA_TITAN]:  { health: 25000,speed: 1.3, damage: 90, shirtColor: 0x2a0800, skinColor: 0xff5500, size: 4.0, attackRange: 4.0,  attackCooldown: 1600, reward: 3000, name: "MAGMA TITAN" },
     [EnemyType.BOSS_PURPLE_DRAGON]:{ health: 60000,speed: 4.0, damage: 60, shirtColor: 0x220044, skinColor: 0x8800cc, size: 5.5, attackRange: 35.0, attackCooldown: 400,  reward: 10000,name: "PURPLE DRAGON" },
+    // ===== CASTILLO =====
+    [EnemyType.ARMORED_ZOMBIE]:     { health: 750,  speed: 2.0, damage: 30, shirtColor: 0x880011, skinColor: 0xbbbbbb, size: 0.85,attackRange: 1.5,  attackCooldown: 950,  reward: 70,   name: "ARMORED ZOMBIE" },
+    [EnemyType.ARMORED_ZOMBIE_LARGE]:{ health:1200, speed: 1.8, damage: 40, shirtColor: 0x880011, skinColor: 0xaaaaaa, size: 1.1, attackRange: 1.8,  attackCooldown: 1100, reward: 100,  name: "HEAVY ARMORED ZOMBIE" },
+    [EnemyType.VAMPIRE]:            { health: 900,  speed: 3.2, damage: 25, shirtColor: 0x220033, skinColor: 0x881122, size: 1.0, attackRange: 20.0, attackCooldown: 2000, reward: 120,  name: "VAMPIRE" },
+    [EnemyType.BAT]:                { health: 200,  speed: 5.0, damage: 12, shirtColor: 0x1a0022, skinColor: 0x331144, size: 0.6, attackRange: 1.5,  attackCooldown: 500,  reward: 45,   name: "GIANT BAT" },
+    [EnemyType.DINOSAUR]:           { health: 2500, speed: 1.5, damage: 55, shirtColor: 0x1a3300, skinColor: 0x3a6600, size: 1.9, attackRange: 2.2,  attackCooldown: 1600, reward: 200,  name: "DINOSAUR" },
+    [EnemyType.BOSS_GIANT_ARMORED]: { health: 20000,speed: 1.6, damage: 75, shirtColor: 0x660009, skinColor: 0x999999, size: 2.8, attackRange: 3.0,  attackCooldown: 1300, reward: 1800, name: "ARMORED GIANT" },
+    [EnemyType.BOSS_GIANT_DINO]:    { health: 40000,speed: 1.2, damage: 90, shirtColor: 0x0f2200, skinColor: 0x2a5500, size: 4.0, attackRange: 4.5,  attackCooldown: 1700, reward: 3500, name: "GIANT DINOSAUR" },
+    [EnemyType.BOSS_ZOMBIE_OVERLORD]:{ health:90000,speed: 3.5, damage: 80, shirtColor: 0x2a0000, skinColor: 0xbbbbbb, size: 5.0, attackRange: 30.0, attackCooldown: 350,  reward: 15000,name: "ZOMBIE OVERLORD" },
 };
 
 class Enemy {
@@ -4094,6 +4122,322 @@ class Enemy {
             this.mesh.position.y = 6.0;
         }
 
+        // ===== MODELOS CASTILLO =====
+        // ARMORED_ZOMBIE / ARMORED_ZOMBIE_LARGE / BOSS_GIANT_ARMORED — zombie con armadura gris clara y manchas de sangre roja
+        if (this.type === EnemyType.ARMORED_ZOMBIE || this.type === EnemyType.ARMORED_ZOMBIE_LARGE || this.type === EnemyType.BOSS_GIANT_ARMORED) {
+            while (this.mesh.children.length) this.mesh.remove(this.mesh.children[0]);
+            this.bodyParts = [];
+            const s = stats.size;
+            const armorMat = new THREE.MeshStandardMaterial({ color: 0xbbbbbb, roughness: 0.4, metalness: 0.7 });
+            const bloodMat = new THREE.MeshBasicMaterial({ color: 0xcc0011 });
+            const redArmorMat = new THREE.MeshStandardMaterial({ color: 0xaa0015, roughness: 0.3, metalness: 0.8 });
+            const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff2200 });
+            // Piernas blindadas
+            for (const lx of [-0.22, 0.22]) {
+                const leg = new THREE.Mesh(new THREE.BoxGeometry(0.28*s, 0.7*s, 0.3*s), armorMat);
+                leg.position.set(lx*s, 0.35*s, 0); this.mesh.add(leg);
+                this.bodyParts.push({ mesh: leg, color: 0xbbbbbb });
+                // Rodilleras rojas
+                const knee = new THREE.Mesh(new THREE.BoxGeometry(0.30*s, 0.14*s, 0.32*s), redArmorMat);
+                knee.position.set(0, 0.1*s, 0); leg.add(knee);
+            }
+            // Peto de armadura (torso blindado)
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.72*s, 0.85*s, 0.48*s), armorMat);
+            torso.position.y = 1.05*s; this.mesh.add(torso);
+            (this as any)._torso = torso; collidables.push(torso);
+            this.bodyParts.push({ mesh: torso, color: 0xbbbbbb });
+            // Cruz roja en el peto
+            const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.52*s, 0.1*s, 0.05*s), redArmorMat);
+            crossH.position.set(0, 0.15*s, 0.25*s); torso.add(crossH);
+            const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.1*s, 0.42*s, 0.05*s), redArmorMat);
+            crossV.position.set(0, 0.08*s, 0.25*s); torso.add(crossV);
+            // Hombros (pauldrons) rojos
+            for (const sx of [-0.46, 0.46]) {
+                const pauldron = new THREE.Mesh(new THREE.SphereGeometry(0.18*s, 8, 8), redArmorMat);
+                pauldron.position.set(sx*s, 1.45*s, 0); this.mesh.add(pauldron);
+                this.bodyParts.push({ mesh: pauldron, color: 0xaa0015 });
+            }
+            // Brazos blindados
+            for (const ax of [-0.56, 0.56]) {
+                const arm = new THREE.Mesh(new THREE.BoxGeometry(0.26*s, 0.6*s, 0.26*s), armorMat);
+                arm.position.set(ax*s, 1.0*s, 0); this.mesh.add(arm);
+                this.bodyParts.push({ mesh: arm, color: 0xbbbbbb });
+            }
+            // Casco
+            const helm = new THREE.Mesh(new THREE.BoxGeometry(0.52*s, 0.52*s, 0.52*s), armorMat);
+            helm.position.y = 1.72*s; this.mesh.add(helm);
+            (this as any)._head = helm; collidables.push(helm);
+            this.bodyParts.push({ mesh: helm, color: 0xbbbbbb });
+            // Visera roja
+            const visor = new THREE.Mesh(new THREE.BoxGeometry(0.40*s, 0.12*s, 0.06*s), redArmorMat);
+            visor.position.set(0, 0, 0.27*s); helm.add(visor);
+            // Ojos brillantes dentro del casco
+            for (const ex of [-0.10, 0.10]) {
+                const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06*s, 6, 6), eyeMat);
+                eye.position.set(ex*s, 0, 0.27*s); helm.add(eye);
+            }
+            // Manchas de sangre aleatorias en la armadura
+            for (let b = 0; b < 6; b++) {
+                const splat = new THREE.Mesh(new THREE.SphereGeometry((0.06 + Math.random()*0.06)*s, 5, 5), bloodMat);
+                splat.scale.set(1, 0.35, 1);
+                splat.position.set((Math.random()-0.5)*0.55*s, 0.7*s + Math.random()*0.6*s, 0.25*s);
+                this.mesh.add(splat);
+            }
+            // Luz tenue de castillo (sin brillo lava)
+            const cl = new THREE.PointLight(0x550000, 0.8*s, 4*s);
+            cl.position.y = 1.2*s; this.mesh.add(cl);
+        }
+
+        // VAMPIRE — humanoide oscuro con capa y colmillos, ranged
+        if (this.type === EnemyType.VAMPIRE) {
+            while (this.mesh.children.length) this.mesh.remove(this.mesh.children[0]);
+            this.bodyParts = [];
+            const s = stats.size;
+            const skinM = new THREE.MeshLambertMaterial({ color: 0x881122 });
+            const capeM = new THREE.MeshLambertMaterial({ color: 0x220033, side: THREE.DoubleSide });
+            const eyeM  = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            const hairM = new THREE.MeshLambertMaterial({ color: 0x110022 });
+            // Piernas
+            for (const lx of [-0.2, 0.2]) {
+                const leg = new THREE.Mesh(new THREE.BoxGeometry(0.25*s, 0.7*s, 0.24*s), hairM);
+                leg.position.set(lx*s, 0.35*s, 0); this.mesh.add(leg);
+            }
+            // Torso
+            const tV = new THREE.Mesh(new THREE.BoxGeometry(0.6*s, 0.8*s, 0.4*s), skinM);
+            tV.position.y = 1.0*s; this.mesh.add(tV);
+            (this as any)._torso = tV; collidables.push(tV);
+            this.bodyParts.push({ mesh: tV, color: 0x881122 });
+            // Brazos
+            for (const ax of [-0.52, 0.52]) {
+                const arm = new THREE.Mesh(new THREE.BoxGeometry(0.22*s, 0.6*s, 0.22*s), skinM);
+                arm.position.set(ax*s, 0.98*s, 0); this.mesh.add(arm);
+            }
+            // Cabeza pálida
+            const hV = new THREE.Mesh(new THREE.BoxGeometry(0.45*s, 0.48*s, 0.44*s), skinM);
+            hV.position.y = 1.64*s; this.mesh.add(hV);
+            (this as any)._head = hV; collidables.push(hV);
+            this.bodyParts.push({ mesh: hV, color: 0x881122 });
+            // Ojos rojos brillantes
+            for (const ex of [-0.1, 0.1]) {
+                const eye = new THREE.Mesh(new THREE.SphereGeometry(0.07*s, 6, 6), eyeM);
+                eye.position.set(ex*s, 0.07*s, 0.23*s); hV.add(eye);
+            }
+            // Colmillos
+            for (const cx of [-0.08, 0.08]) {
+                const fang = new THREE.Mesh(new THREE.ConeGeometry(0.04*s, 0.14*s, 5), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+                fang.position.set(cx*s, -0.27*s, 0.22*s); fang.rotation.x = Math.PI;
+                hV.add(fang);
+            }
+            // Cabello negro
+            const hair = new THREE.Mesh(new THREE.BoxGeometry(0.5*s, 0.15*s, 0.46*s), hairM);
+            hair.position.set(0, 0.27*s, 0); hV.add(hair);
+            // Capa triangular trasera (BufferGeometry)
+            const capeGeo = new THREE.BufferGeometry();
+            const capeV = new Float32Array([-0.55*s, 1.4*s, -0.1*s, 0.55*s, 1.4*s, -0.1*s, 0, 0, -0.2*s]);
+            capeGeo.setAttribute('position', new THREE.BufferAttribute(capeV, 3));
+            capeGeo.setIndex(new THREE.BufferAttribute(new Uint16Array([0,1,2]), 1));
+            capeGeo.computeVertexNormals();
+            const cape = new THREE.Mesh(capeGeo, capeM);
+            this.mesh.add(cape);
+            // Luz roja vampírica
+            const vl = new THREE.PointLight(0xaa0022, 1.2, 5*s);
+            vl.position.y = 1.0*s; this.mesh.add(vl);
+        }
+
+        // BAT — murciélago pequeño que vuela
+        if (this.type === EnemyType.BAT) {
+            while (this.mesh.children.length) this.mesh.remove(this.mesh.children[0]);
+            this.bodyParts = [];
+            const s = stats.size;
+            const batMat = new THREE.MeshLambertMaterial({ color: 0x331144 });
+            const eyeM = new THREE.MeshBasicMaterial({ color: 0xff2200 });
+            const wingM = new THREE.MeshLambertMaterial({ color: 0x1a0022, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
+            // Cuerpo
+            const body = new THREE.Mesh(new THREE.SphereGeometry(0.25*s, 8, 8), batMat);
+            body.position.y = 0.25*s; this.mesh.add(body);
+            (this as any)._torso = body; collidables.push(body);
+            this.bodyParts.push({ mesh: body, color: 0x331144 });
+            // Cabeza
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.18*s, 8, 8), batMat);
+            head.position.set(0, 0.38*s, 0.18*s); this.mesh.add(head);
+            (this as any)._head = head; collidables.push(head);
+            // Orejas puntiagudas
+            for (const ex of [-0.1, 0.1]) {
+                const ear = new THREE.Mesh(new THREE.ConeGeometry(0.07*s, 0.22*s, 5), batMat);
+                ear.position.set(ex*s, 0.17*s, 0); head.add(ear);
+            }
+            // Ojos
+            for (const ex of [-0.07, 0.07]) {
+                const eye = new THREE.Mesh(new THREE.SphereGeometry(0.05*s, 5, 5), eyeM);
+                eye.position.set(ex*s, 0.05*s, 0.17*s); head.add(eye);
+            }
+            // Alas membranosas
+            for (const wx of [-1, 1]) {
+                const wGeo = new THREE.BufferGeometry();
+                const wV = new Float32Array([0, 0.2*s, 0, wx*0.9*s, 0.5*s, -0.3*s, wx*0.6*s, -0.05*s, 0.1*s]);
+                wGeo.setAttribute('position', new THREE.BufferAttribute(wV, 3));
+                wGeo.setIndex(new THREE.BufferAttribute(new Uint16Array([0,1,2]), 1));
+                wGeo.computeVertexNormals();
+                const wing = new THREE.Mesh(wGeo, wingM);
+                this.mesh.add(wing);
+            }
+            // Los murciélagos vuelan
+            (this as any)._flyPhase = Math.random() * Math.PI * 2;
+            (this as any)._baseY = 2.5 + Math.random() * 2;
+            this.mesh.position.y = (this as any)._baseY;
+        }
+
+        // DINOSAUR / BOSS_GIANT_DINO — dinosaurio cuadrúpedo enorme
+        if (this.type === EnemyType.DINOSAUR || this.type === EnemyType.BOSS_GIANT_DINO) {
+            while (this.mesh.children.length) this.mesh.remove(this.mesh.children[0]);
+            this.bodyParts = [];
+            const s = stats.size;
+            const dinoMat = new THREE.MeshStandardMaterial({ color: stats.skinColor, roughness: 0.8, metalness: 0.0 });
+            const darkDino = new THREE.MeshLambertMaterial({ color: stats.shirtColor });
+            const eyeM = new THREE.MeshBasicMaterial({ color: 0xffdd00 });
+            // Cuerpo masivo
+            const body = new THREE.Mesh(new THREE.SphereGeometry(0.85*s, 10, 10), dinoMat);
+            body.scale.set(1.5, 0.8, 2.0);
+            body.position.y = 0.85*s; this.mesh.add(body);
+            (this as any)._torso = body; collidables.push(body);
+            this.bodyParts.push({ mesh: body, color: stats.skinColor });
+            // Cuello
+            const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.3*s, 0.4*s, 0.7*s, 8), dinoMat);
+            neck.position.set(0, 1.5*s, 0.8*s); neck.rotation.x = -0.5; this.mesh.add(neck);
+            // Cabeza
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.65*s, 0.45*s, 0.9*s), dinoMat);
+            head.position.set(0, 2.0*s, 1.5*s); this.mesh.add(head);
+            (this as any)._head = head; collidables.push(head);
+            this.bodyParts.push({ mesh: head, color: stats.skinColor });
+            // Boca y dientes
+            const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.6*s, 0.18*s, 0.85*s), darkDino);
+            jaw.position.set(0, -0.32*s, 0); head.add(jaw);
+            for (let t = 0; t < 4; t++) {
+                const tooth = new THREE.Mesh(new THREE.ConeGeometry(0.05*s, 0.18*s, 5), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+                tooth.position.set((-0.2 + t*0.13)*s, -0.07*s, 0.42*s); tooth.rotation.x = Math.PI;
+                head.add(tooth);
+            }
+            // Ojos amarillos amenazadores
+            for (const ex of [-0.2, 0.2]) {
+                const eye = new THREE.Mesh(new THREE.SphereGeometry(0.1*s, 6, 6), eyeM);
+                eye.position.set(ex*s, 0.1*s, 0.46*s); head.add(eye);
+            }
+            // 4 patas cortas
+            for (const lx of [-0.6, 0.6]) {
+                for (const lz of [-0.5, 0.5]) {
+                    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.2*s, 0.16*s, 0.6*s, 6), dinoMat);
+                    leg.position.set(lx*s, 0.3*s, lz*s); this.mesh.add(leg);
+                }
+            }
+            // Cola
+            const tailBase = new THREE.Mesh(new THREE.CylinderGeometry(0.3*s, 0.12*s, 1.5*s, 6), dinoMat);
+            tailBase.position.set(0, 0.9*s, -1.5*s); tailBase.rotation.x = -0.5;
+            this.mesh.add(tailBase);
+            // Púas en la espalda
+            for (let sp = 0; sp < 5; sp++) {
+                const spike = new THREE.Mesh(new THREE.ConeGeometry(0.08*s, 0.35*s, 5), darkDino);
+                spike.position.set(0, 1.6*s, (-0.8 + sp*0.35)*s);
+                this.mesh.add(spike);
+            }
+        }
+
+        // BOSS_ZOMBIE_OVERLORD — Mega Zombie Final con espada en llamas y alas de fuego
+        if (this.type === EnemyType.BOSS_ZOMBIE_OVERLORD) {
+            while (this.mesh.children.length) this.mesh.remove(this.mesh.children[0]);
+            this.bodyParts = [];
+            const s = stats.size;
+            // Armadura gris oscura con manchas de sangre (igual que armored pero mucho más grande)
+            const armorM = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.3, metalness: 0.9 });
+            const bloodM = new THREE.MeshBasicMaterial({ color: 0xcc0000 });
+            const eyeM = new THREE.MeshBasicMaterial({ color: 0xff4400 });
+            const fireWingM = new THREE.MeshLambertMaterial({ color: 0xff4400, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
+            const swordM = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.2, metalness: 0.95 });
+            const flamM = new THREE.MeshBasicMaterial({ color: 0xff6600 });
+            // Piernas masivas
+            for (const lx of [-0.35, 0.35]) {
+                const leg = new THREE.Mesh(new THREE.BoxGeometry(0.5*s, 1.0*s, 0.5*s), armorM);
+                leg.position.set(lx*s, 0.5*s, 0); this.mesh.add(leg);
+                this.bodyParts.push({ mesh: leg, color: 0xaaaaaa });
+            }
+            // Torso imponente
+            const torsoO = new THREE.Mesh(new THREE.BoxGeometry(1.2*s, 1.2*s, 0.7*s), armorM);
+            torsoO.position.y = 1.6*s; this.mesh.add(torsoO);
+            (this as any)._torso = torsoO; collidables.push(torsoO);
+            this.bodyParts.push({ mesh: torsoO, color: 0xaaaaaa });
+            // Manchas de sangre masivas en el torso
+            for (let b = 0; b < 10; b++) {
+                const splat = new THREE.Mesh(new THREE.SphereGeometry((0.08 + Math.random()*0.1)*s, 5, 5), bloodM);
+                splat.scale.set(1, 0.3, 1);
+                splat.position.set((Math.random()-0.5)*0.9*s, (Math.random()-0.5)*0.5*s, 0.36*s);
+                torsoO.add(splat);
+            }
+            // Brazos enormes
+            const swordArm = new THREE.Mesh(new THREE.BoxGeometry(0.4*s, 1.0*s, 0.4*s), armorM);
+            swordArm.position.set(-0.9*s, 1.5*s, 0); this.mesh.add(swordArm);
+            const shieldArm = new THREE.Mesh(new THREE.BoxGeometry(0.4*s, 1.0*s, 0.4*s), armorM);
+            shieldArm.position.set(0.9*s, 1.5*s, 0); this.mesh.add(shieldArm);
+            // ESPADA EN LLAMAS (en brazo izquierdo)
+            const swordGrip = new THREE.Mesh(new THREE.BoxGeometry(0.12*s, 0.8*s, 0.12*s), swordM);
+            swordGrip.position.set(-0.9*s, 0.7*s, 0); this.mesh.add(swordGrip);
+            const swordBlade = new THREE.Mesh(new THREE.BoxGeometry(0.1*s, 1.4*s, 0.06*s), swordM);
+            swordBlade.position.set(0, 1.1*s, 0); swordGrip.add(swordBlade);
+            // Llama en la espada
+            for (let f = 0; f < 5; f++) {
+                const flame = new THREE.Mesh(new THREE.SphereGeometry((0.15 + Math.random()*0.12)*s, 5, 5), flamM);
+                flame.position.set((Math.random()-0.5)*0.15*s, (0.6 + Math.random()*0.7)*s, 0);
+                swordBlade.add(flame);
+                this.bodyParts.push({ mesh: flame, color: 0xff6600 });
+            }
+            // Guardia de la espada
+            const guard = new THREE.Mesh(new THREE.BoxGeometry(0.45*s, 0.1*s, 0.12*s), swordM);
+            guard.position.y = 0; swordGrip.add(guard);
+            // Casco oscuro con cuernos
+            const helmO = new THREE.Mesh(new THREE.BoxGeometry(0.75*s, 0.75*s, 0.75*s), armorM);
+            helmO.position.y = 2.6*s; this.mesh.add(helmO);
+            (this as any)._head = helmO; collidables.push(helmO);
+            this.bodyParts.push({ mesh: helmO, color: 0xaaaaaa });
+            // Cuernos del casco
+            for (const hx of [-0.3, 0.3]) {
+                const horn = new THREE.Mesh(new THREE.ConeGeometry(0.1*s, 0.6*s, 6), new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.9 }));
+                horn.position.set(hx*s, 0.55*s, 0); helmO.add(horn);
+            }
+            // Ojos naranjas ardientes
+            for (const ex of [-0.15, 0.15]) {
+                const eye = new THREE.Mesh(new THREE.SphereGeometry(0.1*s, 6, 6), eyeM);
+                eye.position.set(ex*s, 0.05*s, 0.38*s); helmO.add(eye);
+            }
+            // ALAS DE FUEGO (2 pares)
+            for (const wx of [-1, 1]) {
+                for (let seg = 0; seg < 2; seg++) {
+                    const wGeo = new THREE.BufferGeometry();
+                    const off = seg * 0.6*s;
+                    const wV = new Float32Array([
+                        0, 1.8*s, 0,
+                        wx*(2.5 + seg*0.8)*s, (1.2 - seg*0.3)*s, (-0.5 - off)*s,
+                        wx*(1.8 + seg*0.5)*s, (2.4 - seg*0.2)*s, (0.4 + off)*s
+                    ]);
+                    wGeo.setAttribute('position', new THREE.BufferAttribute(wV, 3));
+                    wGeo.setIndex(new THREE.BufferAttribute(new Uint16Array([0,1,2]), 1));
+                    wGeo.computeVertexNormals();
+                    const wMat = new THREE.MeshBasicMaterial({
+                        color: seg === 0 ? 0xff5500 : 0xff2200,
+                        side: THREE.DoubleSide,
+                        transparent: true,
+                        opacity: 0.82
+                    });
+                    const wing = new THREE.Mesh(wGeo, wMat);
+                    wing.position.set(wx*0.7*s, 1.5*s, 0); this.mesh.add(wing);
+                    this.bodyParts.push({ mesh: wing, color: seg === 0 ? 0xff5500 : 0xff2200 });
+                }
+            }
+            // Luz épica anaranjada/roja
+            const ol = new THREE.PointLight(0xff3300, 6, 20*s);
+            ol.position.y = 2.0*s; this.mesh.add(ol);
+            // Fase de vuelo/flotación leve
+            (this as any)._flyPhase = Math.random() * Math.PI * 2;
+            (this as any)._baseY = 1.5;
+        }
+
         // SNOW_ZOMBIE / SNOW_FAST — ojos cyan brillante en lugar de rojo
         const isSnowZombie = (this.type === EnemyType.SNOW_ZOMBIE || this.type === EnemyType.SNOW_FAST
             || this.type === EnemyType.BOSS_SNOW_GOLIATH);
@@ -4153,12 +4497,14 @@ class Enemy {
             });
         }
 
-        const isTrueBoss = (this.type === EnemyType.BOSS_FINAL_ROBOT || this.type === EnemyType.BOSS_BLIZZARD_KING || this.type === EnemyType.BOSS_PURPLE_DRAGON);
+        const isTrueBoss = (this.type === EnemyType.BOSS_FINAL_ROBOT || this.type === EnemyType.BOSS_BLIZZARD_KING
+            || this.type === EnemyType.BOSS_PURPLE_DRAGON || this.type === EnemyType.BOSS_ZOMBIE_OVERLORD);
         
         const isGiant = (this.type === EnemyType.BOSS_GOLIATH || this.type === EnemyType.BOSS_SENTINEL ||
                          this.type === EnemyType.BOSS_SNOW_GOLIATH || this.type === EnemyType.BOSS_GIANT_SNOWMAN ||
-                         this.type === EnemyType.BOSS_LAVA_GOLIATH || this.type === EnemyType.BOSS_LAVA_DRAGON || 
-                         this.type === EnemyType.BOSS_MAGMA_TITAN);
+                         this.type === EnemyType.BOSS_LAVA_GOLIATH || this.type === EnemyType.BOSS_LAVA_DRAGON ||
+                         this.type === EnemyType.BOSS_MAGMA_TITAN ||
+                         this.type === EnemyType.BOSS_GIANT_ARMORED || this.type === EnemyType.BOSS_GIANT_DINO);
 
         if (!isTrueBoss && !isGiant) {
             this.isFlinching = true;
@@ -4217,7 +4563,9 @@ class Enemy {
         // Jefes: sin retroceso ni parálisis
         const isBossKnockback = (this.type === EnemyType.BOSS_GOLIATH || this.type === EnemyType.BOSS_SENTINEL
             || this.type === EnemyType.BOSS_FINAL_ROBOT || this.type === EnemyType.BOSS_SNOW_GOLIATH
-            || this.type === EnemyType.BOSS_GIANT_SNOWMAN || this.type === EnemyType.BOSS_BLIZZARD_KING);
+            || this.type === EnemyType.BOSS_GIANT_SNOWMAN || this.type === EnemyType.BOSS_BLIZZARD_KING
+            || this.type === EnemyType.BOSS_GIANT_ARMORED || this.type === EnemyType.BOSS_GIANT_DINO
+            || this.type === EnemyType.BOSS_ZOMBIE_OVERLORD);
         if (!isBossKnockback) {
             this.mesh.position.add(safePush);
         }
@@ -4415,6 +4763,29 @@ class Enemy {
             this.mesh.position.y = baseY + Math.sin((this as any)._flyPhase) * 2.5;
         }
 
+        // BAT vuela: Y oscila rápidamente, ala bateo animado
+        if (this.type === EnemyType.BAT) {
+            (this as any)._flyPhase = ((this as any)._flyPhase || 0) + delta * 3.5;
+            const baseY = (this as any)._baseY || 3.0;
+            this.mesh.position.y = baseY + Math.sin((this as any)._flyPhase) * 0.8;
+        }
+
+        // BOSS_ZOMBIE_OVERLORD flota levemente + emite partículas de fuego de espada
+        if (this.type === EnemyType.BOSS_ZOMBIE_OVERLORD) {
+            (this as any)._flyPhase = ((this as any)._flyPhase || 0) + delta * 0.5;
+            const baseY = (this as any)._baseY || 1.5;
+            this.mesh.position.y = baseY + Math.sin((this as any)._flyPhase) * 0.6;
+            // Partículas de llama en la espada
+            if (Math.random() > 0.3) {
+                const swordPos = this.mesh.position.clone();
+                swordPos.x -= 1.2 * ENEMY_DATA[this.type].size;
+                swordPos.y += 1.5 * ENEMY_DATA[this.type].size;
+                swordPos.x += (Math.random()-0.5)*0.3;
+                swordPos.y += Math.random()*0.5;
+                flameParticles.spawn(swordPos, 1);
+            }
+        }
+
         // Efecto visual de fuego para ZOMBIE_ON_FIRE y lava enemies
         const isLavaEmitter = (this.type === EnemyType.ZOMBIE_ON_FIRE
             || this.type === EnemyType.LAVA_ZOMBIE || this.type === EnemyType.MAGMA_GIANT
@@ -4463,12 +4834,44 @@ class Enemy {
                 );
                 const dir = new THREE.Vector3().subVectors(camera.position, spawnPos).normalize().add(spread).normalize();
                 enemyProjectiles.push(new Laser(spawnPos.clone(), dir, stats.name));
-                // Lava/fuego: la parte naranja-roja identifica que ciega al impacto
                 const proj = enemyProjectiles[enemyProjectiles.length - 1];
                 (proj as any)._isFireBlind = true;
                 proj.mesh.material = new THREE.MeshBasicMaterial({ color: this.type === EnemyType.BOSS_PURPLE_DRAGON ? 0xcc00ff : 0xff4400 });
             }
             soundManager.playBeep();
+        } else if (this.type === EnemyType.VAMPIRE) {
+            // Vampiro: proyectil oscuro que drena vida (ranged) y aplica debuff de fuego por oscuridad
+            const spawnPos = this.mesh.position.clone();
+            spawnPos.y += 1.5 * stats.size;
+            const dir = new THREE.Vector3().subVectors(camera.position, spawnPos).normalize();
+            const laser = new Laser(spawnPos, dir, stats.name);
+            laser.mesh.material = new THREE.MeshBasicMaterial({ color: 0x880022 });
+            (laser as any)._isFireBlind = false;
+            enemyProjectiles.push(laser);
+            soundManager.playBeep();
+        } else if (this.type === EnemyType.BOSS_ZOMBIE_OVERLORD) {
+            // Overlord: melee si está cerca, ranged (ráfaga de fuego) a distancia
+            const distToPlayer = this.mesh.position.distanceTo(playerPos);
+            if (distToPlayer <= 4.0 * stats.size) {
+                // Cuerpo a cuerpo
+                lastAttackerName = stats.name;
+                playerFireDebuff = 4.0;
+                takeDamage(this.damage);
+                soundManager.playGroan();
+            } else {
+                // Ranged: ráfaga de 4 proyectiles de fuego
+                const spawnPos = this.mesh.position.clone();
+                spawnPos.y += 3.0 * stats.size;
+                for (let s = 0; s < 4; s++) {
+                    const spread = new THREE.Vector3((Math.random()-0.5)*0.3, (Math.random()-0.5)*0.15, 0);
+                    const dir = new THREE.Vector3().subVectors(camera.position, spawnPos).normalize().add(spread).normalize();
+                    const proj = new Laser(spawnPos.clone(), dir, stats.name);
+                    proj.mesh.material = new THREE.MeshBasicMaterial({ color: 0xff4400 });
+                    (proj as any)._isFireBlind = true;
+                    enemyProjectiles.push(proj);
+                }
+                soundManager.playBeep();
+            }
         } else {
             // Cuerpo a cuerpo
             lastAttackerName = stats.name;
@@ -4716,7 +5119,7 @@ class WaveManager {
     spawnRate: number = 2000; // ms
     activeEnemies: Enemy[] = [];
     isBreak: boolean = false; // Verdadero entre oleadas
-    maxWaves: number = 30; // 10 Forest + 10 Snowy + 10 Lava
+    maxWaves: number = 40; // 10 Forest + 10 Snowy + 10 Lava + 10 Castle
     isGameOver: boolean = false;
     isNetworkClient: boolean = false; // set to true if multiplayer and NOT host
     syncTimer: number = 0;
@@ -4738,10 +5141,12 @@ class WaveManager {
         // Número de wave relativo al bioma (1-10 en cada bioma)
         const biomeWave = this.currentWave <= 10 ? this.currentWave
             : this.currentWave <= 20 ? this.currentWave - 10
-            : this.currentWave - 20;
+            : this.currentWave <= 30 ? this.currentWave - 20
+            : this.currentWave - 30;
         const biomeName = this.currentWave <= 10 ? 'FOREST'
             : this.currentWave <= 20 ? 'SNOWY'
-            : 'LAVA';
+            : this.currentWave <= 30 ? 'LAVA'
+            : 'CASTLE';
 
         const isFinalWave     = (this.currentWave === this.maxWaves);
         const isBiomeBossWave = (biomeWave === 10);
@@ -4751,13 +5156,15 @@ class WaveManager {
             this.spawnRate = 3000;
         } else {
             const baseCount = 6 + (biomeWave * 4);
-            // Lava: +120% — Nieve: +60% — Bosque: base
-            this.enemiesToSpawn = currentBiome === Biome.LAVA
-                ? Math.round(baseCount * 2.2)
-                : currentBiome === Biome.SNOW
-                    ? Math.round(baseCount * 1.6)
-                    : baseCount;
-            this.spawnRate = Math.max(350, 2000 - (biomeWave * 140));
+            // Castillo: +160% — Lava: +120% — Nieve: +60% — Bosque: base
+            this.enemiesToSpawn = currentBiome === Biome.CASTLE
+                ? Math.round(baseCount * 2.6)
+                : currentBiome === Biome.LAVA
+                    ? Math.round(baseCount * 2.2)
+                    : currentBiome === Biome.SNOW
+                        ? Math.round(baseCount * 1.6)
+                        : baseCount;
+            this.spawnRate = Math.max(300, 2000 - (biomeWave * 160));
         }
 
         const wc = document.getElementById('wave-complete');
@@ -4767,11 +5174,17 @@ class WaveManager {
         if (hordeEl) hordeEl.innerText = t('ENEMIES_LEFT', { alive: 0, spawn: this.enemiesToSpawn });
         if (stageEl) {
             if (isFinalWave) {
-                stageEl.innerHTML = `<span style="font-size:0.7em;color:#ff6600">${t('BIOME_LAVA')}</span><br>${t('FINAL_WAVE_BOSS')}`;
-                stageEl.style.color = '#ff6600';
+                stageEl.innerHTML = `<span style="font-size:0.7em;color:#8855cc">${t('BIOME_CASTLE')}</span><br>${t('FINAL_WAVE_BOSS')}`;
+                stageEl.style.color = '#8855cc';
             } else {
-                const biomeColor = this.currentWave <= 10 ? '#ff3333' : this.currentWave <= 20 ? '#88ccff' : '#ff6600';
-                const biomeKey = this.currentWave <= 10 ? 'BIOME_FOREST' : this.currentWave <= 20 ? 'BIOME_SNOW' : 'BIOME_LAVA';
+                const biomeColor = this.currentWave <= 10 ? '#ff3333'
+                    : this.currentWave <= 20 ? '#88ccff'
+                    : this.currentWave <= 30 ? '#ff6600'
+                    : '#aa66ff';
+                const biomeKey = this.currentWave <= 10 ? 'BIOME_FOREST'
+                    : this.currentWave <= 20 ? 'BIOME_SNOW'
+                    : this.currentWave <= 30 ? 'BIOME_LAVA'
+                    : 'BIOME_CASTLE';
                 stageEl.innerHTML = `<span style="font-size:0.7em;color:${biomeColor};">${t(biomeKey)}</span><br>${t('WAVE', { wave: biomeWave })}`;
                 stageEl.style.color = biomeColor;
             }
@@ -4829,7 +5242,7 @@ class WaveManager {
         this.isBreak = true;
         soundManager.startWinMusic();
 
-        // Victoria final al completar Wave 20
+        // Victoria final al completar Wave 40
         if (this.currentWave === this.maxWaves) {
             this.victory();
             return;
@@ -4837,7 +5250,7 @@ class WaveManager {
 
         // Transición de bioma al completar Wave 10 (Forest → Snow)
         if (this.currentWave === 10) {
-            if (isMultiplayer && isHost && socket?.connected) {
+            if (isMultiplayer && socket?.connected) {
                 socket.emit('wave-complete', { wave: this.currentWave });
                 socket.emit('biome-change', { biome: 'snow' });
             }
@@ -4855,7 +5268,7 @@ class WaveManager {
 
         // Transición de bioma al completar Wave 20 (Snow → Lava)
         if (this.currentWave === 20) {
-            if (isMultiplayer && isHost && socket?.connected) {
+            if (isMultiplayer && socket?.connected) {
                 socket.emit('wave-complete', { wave: this.currentWave });
                 socket.emit('biome-change', { biome: 'lava' });
             }
@@ -4871,15 +5284,36 @@ class WaveManager {
             return;
         }
 
-        if (isMultiplayer && isHost && socket?.connected) {
+        // Transición de bioma al completar Wave 30 (Lava → Castle)
+        if (this.currentWave === 30) {
+            if (isMultiplayer && socket?.connected) {
+                socket.emit('wave-complete', { wave: this.currentWave });
+                socket.emit('biome-change', { biome: 'castle' });
+            }
+            const wcWave = document.getElementById('wc-wave');
+            const wc = document.getElementById('wave-complete');
+            if (wc) wc.style.display = 'flex';
+            if (wcWave) wcWave.innerText = `LAVA CLEARED! DARKNESS FALLS... THE CASTLE AWAITS!`;
+            setTimeout(() => {
+                if (wc) wc.style.display = 'none';
+                transitionToCastleBiome();
+            }, 2000);
+            if (stageEl) stageEl.innerHTML = `<span style="font-size:0.8em;color:#aa66ff">${t('BIOME_CHANGE')}</span>`;
+            return;
+        }
+
+        if (isMultiplayer && socket?.connected) {
             socket.emit('wave-complete', { wave: this.currentWave });
         }
 
         const biomeWave = this.currentWave <= 10 ? this.currentWave
             : this.currentWave <= 20 ? this.currentWave - 10
-            : this.currentWave - 20;
+            : this.currentWave <= 30 ? this.currentWave - 20
+            : this.currentWave - 30;
         const biomeName = this.currentWave <= 10 ? 'FOREST'
-            : this.currentWave <= 20 ? 'SNOWY' : 'LAVA';
+            : this.currentWave <= 20 ? 'SNOWY'
+            : this.currentWave <= 30 ? 'LAVA'
+            : 'CASTLE';
         const wc = document.getElementById('wave-complete');
         const wcWave = document.getElementById('wc-wave');
         if (wc) wc.style.display = 'flex';
@@ -5012,7 +5446,8 @@ class WaveManager {
         const r = Math.random();
         const bw = this.currentWave <= 10 ? this.currentWave
             : this.currentWave <= 20 ? this.currentWave - 10
-            : this.currentWave - 20; // biome-wave (1-10 per biome)
+            : this.currentWave <= 30 ? this.currentWave - 20
+            : this.currentWave - 30; // biome-wave (1-10 per biome)
 
         if (currentBiome === Biome.LAVA) {
             // ===== BIOMA LAVA: Waves 21-30 =====
@@ -5072,6 +5507,39 @@ class WaveManager {
                      : EnemyType.SNOW_ZOMBIE;
             } else { // bw === 1
                 type = r > 0.7 ? EnemyType.SNOW_FAST : EnemyType.SNOW_ZOMBIE;
+            }
+        } else if (currentBiome === Biome.CASTLE) {
+            // ===== BIOMA CASTILLO: Waves 31-40 =====
+            if (bw === 10) { // Wave 40 — Zombie Overlord FINAL
+                type = EnemyType.BOSS_ZOMBIE_OVERLORD;
+            } else if (bw === 8) { // Wave 38 — Dinosaurio Gigante
+                type = r > 0.5 ? EnemyType.BOSS_GIANT_DINO : EnemyType.DINOSAUR;
+            } else if (bw === 5 || bw === 6) { // Wave 35-36 — Zombie Armado Gigante
+                type = r > 0.7 ? EnemyType.BOSS_GIANT_ARMORED
+                     : r > 0.4 ? EnemyType.ARMORED_ZOMBIE_LARGE
+                     : EnemyType.ARMORED_ZOMBIE;
+            } else if (bw === 9) { // Wave 39 — todo mezclado
+                type = r > 0.7 ? EnemyType.DINOSAUR
+                     : r > 0.45 ? EnemyType.VAMPIRE
+                     : r > 0.2 ? EnemyType.BAT
+                     : EnemyType.ARMORED_ZOMBIE_LARGE;
+            } else if (bw === 7) { // Wave 37
+                type = r > 0.5 ? EnemyType.DINOSAUR
+                     : r > 0.25 ? EnemyType.VAMPIRE
+                     : EnemyType.BAT;
+            } else if (bw >= 4) { // Waves 34-36
+                type = r > 0.55 ? EnemyType.VAMPIRE
+                     : r > 0.3 ? EnemyType.BAT
+                     : r > 0.15 ? EnemyType.ARMORED_ZOMBIE_LARGE
+                     : EnemyType.ARMORED_ZOMBIE;
+            } else if (bw === 3) { // Wave 33
+                type = r > 0.6 ? EnemyType.VAMPIRE
+                     : r > 0.3 ? EnemyType.ARMORED_ZOMBIE_LARGE
+                     : EnemyType.ARMORED_ZOMBIE;
+            } else if (bw === 2) { // Wave 32
+                type = r > 0.5 ? EnemyType.ARMORED_ZOMBIE_LARGE : EnemyType.ARMORED_ZOMBIE;
+            } else { // bw === 1
+                type = r > 0.7 ? EnemyType.ARMORED_ZOMBIE_LARGE : EnemyType.ARMORED_ZOMBIE;
             }
         } else {
             // ===== BIOMA BOSQUE: Waves 1-10 =====
@@ -5331,24 +5799,120 @@ function linkSliderAndInput(sliderId: string, inputId: string, onChange: (val: n
     });
 }
 
+// --- Persistencia de Configuración ---
+function saveSettings() {
+    const settings = {
+        masterVolume, musicVolume, sfxVolume,
+        sensitivity: (controls as any).pointerSpeed || 0.002,
+        graphics: currentGraphicsQuality,
+        showFps: (document.getElementById('opt-show-fps') as HTMLInputElement)?.checked,
+        showHp: (document.getElementById('opt-show-hp') as HTMLInputElement)?.checked,
+        language: currentLang
+    };
+    localStorage.setItem('nightfall_settings', JSON.stringify(settings));
+}
+
+function loadSettings() {
+    const saved = localStorage.getItem('nightfall_settings');
+    if (!saved) return;
+    try {
+        const settings = JSON.parse(saved);
+        // Master
+        if (settings.masterVolume !== undefined) {
+            masterVolume = settings.masterVolume;
+            const sv = Math.round(masterVolume * 100);
+            const ms = document.getElementById('opt-master-vol') as HTMLInputElement;
+            const mi = document.getElementById('opt-master-vol-val') as HTMLInputElement;
+            if (ms) ms.value = sv.toString();
+            if (mi) mi.value = sv.toString();
+        }
+        // Music
+        if (settings.musicVolume !== undefined) {
+            musicVolume = settings.musicVolume;
+            const sv = Math.round(musicVolume * 100);
+            const ms = document.getElementById('opt-music-vol') as HTMLInputElement;
+            const mi = document.getElementById('opt-music-vol-val') as HTMLInputElement;
+            if (ms) ms.value = sv.toString();
+            if (mi) mi.value = sv.toString();
+        }
+        // SFX
+        if (settings.sfxVolume !== undefined) {
+            sfxVolume = settings.sfxVolume;
+            const sv = Math.round(sfxVolume * 100);
+            const ms = document.getElementById('opt-sfx-vol') as HTMLInputElement;
+            const mi = document.getElementById('opt-sfx-vol-val') as HTMLInputElement;
+            if (ms) ms.value = sv.toString();
+            if (mi) mi.value = sv.toString();
+        }
+        // Sensibilidad
+        if (settings.sensitivity !== undefined) {
+            (controls as any).pointerSpeed = settings.sensitivity;
+            const sv = Math.round(settings.sensitivity * 100 * 1000); // base is very small
+            // Assuming default sensitivity ~0.002 mapping to "50" -> adjust calculation based on slider
+            const sliderV = Math.round((settings.sensitivity / 0.005) * 100); // rough normalization depending on how slider was set up
+            const ss = document.getElementById('opt-sensitivity') as HTMLInputElement;
+            const si = document.getElementById('opt-sensitivity-val') as HTMLInputElement;
+            if (ss) ss.value = sliderV.toString();
+            if (si) si.value = sliderV.toString();
+        }
+        // Graphics
+        if (settings.graphics) {
+            currentGraphicsQuality = settings.graphics;
+            document.querySelectorAll('.opt-q-btn').forEach(b => {
+                const btn = b as HTMLElement;
+                if (btn.dataset.quality === currentGraphicsQuality) {
+                    btn.click();
+                }
+            });
+            applyGraphicsQuality(currentGraphicsQuality);
+        }
+        // Toggles
+        if (settings.showFps !== undefined) {
+            const el = document.getElementById('opt-show-fps') as HTMLInputElement;
+            if (el && el.checked !== settings.showFps) {
+                el.checked = settings.showFps;
+                el.dispatchEvent(new Event('change'));
+            }
+        }
+        if (settings.showHp !== undefined) {
+            const el = document.getElementById('opt-show-hp') as HTMLInputElement;
+            if (el && el.checked !== settings.showHp) {
+                el.checked = settings.showHp;
+                el.dispatchEvent(new Event('change'));
+            }
+        }
+        // Language
+        if (settings.language && settings.language !== currentLang) {
+            const btn = document.querySelector(`.lang-btn[data-lang="${settings.language}"]`) as HTMLElement;
+            if (btn) btn.click();
+        }
+
+        applyVolumes();
+    } catch (e) { console.error("Could not load settings", e); }
+}
+
 linkSliderAndInput('opt-master-vol', 'opt-master-vol-val', (v) => {
     masterVolume = v / 100;
     applyVolumes();
+    saveSettings();
 });
 
 linkSliderAndInput('opt-music-vol', 'opt-music-vol-val', (v) => {
     musicVolume = v / 100;
     applyVolumes();
+    saveSettings();
 });
 
 linkSliderAndInput('opt-sfx-vol', 'opt-sfx-vol-val', (v) => {
     sfxVolume = v / 100;
     applyVolumes();
+    saveSettings();
 });
 
 // --- Sensitivity ---
 linkSliderAndInput('opt-sensitivity', 'opt-sensitivity-val', (v) => {
-    (controls as any).pointerSpeed = v / 100;
+    (controls as any).pointerSpeed = v / 1000; // was /100 initially? need to check controls setup, usually 0.002
+    saveSettings();
 });
 
 // --- Graphics Quality ---
@@ -5366,6 +5930,7 @@ document.querySelectorAll('.opt-q-btn').forEach(btn => {
         const quality = (btn as HTMLElement).dataset.quality;
         currentGraphicsQuality = quality || 'medium';
         applyGraphicsQuality(currentGraphicsQuality);
+        saveSettings();
     });
 });
 
@@ -5422,6 +5987,7 @@ document.getElementById('opt-show-fps')?.addEventListener('change', (e) => {
     }
     const fpsBox = document.querySelector('.stat-box:nth-child(2)') as HTMLElement;
     if (fpsBox) fpsBox.style.display = checked ? 'block' : 'none';
+    saveSettings();
 });
 
 // --- Show HP Toggle ---
@@ -5437,6 +6003,7 @@ document.getElementById('opt-show-hp')?.addEventListener('change', (e) => {
     }
     const hpDigit = document.getElementById('health-digit');
     if (hpDigit) hpDigit.style.display = checked ? 'block' : 'none';
+    saveSettings();
 });
 
 document.getElementById('btn-exit')?.addEventListener('click', () => {
@@ -6346,21 +6913,151 @@ function transitionToLavaBiome() {
     }, 30);
 }
 
+// ---- CASTLE BIOME ----
+function applyCastleBiome() {
+    currentBiome = Biome.CASTLE;
+    scene.background = new THREE.Color(0x0d0812);
+    scene.fog = new THREE.FogExp2(0x1a0d2e, 0.009);
+
+    // Suelo de piedra oscura (castle floor)
+    const stoneCanvas = document.createElement('canvas');
+    stoneCanvas.width = 512; stoneCanvas.height = 512;
+    const sCtx = stoneCanvas.getContext('2d')!;
+    for (let cy = 0; cy < 512; cy++) {
+        for (let cx = 0; cx < 512; cx++) {
+            // Patrón de adoquines medievales
+            const blockX = Math.floor(cx / 64);
+            const blockY = Math.floor(cy / 48);
+            const offset = blockY % 2 === 0 ? 0 : 32;
+            const localX = (cx + offset) % 64;
+            const localY = cy % 48;
+            const isJoint = localX < 2 || localY < 2;
+            const noise = (Math.random() * 0.08 - 0.04);
+            const base = isJoint ? 0.15 : (0.28 + noise);
+            const v = Math.floor(base * 255);
+            sCtx.fillStyle = `rgb(${v + 10},${v},${v + 15})`;
+            sCtx.fillRect(cx, cy, 1, 1);
+        }
+    }
+    const stoneTex = new THREE.CanvasTexture(stoneCanvas);
+    stoneTex.wrapS = stoneTex.wrapT = THREE.RepeatWrapping;
+    stoneTex.repeat.set(14, 14);
+    (floor.material as THREE.MeshLambertMaterial).map = stoneTex;
+    (floor.material as THREE.MeshLambertMaterial).color.setHex(0x444455);
+    (floor.material as THREE.MeshLambertMaterial).needsUpdate = true;
+
+    // Luz ambiental violeta/azul oscuro
+    scene.children.forEach(c => {
+        if (c instanceof THREE.AmbientLight) { c.color.setHex(0x6644aa); c.intensity = 0.5; }
+        if (c instanceof THREE.DirectionalLight) { c.color.setHex(0x8866cc); c.intensity = 0.4; }
+    });
+
+    // Árboles → muertos y oscuros (estética castillo)
+    trees.forEach(t => {
+        t.traverse(c => {
+            if ((c as THREE.Mesh).isMesh) {
+                const mat = (c as THREE.Mesh).material as THREE.MeshLambertMaterial;
+                if (mat && mat.color) mat.color.setHex(0x1a1020);
+            }
+        });
+    });
+
+    // Casas → torres de castillo (coloreado oscuro)
+    scene.children.forEach(obj => {
+        if ((obj as any)._isBuilding) {
+            obj.traverse(c => {
+                if ((c as THREE.Mesh).isMesh) {
+                    const mat = (c as THREE.Mesh).material as THREE.MeshLambertMaterial;
+                    if (mat && mat.color) mat.color.setHex(0x3a3050);
+                }
+            });
+        }
+    });
+
+    // Torres de castillo (pequeños castillos en lugar de casas)
+    createCastleTowers();
+
+    // Música de castillo
+    soundManager.startCastleMusic();
+    if (isMultiplayer && socket?.connected) {
+        socket.emit('music-change', { track: 'castle' });
+    }
+}
+
+function createCastleTowers() {
+    const towerMat = new THREE.MeshLambertMaterial({ color: 0x2a2540 });
+    const battleMat = new THREE.MeshLambertMaterial({ color: 0x1a1830 });
+    const positions = [
+        [-30, 0, -30], [30, 0, -30], [-30, 0, 30], [30, 0, 30],
+        [0, 0, -50], [-50, 0, 0], [50, 0, 0], [0, 0, 50]
+    ];
+    positions.forEach(([x, _y, z]) => {
+        const towerGroup = new THREE.Group();
+        // Base cilíndrica
+        const base = new THREE.Mesh(new THREE.CylinderGeometry(3, 3.5, 8, 8), towerMat);
+        base.position.y = 4; towerGroup.add(base);
+        // Almenas (merlones) en el tope
+        for (let m = 0; m < 8; m++) {
+            const angle2 = (m / 8) * Math.PI * 2;
+            const merlon = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2, 1.2), battleMat);
+            merlon.position.set(Math.cos(angle2) * 2.8, 9.5, Math.sin(angle2) * 2.8);
+            towerGroup.add(merlon);
+        }
+        // Techo cónico
+        const roof = new THREE.Mesh(new THREE.ConeGeometry(3.2, 3, 8), new THREE.MeshLambertMaterial({ color: 0x110d20 }));
+        roof.position.y = 11.5; towerGroup.add(roof);
+        // Muros cortos entre torres
+        if (Math.random() > 0.4) {
+            const wall = new THREE.Mesh(new THREE.BoxGeometry(8, 5, 1.2), towerMat);
+            wall.position.y = 2.5; towerGroup.add(wall);
+        }
+        towerGroup.position.set(x, 0, z);
+        (towerGroup as any)._isCastleTower = true;
+        scene.add(towerGroup);
+        playerCollidables.push(base);
+    });
+}
+
+function transitionToCastleBiome() {
+    const ls = document.getElementById('loading-screen');
+    const lb = document.getElementById('load-bar');
+    const lt = ls?.querySelector('.loading-text') as HTMLElement;
+    if (ls) { ls.style.display = 'flex'; ls.style.background = 'linear-gradient(to bottom, #0d0812, #1a0d2e)'; }
+    if (lb) { lb.style.background = '#8844cc'; lb.style.boxShadow = '0 0 20px #8844cc'; }
+    let prog = 0;
+    const iv = setInterval(() => {
+        prog += 2;
+        if (lb) lb.style.width = `${prog}%`;
+        if (lt) { lt.innerText = `🏰 DARKNESS FALLS... THE CASTLE AWAITS! ${prog}%`; lt.style.color = '#aa66ff'; }
+        if (prog >= 100) {
+            clearInterval(iv);
+            applyCastleBiome();
+            if (ls) ls.style.display = 'none';
+            for (let i = 0; i < 6; i++) {
+                ammoPickups.push(new AmmoPickup(new THREE.Vector3(-20 + Math.random() * 40, 0, -20 + Math.random() * 40)));
+            }
+            openShop();
+        }
+    }, 30);
+}
+
 // ---- BIOME-CHANGE & MUSIC-CHANGE MULTIPLAYER LISTENERS ----
-// Solo clientes no-host reciben este evento
+// FIXED: Use currentBiome dedup check so host calling transitionToX() first won't retrigger on echo
 if (socket) {
     socket.on('biome-change', (data: { biome: string }) => {
-        if (isHost) return;
-        if (data.biome === 'snow') transitionToSnowBiome();
-        else if (data.biome === 'lava') transitionToLavaBiome();
+        // Dedup: only transition if we're not already in that biome
+        if (data.biome === 'snow' && currentBiome !== Biome.SNOW) transitionToSnowBiome();
+        else if (data.biome === 'lava' && currentBiome !== Biome.LAVA) transitionToLavaBiome();
+        else if (data.biome === 'castle' && currentBiome !== Biome.CASTLE) transitionToCastleBiome();
     });
 
     socket.on('music-change', (data: { track: string }) => {
-        if (isHost) return;
         if (data.track === 'snow') soundManager.startSnowMusic();
+        else if (data.track === 'castle') soundManager.startCastleMusic();
         else soundManager.startGameMusic();
     });
 }
+
 
 // ---- HIT MARKER ----
 function showHitMarker(isHeadshot: boolean = false) {
@@ -7073,6 +7770,10 @@ function animate() {
     prevTime = time;
     renderer.render(inLobby3D ? lobbyScene : scene, inLobby3D ? lobbyCamera : camera);
 }
+
+// Application initialization
+loadSettings();
+applyTranslations();
 
 animate();
 

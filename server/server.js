@@ -312,7 +312,7 @@ io.on('connection', (socket) => {
         if (!code || !rooms[code]) return;
         if (rooms[code].hostId !== socket.id) return; // Solo el host puede cambiar bioma
         rooms[code].currentBiome = data.biome;
-        socket.to(code).emit('biome-change', { biome: data.biome });
+        io.to(code).emit('biome-change', { biome: data.biome });
         console.log(`[BIOME] Room ${code} changing to ${data.biome}`);
     });
 
@@ -321,7 +321,7 @@ io.on('connection', (socket) => {
         const code = socket.data.roomCode;
         if (!code || !rooms[code]) return;
         if (rooms[code].hostId !== socket.id) return; // Solo el host puede cambiar musica
-        socket.to(code).emit('music-change', { track: data.track });
+        io.to(code).emit('music-change', { track: data.track });
         console.log(`[MUSIC] Room ${code} switching track to ${data.track}`);
     });
 
