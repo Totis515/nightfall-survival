@@ -150,7 +150,18 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
         FINAL_WAVE_BOSS: "FINAL WAVE: BOSS",
         BIOME_CHANGE: "BIOME CHANGE...",
         RESTORING: "RESTORING...",
-        LOADING_WAVE: "READYING WAVE {wave}... {progress}%"
+        LOADING_WAVE: "READYING WAVE {wave}... {progress}%",
+        CHANGE_MODE: "CHANGE MODE ▶",
+        MODE_SURVIVAL: "SURVIVAL",
+        MODE_EVE: "EVE",
+        MODE_PARTY_ON: "🎉 PARTY",
+        SELECT_MODE: "SELECT MODE",
+        PARTY_MODE_LABEL: "PARTY MODE",
+        PARTY_MODE_OFF: "🎊 PARTY MODE: OFF",
+        PARTY_MODE_ON: "🎊 PARTY MODE: ON",
+        WAVES_LABEL: "NUMBER OF WAVES",
+        SAVE_MODE: "✓ ALL READY",
+        GAME_MODE_TITLE: "GAME MODE"
     },
     ES: {
         MENU_START: "Iniciar Juego",
@@ -270,7 +281,18 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
         FINAL_WAVE_BOSS: "OLEADA FINAL: JEFE",
         BIOME_CHANGE: "CAMBIO DE BIOMA...",
         RESTORING: "RESTAURANDO...",
-        LOADING_WAVE: "PREPARANDO OLEADA {wave}... {progress}%"
+        LOADING_WAVE: "PREPARANDO OLEADA {wave}... {progress}%",
+        CHANGE_MODE: "CAMBIAR MODO ▶",
+        MODE_SURVIVAL: "SUPERVIVENCIA",
+        MODE_EVE: "TODOS CONTRA TODOS",
+        MODE_PARTY_ON: "🎉 FIESTA",
+        SELECT_MODE: "SELECCIONAR MODO",
+        PARTY_MODE_LABEL: "MODO FIESTA",
+        PARTY_MODE_OFF: "🎊 MODO FIESTA: APAGADO",
+        PARTY_MODE_ON: "🎊 MODO FIESTA: ACTIVO",
+        WAVES_LABEL: "NÚMERO DE OLEADAS",
+        SAVE_MODE: "✓ TODO LISTO",
+        GAME_MODE_TITLE: "MODO DE JUEGO"
     },
     FR: {
         MENU_START: "Commencer",
@@ -355,7 +377,18 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
         VICTORY_WORLD: "LE MONDE EST SAUVÉ",
         VICTORY_SUB: "★ NIGHTFALL SURVIVAL TERMINÉ ★",
         VICTORY_DESC: "Vainqueur des 30 vagues — Forêt, Neige et Lave.<br>Le Dragon Pourpre est tombé. L'humanité survit.",
-        BTN_RETURN_LOBBY: "RETOUR AU SALON"
+        BTN_RETURN_LOBBY: "RETOUR AU SALON",
+        CHANGE_MODE: "CHANGER MODE ▶",
+        MODE_SURVIVAL: "SURVIE",
+        MODE_EVE: "TOUS VS TOUS",
+        MODE_PARTY_ON: "🎉 FÊTE",
+        SELECT_MODE: "SÉLECTIONNER MODE",
+        PARTY_MODE_LABEL: "MODE FÊTE",
+        PARTY_MODE_OFF: "🎊 MODE FÊTE: DÉSACTIVÉ",
+        PARTY_MODE_ON: "🎊 MODE FÊTE: ACTIVÉ",
+        WAVES_LABEL: "NOMBRE DE VAGUES",
+        SAVE_MODE: "✓ TOUT PRÊT",
+        GAME_MODE_TITLE: "MODE DE JEU"
     }
 };
 
@@ -1383,9 +1416,15 @@ function connectMultiplayer() {
             p.group.add(newLabel);
         }
     });
-    socket.on('game-start', (data: { hostId: string }) => {
+    socket.on('game-start', (data: { hostId: string; gameSettings?: { mode: string; waves: number; partyMode: boolean } }) => {
         isHost = (socket!.id === data.hostId);
         if (!isHost) waveManager.isNetworkClient = true;
+
+        // Apply game settings from server before starting
+        if (data.gameSettings) {
+            applyLobbySettings(data.gameSettings);
+        }
+
         hideAllMpScreens();
         
         // Fix: Call beginLoadingSequence immediately instead of waiting for controls.lock() 
@@ -1396,6 +1435,15 @@ function connectMultiplayer() {
             // Attempt to lock pointer, but if blocked, user will just have to click later.
             try { controls.lock(); } catch(e) {}
         }
+    });
+
+    // ── Lobby settings sync (from host) ──────────────────────────
+    socket.on('lobby-settings', (data: { mode: string; waves: number; partyMode: boolean }) => {
+        updateGameModeCard(data);
+        // Keep local state in sync for non-hosts
+        lobbyGameMode  = data.mode;
+        lobbyWaveCount = data.waves;
+        lobbyPartyMode = data.partyMode;
     });
 
     // ── Enemy sync ───────────────────────────────────────────────
@@ -1594,6 +1642,7 @@ function connectMultiplayer() {
             isHost = true;
             waveManager.isNetworkClient = false;
             showPickupNotice('YOU ARE NOW THE HOST');
+            refreshGameModeCardHostVisibility();
         }
     });
 
@@ -1638,10 +1687,18 @@ function setup3DLobby() {
     spawnRemotePlayer('local_dummy', myUsername || 'YOU', 0, 1.6, 0, currentSkin, true, platStr, false);
 
     rearrangeLobbySlots();
+    // Show and configure the game mode card
+    refreshGameModeCardHostVisibility();
+    updateGameModeCard({ mode: lobbyGameMode, waves: lobbyWaveCount, partyMode: lobbyPartyMode });
 }
 
 function cleanup3DLobby() {
     inLobby3D = false;
+    // Hide the game mode card — it's lobby-only
+    const card = document.getElementById('game-mode-card');
+    const modal = document.getElementById('game-mode-modal');
+    if (card)  card.style.display = 'none';
+    if (modal) modal.classList.remove('visible');
     if (lobbyLocalGroup) {
         lobbyScene.remove(lobbyLocalGroup);
         lobbyLocalGroup = null;
@@ -1811,7 +1868,126 @@ function updateLobbyUI(players: Record<string, { id: string; username: string; p
     rearrangeLobbySlots();
 }
 
+// ═══════════════════════════════════════════════════════════════
+// LOBBY GAME MODE STATE & UI
+// ═══════════════════════════════════════════════════════════════
+let lobbyGameMode  = 'survival';
+let lobbyWaveCount = 40;
+let lobbyPartyMode = false;
+
+/** Updates the Game Mode Card displayed to all players */
+function updateGameModeCard(settings: { mode: string; waves: number; partyMode: boolean }) {
+    const modeLabel  = document.getElementById('gmc-mode-label');
+    const wavesLabel = document.getElementById('gmc-waves-label');
+    const partyBadge = document.getElementById('gmc-party-badge');
+
+    if (modeLabel) {
+        modeLabel.innerText = settings.mode === 'survival' ? t('MODE_SURVIVAL') : t('MODE_EVE');
+    }
+    if (wavesLabel) {
+        wavesLabel.innerText = `${settings.waves} ${t('WAVES_LABEL').split(' ')[0] || 'WAVES'}`;
+        // Use short label: "10 WAVES" / "40 WAVES"
+        wavesLabel.innerText = `${settings.waves} WAVES`;
+    }
+    if (partyBadge) {
+        partyBadge.style.display = settings.partyMode ? 'block' : 'none';
+    }
+}
+
+/** Applies lobby settings to the wave manager (called at game start) */
+function applyLobbySettings(settings: { mode: string; waves: number; partyMode: boolean }) {
+    lobbyGameMode  = settings.mode;
+    lobbyWaveCount = settings.waves;
+    lobbyPartyMode = settings.partyMode;
+    waveManager.maxWaves = settings.waves;
+    // Update UI card
+    updateGameModeCard(settings);
+}
+
+/** Shows or hides the host-only "Change Mode" button on the card */
+function refreshGameModeCardHostVisibility() {
+    const btn = document.getElementById('gmc-change-btn');
+    const card = document.getElementById('game-mode-card');
+    if (btn) {
+        if (isHost) {
+            btn.classList.remove('host-hidden');
+        } else {
+            btn.classList.add('host-hidden');
+        }
+    }
+    if (card) {
+        card.style.display = 'flex'; // always visible in lobby
+    }
+}
+
+// ── Game Mode Modal interactions ─────────────────────────────
+(function initGameModeModal() {
+    const modal         = document.getElementById('game-mode-modal');
+    const changBtn      = document.getElementById('gmc-change-btn');
+    const closeBtn      = document.getElementById('btn-gm-close');
+    const saveBtn       = document.getElementById('btn-gm-save');
+    const partyToggle   = document.getElementById('btn-party-toggle') as HTMLButtonElement | null;
+
+    // Open modal (host only)
+    changBtn?.addEventListener('click', () => {
+        if (!isHost) return;
+        if (modal) modal.classList.add('visible');
+    });
+
+    // Close modal (X button)
+    closeBtn?.addEventListener('click', () => {
+        if (modal) modal.classList.remove('visible');
+    });
+    // Close on backdrop click
+    modal?.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.remove('visible');
+    });
+
+    // Mode pills (Survival / EVE)
+    document.querySelectorAll('.gm-pill[data-mode]').forEach(pill => {
+        pill.addEventListener('click', () => {
+            if ((pill as HTMLElement).classList.contains('disabled')) return;
+            document.querySelectorAll('.gm-pill[data-mode]').forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+            lobbyGameMode = (pill as HTMLElement).dataset.mode || 'survival';
+        });
+    });
+
+    // Wave count pills
+    document.querySelectorAll('.gm-pill[data-waves]').forEach(pill => {
+        pill.addEventListener('click', () => {
+            document.querySelectorAll('.gm-pill[data-waves]').forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+            lobbyWaveCount = parseInt((pill as HTMLElement).dataset.waves || '40');
+        });
+    });
+
+    // Party mode toggle
+    partyToggle?.addEventListener('click', () => {
+        lobbyPartyMode = !lobbyPartyMode;
+        partyToggle.classList.toggle('on', lobbyPartyMode);
+        partyToggle.innerText = lobbyPartyMode ? t('PARTY_MODE_ON') : t('PARTY_MODE_OFF');
+    });
+
+    // Save button — broadcasts settings and closes modal
+    saveBtn?.addEventListener('click', () => {
+        const settings = { mode: lobbyGameMode, waves: lobbyWaveCount, partyMode: lobbyPartyMode };
+
+        // Apply locally first
+        applyLobbySettings(settings);
+
+        // Broadcast to all players if multiplayer host
+        if (isMultiplayer && socket?.connected) {
+            socket.emit('lobby-settings', settings);
+        }
+
+        // Close modal
+        if (modal) modal.classList.remove('visible');
+    });
+})();
+
 function initMultiplayerUI() {
+
     // Auto-rejoin if coming from a victory screen
     if (sessionStorage.getItem('rejoinRoom')) {
         const room = sessionStorage.getItem('rejoinRoom');
@@ -5592,6 +5768,9 @@ const controls = new PointerLockControls(camera, document.body);
 function beginLoadingSequence() {
     if (gameStarted) return;
     gameStarted = true; // Mark game as started to affect createNameLabel
+    
+    // Apply local lobby settings straight into the wave manager
+    applyLobbySettings({ mode: lobbyGameMode, waves: lobbyWaveCount, partyMode: lobbyPartyMode });
     
     // Update all remote player labels to remove READY status
     remotePlayers.forEach((p, id) => {

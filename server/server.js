@@ -92,7 +92,10 @@ io.on('connection', (socket) => {
         if (username.length < 2) return callback({ error: 'Min 2 characters.' });
 
         const code = generateCode();
-        rooms[code] = { players: {}, enemies: {}, hostId: socket.id, gameStarted: false };
+        rooms[code] = {
+            players: {}, enemies: {}, hostId: socket.id, gameStarted: false,
+            gameSettings: { mode: 'survival', waves: 40, partyMode: false }
+        };
         rooms[code].players[socket.id] = {
             id: socket.id, username, platform: platform || 'pc', skin: skin || 'default',
             x: 0, y: 1.6, z: 0, rotY: 0, weaponIdx: 0, ready: false
@@ -133,6 +136,9 @@ io.on('connection', (socket) => {
         // Tell the new player about ALL existing players (fix late-join visibility)
         socket.emit('existing-players', Object.values(rooms[code].players).filter(p => p.id !== socket.id));
 
+        // Tell new player the current lobby game settings
+        socket.emit('lobby-settings', rooms[code].gameSettings || { mode: 'survival', waves: 40, partyMode: false });
+
         // Tell EXISTING players about the new person
         socket.to(code).emit('player-joined', rooms[code].players[socket.id]);
 
@@ -151,7 +157,10 @@ io.on('connection', (socket) => {
 
         if (allReady(rooms[code])) {
             rooms[code].gameStarted = true;
-            io.to(code).emit('game-start', { hostId: rooms[code].hostId });
+            io.to(code).emit('game-start', {
+                hostId: rooms[code].hostId,
+                gameSettings: rooms[code].gameSettings || { mode: 'survival', waves: 40, partyMode: false }
+            });
             console.log(`[GAME] Room ${code} starting! Host: ${rooms[code].hostId}`);
         }
         if (callback) callback({ ready: player.ready });
@@ -324,6 +333,23 @@ io.on('connection', (socket) => {
         io.to(code).emit('music-change', { track: data.track });
         console.log(`[MUSIC] Room ${code} switching track to ${data.track}`);
     });
+
+    // ── LOBBY SETTINGS (host → server → ALL players) ─────────────
+    socket.on('lobby-settings', (data) => {
+        const code = socket.data.roomCode;
+        if (!code || !rooms[code]) return;
+        if (rooms[code].hostId !== socket.id) return; // Only host sets game settings
+        // Update stored settings
+        rooms[code].gameSettings = {
+            mode: data.mode || 'survival',
+            waves: data.waves || 40,
+            partyMode: data.partyMode || false
+        };
+        // Broadcast to ALL players (including host for confirmation)
+        io.to(code).emit('lobby-settings', rooms[code].gameSettings);
+        console.log(`[SETTINGS] Room ${code}: mode=${data.mode}, waves=${data.waves}, party=${data.partyMode}`);
+    });
+
 
     // ── KICK PLAYER (host only) ──────────────────────────────────
     socket.on('kick-player', (data) => {

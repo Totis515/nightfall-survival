@@ -1117,6 +1117,245 @@
             padding: 0 !important;
         }
 
+        /* ═══════════════════════════════════════════════════
+           GAME MODE CARD — bottom-right of lobby
+        ═══════════════════════════════════════════════════ */
+        #game-mode-card {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 160px;
+            background: rgba(8, 4, 20, 0.88);
+            border: 2px solid rgba(160, 100, 255, 0.5);
+            border-radius: 14px;
+            box-shadow: 0 0 30px rgba(120, 60, 200, 0.35), inset 0 0 20px rgba(0,0,0,0.5);
+            backdrop-filter: blur(12px);
+            overflow: hidden;
+            z-index: 500;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: default;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        #game-mode-card:hover {
+            border-color: rgba(170, 110, 255, 0.8);
+            box-shadow: 0 0 40px rgba(140, 80, 220, 0.5), inset 0 0 20px rgba(0,0,0,0.5);
+        }
+        #gmc-change-btn {
+            width: 100%;
+            padding: 9px 0 8px;
+            background: linear-gradient(135deg, rgba(120,60,200,0.7), rgba(60,20,100,0.9));
+            border: none;
+            border-bottom: 1px solid rgba(160,100,255,0.4);
+            color: #cc88ff;
+            font-family: 'Impact', sans-serif;
+            font-size: 11px;
+            letter-spacing: 2px;
+            cursor: pointer;
+            text-align: center;
+            transition: background 0.25s, color 0.25s;
+            text-transform: uppercase;
+        }
+        #gmc-change-btn:hover {
+            background: linear-gradient(135deg, rgba(160,80,255,0.85), rgba(80,30,150,0.95));
+            color: #eeccff;
+        }
+        #gmc-change-btn.host-hidden {
+            display: none;
+        }
+        #gmc-image {
+            width: 100%;
+            height: 134px;
+            object-fit: cover;
+            display: block;
+            border-bottom: 1px solid rgba(160,100,255,0.25);
+        }
+        #gmc-info {
+            width: 100%;
+            padding: 10px 12px 12px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        #gmc-mode-label {
+            font-family: 'Impact', sans-serif;
+            font-size: 15px;
+            letter-spacing: 2px;
+            color: #00ffcc;
+            text-shadow: 0 0 8px #00ffcc66;
+        }
+        #gmc-waves-label {
+            font-family: 'Impact', sans-serif;
+            font-size: 11px;
+            letter-spacing: 1.5px;
+            color: #aa88ff;
+            margin-top: 3px;
+        }
+        #gmc-party-badge {
+            display: none;
+            margin-top: 5px;
+            background: linear-gradient(135deg, #ff6600, #ffaa00);
+            border-radius: 20px;
+            padding: 2px 10px;
+            font-family: 'Impact', sans-serif;
+            font-size: 10px;
+            letter-spacing: 1.5px;
+            color: #fff;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+        }
+
+        /* ═══════════════════════════════════════════════════
+           GAME MODE MODAL
+        ═══════════════════════════════════════════════════ */
+        #game-mode-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(4, 2, 12, 0.92);
+            backdrop-filter: blur(16px);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            animation: gmModalIn 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
+        }
+        @keyframes gmModalIn {
+            from { opacity:0; transform: scale(0.88); }
+            to   { opacity:1; transform: scale(1); }
+        }
+        #game-mode-modal.visible { display: flex; }
+        .gm-modal-box {
+            background: linear-gradient(160deg, #0e0820 0%, #180d30 60%, #0a0518 100%);
+            border: 2px solid rgba(160,100,255,0.6);
+            border-radius: 20px;
+            padding: 36px 40px 32px;
+            width: 520px;
+            max-width: 94vw;
+            box-shadow: 0 0 80px rgba(130,60,220,0.45), 0 0 20px rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
+            position: relative;
+        }
+        .gm-modal-title {
+            font-family: 'Impact', sans-serif;
+            font-size: 26px;
+            letter-spacing: 4px;
+            color: #cc88ff;
+            text-align: center;
+            text-shadow: 0 0 20px #8844cc;
+            margin: 0;
+        }
+        .gm-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .gm-section-label {
+            font-family: 'Impact', sans-serif;
+            font-size: 11px;
+            letter-spacing: 3px;
+            color: #7755aa;
+            text-transform: uppercase;
+        }
+        .gm-pills {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .gm-pill {
+            padding: 10px 22px;
+            border-radius: 50px;
+            border: 2px solid rgba(160,100,255,0.4);
+            background: rgba(80,40,140,0.3);
+            color: #9977cc;
+            font-family: 'Impact', sans-serif;
+            font-size: 14px;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            user-select: none;
+            flex: 1;
+            text-align: center;
+        }
+        .gm-pill:hover {
+            border-color: rgba(180,120,255,0.7);
+            color: #cc99ff;
+            background: rgba(100,50,180,0.4);
+        }
+        .gm-pill.active {
+            border-color: #a066ff;
+            background: linear-gradient(135deg, rgba(120,60,200,0.7), rgba(80,30,150,0.8));
+            color: #eeccff;
+            text-shadow: 0 0 10px #cc88ff;
+            box-shadow: 0 0 18px rgba(160,80,255,0.4);
+        }
+        .gm-pill.disabled {
+            opacity: 0.4;
+            pointer-events: none;
+            cursor: not-allowed;
+        }
+        .gm-pill.wave-pill {
+            flex: none;
+            width: calc(25% - 8px);
+            padding: 10px 0;
+        }
+        .gm-toggle-btn {
+            padding: 12px 24px;
+            border-radius: 50px;
+            border: 2px solid rgba(255,140,0,0.35);
+            background: rgba(40,20,10,0.5);
+            color: #996633;
+            font-family: 'Impact', sans-serif;
+            font-size: 14px;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            user-select: none;
+        }
+        .gm-toggle-btn.on {
+            border-color: #ff8800;
+            background: linear-gradient(135deg, rgba(180,80,0,0.5), rgba(120,50,0,0.6));
+            color: #ffcc66;
+            text-shadow: 0 0 10px #ff880066;
+            box-shadow: 0 0 18px rgba(255,120,0,0.35);
+        }
+        .gm-divider {
+            height: 1px;
+            background: linear-gradient(to right, transparent, rgba(130,70,200,0.4), transparent);
+        }
+        #btn-gm-save {
+            padding: 14px 0;
+            border-radius: 50px;
+            border: 2px solid #00ffcc;
+            background: transparent;
+            color: #00ffcc;
+            font-family: 'Impact', sans-serif;
+            font-size: 18px;
+            letter-spacing: 3px;
+            cursor: pointer;
+            transition: all 0.25s;
+            text-shadow: 0 0 10px #00ffcc66;
+            box-shadow: 0 0 18px rgba(0,255,204,0.15);
+        }
+        #btn-gm-save:hover {
+            background: rgba(0,255,204,0.12);
+            box-shadow: 0 0 30px rgba(0,255,204,0.35);
+        }
+        #btn-gm-close {
+            position: absolute;
+            top: 14px; right: 18px;
+            background: none;
+            border: none;
+            color: #7755aa;
+            font-size: 22px;
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+        #btn-gm-close:hover { color: #cc88ff; }
+
         .mp-title {
             font-size: 38px;
             letter-spacing: 5px;
@@ -1520,7 +1759,69 @@
             </div>
         </div>
 
+        <!-- ══════════════════════════════════════════
+             GAME MODE CARD — always visible, bottom-right
+        ══════════════════════════════════════════ -->
+        <div id="game-mode-card">
+            <!-- Host-only "Change Mode" button -->
+            <button id="gmc-change-btn" class="host-hidden" data-i18n="CHANGE_MODE">CHANGE MODE</button>
+            <!-- Biome art image -->
+            <img id="gmc-image" src="/gamemode_biomes.png" alt="game mode biomes" />
+            <!-- Info panel -->
+            <div id="gmc-info">
+                <div id="gmc-mode-label" data-i18n="MODE_SURVIVAL">SURVIVAL</div>
+                <div id="gmc-waves-label">40 WAVES</div>
+                <div id="gmc-party-badge" data-i18n="MODE_PARTY_ON">🎉 PARTY</div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════
+             GAME MODE SELECTION MODAL — host only
+        ══════════════════════════════════════════ -->
+        <div id="game-mode-modal">
+            <div class="gm-modal-box">
+                <button id="btn-gm-close">✕</button>
+                <p class="gm-modal-title" data-i18n="GAME_MODE_TITLE">GAME MODE</p>
+
+                <!-- Section 1: Game Mode -->
+                <div class="gm-section">
+                    <div class="gm-section-label" data-i18n="SELECT_MODE">SELECT MODE</div>
+                    <div class="gm-pills">
+                        <div class="gm-pill active" id="pill-survival" data-mode="survival" data-i18n="MODE_SURVIVAL">SURVIVAL</div>
+                        <div class="gm-pill disabled" id="pill-eve" data-mode="eve" data-i18n="MODE_EVE">EVE <span style="font-size:9px;letter-spacing:1px;opacity:0.6;"><br>COMING SOON</span></div>
+                    </div>
+                </div>
+
+                <div class="gm-divider"></div>
+
+                <!-- Section 2: Party Mode -->
+                <div class="gm-section">
+                    <div class="gm-section-label" data-i18n="PARTY_MODE_LABEL">PARTY MODE</div>
+                    <button id="btn-party-toggle" class="gm-toggle-btn" data-i18n="PARTY_MODE_OFF">🎊 PARTY MODE: OFF</button>
+                </div>
+
+                <div class="gm-divider"></div>
+
+                <!-- Section 3: Wave Count -->
+                <div class="gm-section">
+                    <div class="gm-section-label" data-i18n="WAVES_LABEL">NUMBER OF WAVES</div>
+                    <div class="gm-pills">
+                        <div class="gm-pill wave-pill" data-waves="10">10</div>
+                        <div class="gm-pill wave-pill" data-waves="20">20</div>
+                        <div class="gm-pill wave-pill" data-waves="30">30</div>
+                        <div class="gm-pill wave-pill active" data-waves="40">40</div>
+                    </div>
+                </div>
+
+                <div class="gm-divider"></div>
+
+                <!-- Section 4: Save -->
+                <button id="btn-gm-save" data-i18n="SAVE_MODE">✓ ALL READY</button>
+            </div>
+        </div>
+
         <!-- SKINS CONTENT (Hidden by default) -->
+
         <div id="skins-content"
             style="display: none; width: 100%; height: 90vh; padding: 40px; box-sizing: border-box; flex-direction: row; background: radial-gradient(circle at left, rgba(0,0,0,0.8) 0%, transparent 60%); align-items: flex-start; overflow: hidden; justify-content: flex-start;">
             <!-- Left Side: Selection Grid -->
