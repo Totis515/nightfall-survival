@@ -151,14 +151,14 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
         BIOME_CHANGE: "BIOME CHANGE...",
         RESTORING: "RESTORING...",
         LOADING_WAVE: "READYING WAVE {wave}... {progress}%",
-        CHANGE_MODE: "CHANGE MODE ▶",
+        CHANGE_MODE: "CHANGE MODE >",
         MODE_SURVIVAL: "SURVIVAL",
         MODE_EVE: "EVE",
-        MODE_PARTY_ON: "🎉 PARTY",
+        MODE_PARTY_ON: "PARTY",
         SELECT_MODE: "SELECT MODE",
         PARTY_MODE_LABEL: "PARTY MODE",
-        PARTY_MODE_OFF: "🎊 PARTY MODE: OFF",
-        PARTY_MODE_ON: "🎊 PARTY MODE: ON",
+        PARTY_MODE_OFF: "PARTY MODE: OFF",
+        PARTY_MODE_ON: "PARTY MODE: ON",
         WAVES_LABEL: "NUMBER OF WAVES",
         SAVE_MODE: "✓ ALL READY",
         GAME_MODE_TITLE: "GAME MODE"
@@ -170,7 +170,7 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
         WAITING_ROOM: "SALA DE ESPERA",
         UI_TOTAL_ENEMIES: "ENEMIGOS TOTALES: ",
         UI_FPS: "FPS: ",
-        UI_COINS: "MONEDAS: ",
+        UI_MONEDAS: "MONEDAS: ",
         GO_TITLE: "ESTÁS MUERTO",
         GO_STATS: "Oleadas Superadas: ",
         GO_KILLED_BY: "ASESINADO POR: ",
@@ -282,14 +282,14 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
         BIOME_CHANGE: "CAMBIO DE BIOMA...",
         RESTORING: "RESTAURANDO...",
         LOADING_WAVE: "PREPARANDO OLEADA {wave}... {progress}%",
-        CHANGE_MODE: "CAMBIAR MODO ▶",
+        CHANGE_MODE: "CAMBIAR MODO >",
         MODE_SURVIVAL: "SUPERVIVENCIA",
         MODE_EVE: "TODOS CONTRA TODOS",
-        MODE_PARTY_ON: "🎉 FIESTA",
+        MODE_PARTY_ON: "FIESTA",
         SELECT_MODE: "SELECCIONAR MODO",
         PARTY_MODE_LABEL: "MODO FIESTA",
-        PARTY_MODE_OFF: "🎊 MODO FIESTA: APAGADO",
-        PARTY_MODE_ON: "🎊 MODO FIESTA: ACTIVO",
+        PARTY_MODE_OFF: "MODO FIESTA: APAGADO",
+        PARTY_MODE_ON: "MODO FIESTA: ACTIVO",
         WAVES_LABEL: "NÚMERO DE OLEADAS",
         SAVE_MODE: "✓ TODO LISTO",
         GAME_MODE_TITLE: "MODO DE JUEGO"
@@ -378,14 +378,14 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
         VICTORY_SUB: "★ NIGHTFALL SURVIVAL TERMINÉ ★",
         VICTORY_DESC: "Vainqueur des 30 vagues — Forêt, Neige et Lave.<br>Le Dragon Pourpre est tombé. L'humanité survit.",
         BTN_RETURN_LOBBY: "RETOUR AU SALON",
-        CHANGE_MODE: "CHANGER MODE ▶",
+        CHANGE_MODE: "CHANGER MODE >",
         MODE_SURVIVAL: "SURVIE",
         MODE_EVE: "TOUS VS TOUS",
-        MODE_PARTY_ON: "🎉 FÊTE",
+        MODE_PARTY_ON: "FÊTE",
         SELECT_MODE: "SÉLECTIONNER MODE",
         PARTY_MODE_LABEL: "MODE FÊTE",
-        PARTY_MODE_OFF: "🎊 MODE FÊTE: DÉSACTIVÉ",
-        PARTY_MODE_ON: "🎊 MODE FÊTE: ACTIVÉ",
+        PARTY_MODE_OFF: "MODE FÊTE: DÉSACTIVÉ",
+        PARTY_MODE_ON: "MODE FÊTE: ACTIVÉ",
         WAVES_LABEL: "NOMBRE DE VAGUES",
         SAVE_MODE: "✓ TOUT PRÊT",
         GAME_MODE_TITLE: "MODE DE JEU"
@@ -1916,7 +1916,11 @@ function refreshGameModeCardHostVisibility() {
         }
     }
     if (card) {
-        card.style.display = 'flex'; // always visible in lobby
+        if (inSkinsTab || !inLobby3D) {
+            card.style.display = 'none';
+        } else {
+            card.style.display = 'flex';
+        }
     }
 }
 
@@ -2221,6 +2225,7 @@ function initMultiplayerUI() {
         lobbyCamera.position.set(0, 3.5, 9);
         lobbyCamera.lookAt(0, 1.8, 0);
         rearrangeLobbySlots(); // Will show teammates and position dummy at -4.5
+        refreshGameModeCardHostVisibility();
     });
 
     tabSkins?.addEventListener('click', () => {
@@ -2234,6 +2239,7 @@ function initMultiplayerUI() {
         lobbyCamera.position.set(0, 3.5, 5);
         lobbyCamera.lookAt(0, 2.0, 0);
         rearrangeLobbySlots(); // Will center dummy at 0,0,0 and hide teammates
+        refreshGameModeCardHostVisibility();
     });
 
     // Skin Selection Logic — with real-time broadcast
