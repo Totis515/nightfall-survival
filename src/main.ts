@@ -1950,8 +1950,15 @@ function showScreen(id: string) {
         if (mainMenu) mainMenu.style.display = 'flex';
     }
     
-    if (id === 'lobby-screen') setup3DLobby();
-    else cleanup3DLobby();
+    if (id === 'lobby-screen') {
+        setup3DLobby();
+        const nav = document.getElementById('lobby-nav');
+        if (nav) nav.style.display = 'flex';
+    } else {
+        cleanup3DLobby();
+        const nav = document.getElementById('lobby-nav');
+        if (nav) nav.style.display = 'none';
+    }
 }
 
 function hideAllMpScreens() {
