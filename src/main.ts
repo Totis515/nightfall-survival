@@ -2458,7 +2458,7 @@ let playerStamina = 100;
 let staminaExhausted = false;
 let staminaCooldown = 0;
 let isDowned = false;
-let downedTimer = 120.0;
+let downedTimer = 90.0; // 1 min 30 sec
 let isRevivingKey = false;
 let reviveProgress = 0.0;
 let reviveTargetId: string | null = null;
@@ -3097,7 +3097,7 @@ function takeDamage(amount: number) {
         if (isMultiplayer && (socket as any)?.connected) {
             if (!isDowned) {
                 isDowned = true;
-                downedTimer = 120.0;
+                downedTimer = 90.0;
                 const ds = document.getElementById('downed-screen');
                 if (ds) ds.style.display = 'flex';
                 (socket as any).emit('player-downed', { name: myUsername });
@@ -5958,6 +5958,17 @@ function beginLoadingSequence() {
     loadingScreen.style.display = 'flex';
     uiLayer.style.display = 'none';
     crosshair.style.display = 'none';
+    // Hide all lobby/achievements overlays so they don't block the canvas
+    const lobbyScreen = document.getElementById('lobby-screen');
+    if (lobbyScreen) lobbyScreen.style.display = 'none';
+    const achContent = document.getElementById('achievements-content');
+    if (achContent) achContent.style.display = 'none';
+    const skinsContent = document.getElementById('skins-content');
+    if (skinsContent) skinsContent.style.display = 'none';
+    const lobbyNavEl = document.getElementById('lobby-nav');
+    if (lobbyNavEl) lobbyNavEl.style.display = 'none';
+    const menuBg = document.getElementById('menu-background');
+    if (menuBg) menuBg.style.display = 'none';
 
     // Si es móvil, mostramos los controles virtuales (el contenedor invisible por ahora)
     if (isMobile) {
