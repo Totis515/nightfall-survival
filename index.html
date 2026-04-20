@@ -1669,32 +1669,7 @@
             z-index: 10;
             border-color: #ffcc00;
         }
-        .ach-slot::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            bottom: 120%;
-            left: 50%;
-            transform: translateX(-50%) scale(0.9);
-            background: rgba(0,0,0,0.92);
-            color: #ffcc00;
-            padding: 8px 14px;
-            border: 1px solid rgba(255,170,0,0.6);
-            border-radius: 6px;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 11px;
-            font-weight: bold;
-            text-align: center;
-            min-width: 140px;
-            opacity: 0;
-            pointer-events: none;
-            transition: all 0.2s;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.9);
-            z-index: 20;
-        }
-        .ach-slot:hover::after {
-            opacity: 1;
-            transform: translateX(-50%) scale(1);
-        }
+        /* JavaScript hover dynamic text */
 
         #achievement-toast {
             position: fixed;
@@ -1900,16 +1875,17 @@
     <div id="lobby-screen" class="mp-screen">
         <!-- TOP NAVIGATION -->
         <div
-            style="position: relative; z-index: 20; width: 100%; display: flex; justify-content: space-between; padding: 30px; box-sizing: border-box; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);">
-            <div
-                style="color: white; font-size: 32px; font-weight: bold; text-shadow: 0 0 10px #000; font-family: 'Impact', sans-serif;">
-                NIGHTFALL <span style="color: #ffcc00">SURVIVAL</span></div>
-            <div style="display: flex; gap: 40px;">
+            style="position: relative; z-index: 20; width: 100%; display: flex; justify-content: center; padding: 30px; box-sizing: border-box; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);">
+            
+            <div style="position: absolute; left: 30px; top: 30px; color: white; font-size: 32px; font-weight: bold; text-shadow: 0 0 10px #000; font-family: 'Impact', sans-serif;">
+                NIGHTFALL <span style="color: #ffcc00">SURVIVAL</span>
+            </div>
+
+            <div style="display: flex; gap: 40px; margin: 0 auto;">
                 <button id="tab-achievements" class="lobby-tab" data-i18n="TAB_ACH">ACHIEVEMENTS</button>
                 <button id="tab-lobby" class="lobby-tab active" data-i18n="TAB_LOBBY">LOBBY</button>
                 <button id="tab-skins" class="lobby-tab" data-i18n="TAB_SKINS">SKINS</button>
             </div>
-            <div style="width: 150px;"></div> <!-- Spacer to center tabs -->
         </div>
 
         <!-- LOBBY CONTENT -->
@@ -2218,8 +2194,14 @@
 
     <!-- Pantalla de carga que se muestra temporalmente mientras el motor 3D prepara el nivel -->
     <!-- ──────────────── ACHIEVEMENTS CONTENT ──────────────── -->
-    <div id="achievements-content" style="display: none; position: absolute; inset: 0; padding: 150px 40px 40px 40px; box-sizing: border-box; flex-direction: column; background: rgba(0, 0, 0, 0.98); align-items: center; justify-content: flex-start; z-index: 10; overflow-y: auto;">
-        <div style="width: 100%; max-width: 900px; display: grid; gap: 30px; grid-template-columns: repeat(5, 1fr); justify-items: center; align-items: center; margin-top: 20px; padding-bottom: 50px;">
+    <div id="achievements-content" style="display: none; position: absolute; inset: 0; padding: 150px 40px 40px 40px; box-sizing: border-box; flex-direction: column; background: url('/ach_bg.svg') center/cover no-repeat; background-color: #0b0202; align-items: center; justify-content: flex-start; z-index: 10; overflow-y: auto;">
+        
+        <div style="width: 100%; max-width: 900px; text-align: center; margin-bottom: 40px; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 12px; border: 2px solid rgba(255,170,0,0.3); box-shadow: 0 0 20px rgba(0,0,0,0.8);">
+            <h3 id="ach-hover-title" style="color: #ffcc00; font-family: 'Impact', sans-serif; font-size: 40px; margin: 0; text-shadow: 0 0 10px #ffaa00; letter-spacing: 2px; text-transform: uppercase;">ACHIEVEMENTS</h3>
+            <p id="ach-hover-desc" style="color: white; font-family: 'Courier New', Courier, monospace; font-size: 18px; margin: 10px 0 0 0; text-shadow: 0 0 5px black; font-weight: bold;">HOVER OVER AN ICON TO VIEW DETAILS</p>
+        </div>
+
+        <div style="width: 100%; max-width: 900px; display: grid; gap: 30px; grid-template-columns: repeat(5, 1fr); justify-items: center; align-items: center; padding-bottom: 50px;">
             <div class="ach-slot locked" id="ach-1" data-tooltip="First Blood: Kill 1 enemy" style="width: 140px; height: 140px;"><img src="/ach_blood.svg"/></div>
             <div class="ach-slot locked" id="ach-2" data-tooltip="Slayer: Kill 100 enemies" style="width: 140px; height: 140px;"><img src="/ach_slayer.svg"/></div>
             <div class="ach-slot locked" id="ach-3" data-tooltip="Consumer: Buy 5 items" style="width: 140px; height: 140px;"><img src="/ach_consumer.svg"/></div>

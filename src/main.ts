@@ -2360,6 +2360,24 @@ function initMultiplayerUI() {
         rearrangeLobbySlots();
     });
 
+    // Achievement Hover Text Logic
+    document.querySelectorAll('.ach-slot').forEach(slot => {
+        slot.addEventListener('mouseenter', () => {
+            const tooltip = slot.getAttribute('data-tooltip') || '';
+            const parts = tooltip.split(':');
+            const titleEl = document.getElementById('ach-hover-title');
+            const descEl = document.getElementById('ach-hover-desc');
+            if (titleEl) titleEl.innerText = parts[0] ? parts[0].trim() : 'ACHIEVEMENT';
+            if (descEl) descEl.innerText = parts[1] ? parts[1].trim() : '';
+        });
+        slot.addEventListener('mouseleave', () => {
+            const titleEl = document.getElementById('ach-hover-title');
+            const descEl = document.getElementById('ach-hover-desc');
+            if (titleEl) titleEl.innerText = 'ACHIEVEMENTS';
+            if (descEl) descEl.innerText = 'HOVER OVER AN ICON TO VIEW DETAILS';
+        });
+    });
+
     // Skin Selection Logic — with real-time broadcast
     document.querySelectorAll('.skin-card').forEach(card => {
         card.addEventListener('click', () => {
