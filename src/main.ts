@@ -2353,6 +2353,8 @@ function initMultiplayerUI() {
         if (achievementsContent) achievementsContent.style.display = 'flex';
         inLobby3D = true;
         inSkinsTab = true; 
+        const gmc = document.getElementById('game-mode-card');
+        if (gmc) gmc.style.display = 'none';
         lobbyCamera.position.set(0, 3.5, 5);
         lobbyCamera.lookAt(0, 2.0, 0);
         rearrangeLobbySlots();
