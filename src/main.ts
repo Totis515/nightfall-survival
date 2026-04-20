@@ -6030,7 +6030,9 @@ controls.addEventListener('lock', () => {
 controls.addEventListener('unlock', () => {
     // Este evento se dispara cuando el puntero se libera (ESC del navegador)
     // GUARD: No mostrar el menú principal si se desbloqueó por una UI interna o si es móvil o si el juego acabo (victoria)
-    if (gameStarted && !isUIShowing && !isMobile && !waveManager.isGameOver) {
+    // Also: don't pause if the loading screen is visible (unlock can fire during DOM changes in loading)
+    const loadingVisible = loadingScreen.style.display === 'flex';
+    if (gameStarted && !isUIShowing && !isMobile && !waveManager.isGameOver && !loadingVisible && !isDowned) {
         if (!isPaused && playerHealth > 0) {
             // El jugador presionó ESC durante la partida → mostrar pantalla de PAUSA
             isPaused = true;
@@ -7458,7 +7460,13 @@ const mass = 100.0;
 let prevTime = performance.now();
 
 const onKeyDown = (event: KeyboardEvent) => {
+    // Block Ctrl+R (reload) and F5 during gameplay
+    if (gameStarted && ((event.ctrlKey && event.code === 'KeyR') || event.code === 'F5')) {
+        event.preventDefault();
+        return;
+    }
     if (!gameStarted) return;
+    if (isDowned) return; // No controls while downed
     switch (event.code) {
         case 'ArrowUp': case 'KeyW': moveForward = true; break;
         case 'ArrowLeft': case 'KeyA': moveLeft = true; break;
