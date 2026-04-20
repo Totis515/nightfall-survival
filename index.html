@@ -2240,31 +2240,17 @@
     <!-- ──────────────── ACHIEVEMENTS CONTENT ──────────────── -->
     <div id="achievements-content" style="display: none; position: absolute; inset: 0; padding: 100px 40px 40px 40px; box-sizing: border-box; flex-direction: column; background: url('/ach_bg.svg') center/cover no-repeat; background-color: #0b0202; align-items: center; justify-content: flex-start; z-index: 10; overflow: visible;">
         <div style="width: 100%; max-width: 900px; display: grid; gap: 30px; grid-template-columns: repeat(5, 1fr); justify-items: center; align-items: center; padding-top: 60px; padding-bottom: 50px; overflow: visible;">
-            <div class="ach-slot locked" id="ach-1" data-ach-name="First Blood" data-ach-desc="Kill your first enemy" style="width: 140px; height: 140px;"><img src="/ach_blood.svg"/></div>
-            <div class="ach-slot locked" id="ach-2" data-ach-name="Slayer" data-ach-desc="Kill 100 enemies" style="width: 140px; height: 140px;"><img src="/ach_slayer.svg"/></div>
-            <div class="ach-slot locked" id="ach-3" data-ach-name="Consumer" data-ach-desc="Buy 5 items in the Black Market" style="width: 140px; height: 140px;"><img src="/ach_consumer.svg"/></div>
-            <div class="ach-slot locked" id="ach-4" data-ach-name="Forest Master" data-ach-desc="Reach Wave 10" style="width: 140px; height: 140px;"><img src="/ach_forest.svg"/></div>
-            <div class="ach-slot locked" id="ach-5" data-ach-name="Polar Explorer" data-ach-desc="Reach Wave 20" style="width: 140px; height: 140px;"><img src="/ach_polar.svg"/></div>
-            <div class="ach-slot locked" id="ach-6" data-ach-name="Lava Walker" data-ach-desc="Reach Wave 30" style="width: 140px; height: 140px;"><img src="/ach_lava.svg"/></div>
-            <div class="ach-slot locked" id="ach-7" data-ach-name="Castle Crusher" data-ach-desc="Win the game — survive all waves!" style="width: 140px; height: 140px;"><img src="/ach_castle.svg"/></div>
-            <div class="ach-slot locked" id="ach-8" data-ach-name="Untouchable" data-ach-desc="Win with 0 deaths" style="width: 140px; height: 140px;"><img src="/ach_shield.svg"/></div>
-            <div class="ach-slot locked" id="ach-9" data-ach-name="Headhunter" data-ach-desc="Land 20 headshots in one session" style="width: 140px; height: 140px;"><img src="/ach_headshot.svg"/></div>
-            <div class="ach-slot locked" id="ach-10" data-ach-name="Wealthy" data-ach-desc="Gather 500 coins total" style="width: 140px; height: 140px;"><img src="/ach_coins.svg"/></div>
+            <div class="ach-slot locked" id="ach-1" data-ach-name="First Blood" data-ach-desc="Kill your first enemy" style="width: 140px; height: 140px;" onmouseenter="showAchTip(this,event)" onmouseleave="hideAchTip()"><img src="/ach_blood.svg"/></div>
+            <div class="ach-slot locked" id="ach-2" data-ach-name="Slayer" data-ach-desc="Kill 100 enemies" style="width: 140px; height: 140px;" onmouseenter="showAchTip(this,event)" onmouseleave="hideAchTip()"><img src="/ach_slayer.svg"/></div>
+            <div class="ach-slot locked" id="ach-3" data-ach-name="Consumer" data-ach-desc="Buy 5 items in the Black Market" style="width: 140px; height: 140px;" onmouseenter="showAchTip(this,event)" onmouseleave="hideAchTip()"><img src="/ach_consumer.svg"/></div>
+            <div class="ach-slot locked" id="ach-4" data-ach-name="Forest Master" data-ach-desc="Reach Wave 10" style="width: 140px; height: 140px;" onmouseenter="showAchTip(this,event)" onmouseleave="hideAchTip()"><img src="/ach_forest.svg"/></div>
+            <div class="ach-slot locked" id="ach-5" data-ach-name="Polar Explorer" data-ach-desc="Reach Wave 20" style="width: 140px; height: 140px;" onmouseenter="showAchTip(this,event)" onmouseleave="hideAchTip()"><img src="/ach_polar.svg"/></div>
+            <div class="ach-slot locked" id="ach-6" data-ach-name="Lava Walker" data-ach-desc="Reach Wave 30" style="width: 140px; height: 140px;" onmouseenter="showAchTip(this,event)" onmouseleave="hideAchTip()"><img src="/ach_lava.svg"/></div>
+            <div class="ach-slot locked" id="ach-7" data-ach-name="Castle Crusher" data-ach-desc="Win the game — survive all waves!" style="width: 140px; height: 140px;" onmouseenter="showAchTip(this,event)" onmouseleave="hideAchTip()"><img src="/ach_castle.svg"/></div>
+            <div class="ach-slot locked" id="ach-8" data-ach-name="Untouchable" data-ach-desc="Win with 0 deaths" style="width: 140px; height: 140px;" onmouseenter="showAchTip(this,event)" onmouseleave="hideAchTip()"><img src="/ach_shield.svg"/></div>
+            <div class="ach-slot locked" id="ach-9" data-ach-name="Headhunter" data-ach-desc="Land 20 headshots in one session" style="width: 140px; height: 140px;" onmouseenter="showAchTip(this,event)" onmouseleave="hideAchTip()"><img src="/ach_headshot.svg"/></div>
+            <div class="ach-slot locked" id="ach-10" data-ach-name="Wealthy" data-ach-desc="Gather 500 coins total" style="width: 140px; height: 140px;" onmouseenter="showAchTip(this,event)" onmouseleave="hideAchTip()"><img src="/ach_coins.svg"/></div>
         </div>
-        
-        <script>
-            function achHover(el) {
-                const parts = el.getAttribute('data-tooltip').split(':');
-                document.getElementById('ach-hover-title').innerText = parts[0] ? parts[0].trim().toUpperCase() : 'ACHIEVEMENT';
-                document.getElementById('ach-hover-title').style.textShadow = '0 0 20px #ff0000, 0 0 40px #ffcc00';
-                document.getElementById('ach-hover-desc').innerText = parts[1] ? parts[1].trim() : '';
-            }
-            function achOut() {
-                document.getElementById('ach-hover-title').innerText = 'ACHIEVEMENTS';
-                document.getElementById('ach-hover-title').style.textShadow = '0 0 10px #ffaa00';
-                document.getElementById('ach-hover-desc').innerText = 'HOVER OVER AN ICON TO VIEW DETAILS';
-            }
-        </script>
     </div>
 
     <!-- Loading Screen -->
@@ -2577,6 +2563,41 @@
     </div>
     <!-- CARGA EL MÓDULO PRINCIPAL DEL JUEGO -->
     <script type="module" src="/src/main.ts"></script>
+    <!-- ACHIEVEMENT FIXED TOOLTIP: position:fixed escapes all clipping contexts -->
+    <div id="ach-fixed-tip" style="
+        display: none;
+        position: fixed;
+        z-index: 99999;
+        pointer-events: none;
+        background: rgba(0,0,0,0.96);
+        border: 2px solid #ffcc00;
+        border-radius: 10px;
+        padding: 10px 18px 12px;
+        text-align: center;
+        box-shadow: 0 0 20px rgba(255,200,0,0.4), 0 4px 20px rgba(0,0,0,0.9);
+        min-width: 180px;
+        max-width: 260px;
+        transform: translateX(-50%);
+    ">
+        <div id="ach-tip-name" style="color:#ffcc00; font-family:'Impact',sans-serif; font-size:15px; letter-spacing:2px; text-transform:uppercase; margin-bottom:5px;"></div>
+        <div id="ach-tip-desc" style="color:#ffffff; font-family:'Courier New',monospace; font-size:12px; line-height:1.4;"></div>
+    </div>
+
+    <script>
+        function showAchTip(el, e) {
+            var tip = document.getElementById('ach-fixed-tip');
+            document.getElementById('ach-tip-name').textContent = el.getAttribute('data-ach-name') || '';
+            document.getElementById('ach-tip-desc').textContent = el.getAttribute('data-ach-desc') || '';
+            var rect = el.getBoundingClientRect();
+            tip.style.left = (rect.left + rect.width / 2) + 'px';
+            tip.style.top  = (rect.top - 10) + 'px';
+            tip.style.transform = 'translateX(-50%) translateY(-100%)';
+            tip.style.display = 'block';
+        }
+        function hideAchTip() {
+            document.getElementById('ach-fixed-tip').style.display = 'none';
+        }
+    </script>
 </body>
 
 </html>
