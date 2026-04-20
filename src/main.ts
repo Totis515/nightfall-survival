@@ -449,6 +449,9 @@ function resetGameToLobby() {
     // 2. Mostrar Lobby UI
     document.getElementById('lobby-screen')!.style.display = 'flex';
     document.getElementById('menu-background')!.style.display = 'block';
+    // Restore nav
+    const navEl = document.getElementById('lobby-nav');
+    if (navEl) navEl.style.display = 'flex';
 
     // 3. Resetear Entidades 3D y Memoria
     gameStarted = false;
@@ -6391,6 +6394,10 @@ function startGame() {
         if (kl) kl.visible = false;
     });
 
+    // Hide the lobby nav bar during gameplay
+    const lobbyNav = document.getElementById('lobby-nav');
+    if (lobbyNav) lobbyNav.style.display = 'none';
+
     // waveManager.startNextWave() ya fue llamada al final de la carga (progress >= 100)
 }
 
@@ -7716,9 +7723,11 @@ function animate() {
         }
     } else if ((controls.isLocked === true || isMobile) && gameStarted) {
         if (isDowned) {
-            downedTimer -= delta;
+            // Use real wall-clock seconds, not frame-bounded delta
+            const realDelta = (time - prevTime) / 1000;
+            downedTimer -= realDelta;
             const dtEl = document.getElementById('downed-timer');
-            if (dtEl) dtEl.innerText = downedTimer.toFixed(1);
+            if (dtEl) dtEl.innerText = Math.max(0, downedTimer).toFixed(1);
             if (downedTimer <= 0) {
                 isDowned = false;
                 const ds = document.getElementById('downed-screen');
