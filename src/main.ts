@@ -6703,7 +6703,7 @@ function updateJoystickVector(clientX: number, clientY: number) {
 }
 
 function handleShooting(time: number) {
-    if (!isShooting || (!controls.isLocked && !isMobile) || !gameStarted) return;
+    if (!isShooting || (!controls.isLocked && !isMobile) || !gameStarted || isDowned || playerHealth <= 0) return;
     const w = weapons[currentWeaponIndex];
     if (w.isReloading) return;
 
@@ -7701,10 +7701,10 @@ function animate() {
 
     // CORRECCIÓN DE RENDIMIENTO Y MOVIMIENTO: Limitar el delta máximo a 0.1 (100ms) para evitar teletransportes por tirones de lag
     const delta = Math.min((time - prevTime) / 1000, 0.1);
+    prevTime = time;
 
     // Si el juego está en pausa, no actualizamos físicas ni enemigos, solo renderizamos el frame
     if (isPaused) {
-        prevTime = time;
         renderer.render(inLobby3D ? lobbyScene : scene, inLobby3D ? lobbyCamera : camera);
         return;
     }
@@ -7723,9 +7723,7 @@ function animate() {
         }
     } else if ((controls.isLocked === true || isMobile) && gameStarted) {
         if (isDowned) {
-            // Use real wall-clock seconds, not frame-bounded delta
-            const realDelta = (time - prevTime) / 1000;
-            downedTimer -= realDelta;
+            downedTimer -= delta;
             const dtEl = document.getElementById('downed-timer');
             if (dtEl) dtEl.innerText = Math.max(0, downedTimer).toFixed(1);
             if (downedTimer <= 0) {
@@ -7734,14 +7732,8 @@ function animate() {
                 if (ds) ds.style.display = 'none';
                 if (socket?.connected) socket.emit('player-died-final', { name: myUsername });
                 gameOver();
-            } else {
-                speed = 0; velocity.x = 0; velocity.z = 0; // Lock movement
-                velocity.y -= 9.8 * 8.0 * delta; // Gravity only
-                camera.position.y += (velocity.y * delta);
-                if (camera.position.y <= 0.5) camera.position.y = 0.5;
             }
-            // Skip the rest of normal loop controls
-            return; 
+            // Allow them to move while downed, just like normal (no return, no lock)
         }
 
         // Muerte de Jugador: Revivir a otro
@@ -8121,7 +8113,6 @@ function animate() {
         }
     }
 
-    prevTime = time;
     renderer.render(inLobby3D ? lobbyScene : scene, inLobby3D ? lobbyCamera : camera);
 }
 
