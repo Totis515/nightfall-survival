@@ -347,7 +347,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            z-index: 30;
+            z-index: 999999;
         }
 
         .loading-text {
@@ -1973,56 +1973,7 @@
             </div>
         </div>
 
-        <!-- ══════════════════════════════════════════
-             GAME MODE SELECTION MODAL — host only
-        ══════════════════════════════════════════ -->
-        <div id="game-mode-modal">
-            <div class="gm-modal-box">
-                <button id="btn-gm-close">✕</button>
-                <p class="gm-modal-title" data-i18n="GAME_MODE_TITLE">GAME MODE</p>
 
-                <!-- Section 1: Game Mode -->
-                <div class="gm-section">
-                    <div class="gm-section-label" data-i18n="SELECT_MODE">SELECT MODE</div>
-                    <div class="gm-pills">
-                        <div class="gm-pill active" id="pill-survival" data-mode="survival">
-                            <div data-i18n="MODE_SURVIVAL">SURVIVAL</div>
-                        </div>
-                        <div class="gm-pill disabled" id="pill-eve" data-mode="eve">
-                            <div><span data-i18n="MODE_EVE">EVE</span> <span style="font-size:9px;letter-spacing:1px;opacity:0.6;"><br>COMING SOON</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="gm-divider"></div>
-
-                <!-- Section 2: Party Mode -->
-                <div class="gm-section">
-                    <div class="gm-section-label" data-i18n="PARTY_MODE_LABEL">PARTY MODE</div>
-                    <button id="btn-party-toggle" class="gm-toggle-btn">
-                        <span data-i18n="PARTY_MODE_OFF">PARTY MODE: OFF</span>
-                    </button>
-                </div>
-
-                <div class="gm-divider"></div>
-
-                <!-- Section 3: Wave Count -->
-                <div class="gm-section">
-                    <div class="gm-section-label" data-i18n="WAVES_LABEL">NUMBER OF WAVES</div>
-                    <div class="gm-pills">
-                        <div class="gm-pill wave-pill" data-waves="10"><div>10</div></div>
-                        <div class="gm-pill wave-pill" data-waves="20"><div>20</div></div>
-                        <div class="gm-pill wave-pill" data-waves="30"><div>30</div></div>
-                        <div class="gm-pill wave-pill active" data-waves="40"><div>40</div></div>
-                    </div>
-                </div>
-
-                <div class="gm-divider"></div>
-
-                <!-- Section 4: Save -->
-                <button id="btn-gm-save" data-i18n="SAVE_MODE">✓ ALL READY</button>
-            </div>
-        </div>
 
         <!-- SKINS CONTENT (Hidden by default) -->
 
@@ -2561,6 +2512,58 @@
             <div class="mobile-weapon-btn" id="btn-mw-5">5</div>
         </div>
     </div>
+
+    <!-- ══════════════════════════════════════════
+         GAME MODE SELECTION MODAL — host only
+    ══════════════════════════════════════════ -->
+    <div id="game-mode-modal">
+        <div class="gm-modal-box">
+            <button id="btn-gm-close">✕</button>
+            <p class="gm-modal-title" data-i18n="GAME_MODE_TITLE">GAME MODE</p>
+
+            <!-- Section 1: Game Mode -->
+            <div class="gm-section">
+                <div class="gm-section-label" data-i18n="SELECT_MODE">SELECT MODE</div>
+                <div class="gm-pills">
+                    <div class="gm-pill active" id="pill-survival" data-mode="survival">
+                        <div data-i18n="MODE_SURVIVAL">SURVIVAL</div>
+                    </div>
+                    <div class="gm-pill disabled" id="pill-eve" data-mode="eve">
+                        <div><span data-i18n="MODE_EVE">EVE</span> <span style="font-size:9px;letter-spacing:1px;opacity:0.6;"><br>COMING SOON</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gm-divider"></div>
+
+            <!-- Section 2: Party Mode -->
+            <div class="gm-section">
+                <div class="gm-section-label" data-i18n="PARTY_MODE_LABEL">PARTY MODE</div>
+                <button id="btn-party-toggle" class="gm-toggle-btn">
+                    <span data-i18n="PARTY_MODE_OFF">PARTY MODE: OFF</span>
+                </button>
+            </div>
+
+            <div class="gm-divider"></div>
+
+            <!-- Section 3: Wave Count -->
+            <div class="gm-section">
+                <div class="gm-section-label" data-i18n="WAVES_LABEL">NUMBER OF WAVES</div>
+                <div class="gm-pills">
+                    <div class="gm-pill wave-pill" data-waves="10"><div>10</div></div>
+                    <div class="gm-pill wave-pill" data-waves="20"><div>20</div></div>
+                    <div class="gm-pill wave-pill" data-waves="30"><div>30</div></div>
+                    <div class="gm-pill wave-pill active" data-waves="40"><div>40</div></div>
+                </div>
+            </div>
+
+            <div class="gm-divider"></div>
+
+            <!-- Section 4: Save -->
+            <button id="btn-gm-save" data-i18n="SAVE_MODE">✓ ALL READY</button>
+        </div>
+    </div>
+
     <!-- CARGA EL MÓDULO PRINCIPAL DEL JUEGO -->
     <script type="module" src="/src/main.ts"></script>
     <!-- ACHIEVEMENT FIXED TOOLTIP: position:fixed escapes all clipping contexts -->
