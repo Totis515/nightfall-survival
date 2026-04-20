@@ -1599,6 +1599,148 @@
             border-color: #ffcc00 !important;
             box-shadow: 0 0 20px rgba(255, 204, 0, 0.4);
         }
+
+        /* ═══════════════════════════════════════════════════
+           ACHIEVEMENTS PANEL & TOAST NOTIFICATION
+        ═══════════════════════════════════════════════════ */
+        #achievements-panel {
+            position: absolute;
+            left: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(10,5,5,0.85);
+            border: 2px solid rgba(255,170,0,0.5);
+            border-radius: 12px;
+            padding: 20px 24px;
+            width: 250px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8), inset 0 0 15px rgba(255,100,0,0.1);
+            backdrop-filter: blur(10px);
+            z-index: 400;
+        }
+        .ach-title {
+            font-family: 'Impact', sans-serif;
+            color: #ffcc00;
+            font-size: 20px;
+            letter-spacing: 4px;
+            text-align: center;
+            border-bottom: 2px solid rgba(255,100,0,0.5);
+            padding-bottom: 12px;
+            text-shadow: 0 0 10px #ffaa00;
+        }
+        .ach-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            justify-content: center;
+        }
+        .ach-slot {
+            height: 60px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, rgba(255,170,0,0.2), rgba(80,20,0,0.6));
+            border: 2px solid rgba(255,200,0,0.6);
+            cursor: help;
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.9), 0 5px 10px rgba(0,0,0,0.5);
+        }
+        .ach-slot img {
+            width: 36px; height: 36px;
+            object-fit: contain;
+            transition: 0.3s;
+            filter: drop-shadow(0 0 5px rgba(255,170,0,0.8));
+        }
+        .ach-slot.locked {
+            border-color: rgba(80,80,80,0.5);
+            background: linear-gradient(135deg, rgba(40,40,40,0.4), rgba(10,10,10,0.8));
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.9);
+        }
+        .ach-slot.locked img {
+            filter: grayscale(100%) brightness(0.6);
+            opacity: 0.7;
+        }
+        .ach-slot:hover {
+            transform: scale(1.15);
+            z-index: 10;
+            border-color: #ffcc00;
+        }
+        .ach-slot::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 120%;
+            left: 50%;
+            transform: translateX(-50%) scale(0.9);
+            background: rgba(0,0,0,0.92);
+            color: #ffcc00;
+            padding: 8px 14px;
+            border: 1px solid rgba(255,170,0,0.6);
+            border-radius: 6px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+            min-width: 140px;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.2s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.9);
+            z-index: 20;
+        }
+        .ach-slot:hover::after {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+        }
+
+        #achievement-toast {
+            position: fixed;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(90deg, rgba(30,5,5,0.95), rgba(120,20,0,0.98), rgba(30,5,5,0.95));
+            border: 2px solid #ffcc00;
+            border-radius: 12px;
+            padding: 12px 30px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 9999;
+            box-shadow: 0 10px 40px rgba(255,60,0,0.6), inset 0 0 15px rgba(255,200,0,0.3);
+            transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+            opacity: 0;
+        }
+        #achievement-toast.show {
+            top: 40px;
+            opacity: 1;
+        }
+        .toast-icon { 
+            width: 50px; height: 50px; 
+            object-fit: contain;
+            filter: drop-shadow(0 0 8px #ffcc00);
+        }
+        .toast-info {
+            display: flex; flex-direction: column; gap: 3px;
+        }
+        .toast-title { 
+            font-size: 12px; 
+            color: #ffaa66; 
+            letter-spacing: 3px; 
+            font-family: 'Impact', sans-serif;
+            text-transform: uppercase; 
+        }
+        .toast-text { 
+            font-family: 'Impact', sans-serif;
+            font-size: 22px; 
+            letter-spacing: 2px;
+            color: #ffcc00; 
+            text-shadow: 0 0 10px rgba(255,170,0,0.8), 2px 2px 0px #000; 
+        }
     </style>
 </head>
 
@@ -1783,6 +1925,23 @@
             </div>
 
             <!-- 3D Kick system handled by Raycaster -->
+
+            <!-- Achievements Panel (Left Side of Lobby) -->
+            <div id="achievements-panel">
+                <div class="ach-title">ACHIEVEMENTS</div>
+                <div class="ach-grid">
+                    <div class="ach-slot locked" id="ach-1" data-tooltip="First Blood: Kill 1 enemy"><img src="/ach_blood.png" onerror="this.src='/favicon.png'"/></div>
+                    <div class="ach-slot locked" id="ach-2" data-tooltip="Slayer: Kill 100 enemies"><img src="/ach_slayer.png" onerror="this.src='/favicon.png'"/></div>
+                    <div class="ach-slot locked" id="ach-3" data-tooltip="Consumer: Buy 5 items"><img src="/ach_consumer.png" onerror="this.src='/favicon.png'"/></div>
+                    <div class="ach-slot locked" id="ach-4" data-tooltip="Forest Master: Reach Wave 10"><img src="/ach_forest.png" onerror="this.src='/favicon.png'"/></div>
+                    <div class="ach-slot locked" id="ach-5" data-tooltip="Polar Explorer: Reach Wave 20"><img src="/ach_polar.png" onerror="this.src='/favicon.png'"/></div>
+                    <div class="ach-slot locked" id="ach-6" data-tooltip="Lava Walker: Reach Wave 30"><img src="/ach_lava.png" onerror="this.src='/favicon.png'"/></div>
+                    <div class="ach-slot locked" id="ach-7" data-tooltip="Castle Crusher: Win the game!"><img src="/ach_castle.png" onerror="this.src='/favicon.png'"/></div>
+                    <div class="ach-slot locked" id="ach-8" data-tooltip="Untouchable: Win with 0 deaths"><img src="/ach_shield.png" onerror="this.src='/favicon.png'"/></div>
+                    <div class="ach-slot locked" id="ach-9" data-tooltip="The Host: Create a Room"><img src="/ach_host.png" onerror="this.src='/favicon.png'"/></div>
+                    <div class="ach-slot locked" id="ach-10" data-tooltip="Wealthy: Gather 500 coins"><img src="/ach_coins.png" onerror="this.src='/favicon.png'"/></div>
+                </div>
+            </div>
 
             <!-- Play Button Area -->
             <div style="align-self: center; margin-bottom: 20px; width: 100%; display: flex; justify-content: center;">

@@ -369,6 +369,17 @@ io.on('connection', (socket) => {
     });
 
     // ── DISCONNECT ────────────────────────────────────────────────
+        // Host resets the game to lobby state
+        socket.on('reset-room-state', () => {
+            const code = reverseLookup[socket.id];
+            if (!code || !rooms[code]) return;
+            if (rooms[code].hostId === socket.id) {
+                rooms[code].gameStarted = false;
+                rooms[code].enemies = {};
+                io.to(code).emit('force-lobby-return');
+            }
+        });
+
     socket.on('disconnect', (reason) => {
         const code = socket.data.roomCode;
         console.log(`[-] ${socket.id} (${reason})`);

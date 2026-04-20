@@ -392,6 +392,99 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     }
 };
 
+// ── ACHIEVEMENTS LOGIC ────────────────────────────────────────────────────────
+let achievements: Record<number, boolean> = {};
+let localPlayerKills = 0;
+let totalCoinsAmassed = 0;
+let localPlayerDeaths = 0;
+let itemsBought = 0;
+
+function initAchievements() {
+    const saved = localStorage.getItem('nightfall_achievements');
+    if (saved) {
+        achievements = JSON.parse(saved);
+        for(let i=1; i<=10; i++) {
+            if (achievements[i]) {
+                const slot = document.getElementById(`ach-${i}`);
+                if (slot) slot.classList.remove('locked');
+            }
+        }
+    }
+}
+
+function unlockAchievement(id: number, title: string) {
+    if (achievements[id]) return; // Ya desbloqueado
+    achievements[id] = true;
+    localStorage.setItem('nightfall_achievements', JSON.stringify(achievements));
+    
+    // UI update
+    const slot = document.getElementById(`ach-${id}`);
+    if (slot) slot.classList.remove('locked');
+    
+    // Toast
+    const toast = document.getElementById('achievement-toast');
+    const toastText = document.getElementById('toast-text');
+    const toastImg = document.getElementById('toast-img') as HTMLImageElement;
+    
+    if (toast && toastText && toastImg) {
+        toastText.innerText = title;
+        const slotImg = slot?.querySelector('img') as HTMLImageElement;
+        if (slotImg) toastImg.src = slotImg.src;
+        
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 4500);
+    }
+}
+
+function resetGameToLobby() {
+    // 1. Ocultar HUDs
+    const hud = document.getElementById('hud-container');
+    const win = document.getElementById('victory-screen');
+    const go = document.getElementById('game-over-screen');
+    if(hud) hud.style.display = 'none';
+    if(win) win.style.display = 'none';
+    if(go) go.style.display = 'none';
+    
+    // 2. Mostrar Lobby UI
+    document.getElementById('lobby-screen')!.style.display = 'flex';
+    document.getElementById('menu-background')!.style.display = 'block';
+
+    // 3. Resetear Entidades 3D y Memoria
+    gameStarted = false;
+    for (const enId in enemies) {
+        if (enemies[enId] && enemies[enId].mesh && enemies[enId].mesh.parent) {
+            scene.remove(enemies[enId].mesh);
+        }
+    }
+    enemies = {};
+    if (waveManager) waveManager.reset();
+    activeBullets.forEach(b => { if(b.mesh && b.mesh.parent) scene.remove(b.mesh); });
+    activeBullets = [];
+
+    // Detener la musiquilla de batalla
+    if (typeof startGameMusic !== 'undefined' && (window as any).bgmSource) {
+        (window as any).bgmSource.stop();
+        (window as any).bgmSource.disconnect();
+        (window as any).bgmSource = null;
+    }
+    soundManager.startMenuMusic(); // Start lobby music de nuevo
+    
+    // 4. Forzar que el loop renderice el lobby
+    inLobby3D = true;
+    setup3DLobby();
+    rearrangeLobbySlots();
+    
+    // 5. Resetear Stats Temporales del Jugador
+    for(const pid in players) {
+        players[pid].hp = 100;
+        players[pid].isDead = false;
+    }
+    localPlayerKills = 0;
+    localPlayerDeaths = 0;
+    itemsBought = 0;
+}
+
+
 function t(key: string, params?: Record<string, any>): string {
     let str = TRANSLATIONS[currentLanguage][key] || key;
     if (params) {
@@ -1464,6 +1557,10 @@ function connectMultiplayer() {
             enemy.die(true); // fromNetwork = true, skip re-emit
         }
     });
+
+    socket.on('force-lobby-return', () => {
+        resetGameToLobby();
+    });
     socket.on('enemy-sync', (enemiesArray: {nid: string, x: number, z: number, rotY: number}[]) => {
         if (isHost || !gameStarted) return; // We are authoritative or early
         for (const data of enemiesArray) {
@@ -2200,12 +2297,10 @@ function initMultiplayerUI() {
 
     // Victory screen return
     document.getElementById('btn-victory-return')?.addEventListener('click', () => {
-        if (myRoomCode) {
-            sessionStorage.setItem('rejoinRoom', myRoomCode);
-            sessionStorage.setItem('rejoinUsername', myUsername);
-            sessionStorage.setItem('rejoinPlatform', isMobile ? 'mobile' : 'pc');
+        if (isHost && socket?.connected) {
+            socket.emit('reset-room-state');
         }
-        location.reload();
+        resetGameToLobby();
     });
 
     // Sub-Tabs within Lobby Screen
@@ -2964,6 +3059,7 @@ function takeDamage(amount: number) {
 
     if (playerHealth <= 0) {
         playerHealth = 0;
+        localPlayerDeaths++;
         if (isMultiplayer && (socket as any)?.connected) {
             if (!isDowned) {
                 isDowned = true;
@@ -4767,7 +4863,15 @@ class Enemy {
         this.isDead = true;
         if (!fromNetwork) {
             // Only give coins + emit kill to server when killed locally
-            playerCoins += ENEMY_DATA[this.type].reward;
+            const reward = ENEMY_DATA[this.type].reward;
+            playerCoins += reward;
+            totalCoinsAmassed += reward;
+            if (totalCoinsAmassed >= 500) unlockAchievement(10, "Wealthy");
+            
+            localPlayerKills++;
+            if (localPlayerKills === 1) unlockAchievement(1, "First Blood");
+            if (localPlayerKills >= 100) unlockAchievement(2, "Slayer");
+            
             updateStatsHUD();
             if (isMultiplayer && socket?.connected) {
                 socket.emit('enemy-killed', { nid: this.nid });
@@ -5306,12 +5410,26 @@ class WaveManager {
     isNetworkClient: boolean = false; // set to true if multiplayer and NOT host
     syncTimer: number = 0;
 
+    reset() {
+        this.currentWave = 0;
+        this.enemiesToSpawn = 0;
+        this.enemiesAlive = 0;
+        this.activeEnemies = [];
+        this.isBreak = false;
+        this.isGameOver = false;
+        this.syncTimer = 0;
+    }
+
     startNextWave() {
         if (this.currentWave >= this.maxWaves) return;
 
         this.isBreak = false;
         soundManager.startGameMusic();
         this.currentWave++;
+
+        if (this.currentWave === 10) unlockAchievement(4, "Forest Master");
+        if (this.currentWave === 20) unlockAchievement(5, "Polar Explorer");
+        if (this.currentWave === 30) unlockAchievement(6, "Lava Walker");
 
         if (this.currentWave === 1 && !hasJetpack) {
             // Spawnear el jetpack un poco más lejos para que el jugador tenga que caminar a recogerlo
@@ -5517,6 +5635,9 @@ class WaveManager {
         if (isMultiplayer && isHost && socket?.connected) {
             socket.emit('game-victory');
         }
+        
+        unlockAchievement(7, "Castle Crusher");
+        if (localPlayerDeaths === 0) unlockAchievement(8, "Untouchable");
 
         if (!isMobile) controls.unlock();
         const victoryScreen = document.getElementById('victory-screen');
@@ -7387,6 +7508,10 @@ function tryBuy(itemKey: string) {
     if (playerCoins >= item.cost) {
         playerCoins -= item.cost;
         item.action();
+        
+        itemsBought++;
+        if (itemsBought >= 5) unlockAchievement(3, "Consumer");
+        
         // Escalar el precio +$100 fijos por nivel comprado (excepto salud que siempre es 50)
         if (item.id !== 'health') {
             item.cost += 100;
