@@ -7732,8 +7732,17 @@ function animate() {
                 if (ds) ds.style.display = 'none';
                 if (socket?.connected) socket.emit('player-died-final', { name: myUsername });
                 gameOver();
+            } else {
+                // Lock all movement and camera when downed
+                speed = 0;
+                velocity.x = 0;
+                velocity.z = 0;
+                velocity.y -= 9.8 * 4.0 * delta; // Light gravity
+                camera.position.y += (velocity.y * delta);
+                if (camera.position.y <= 0.5) { camera.position.y = 0.5; velocity.y = 0; }
             }
-            // Allow them to move while downed, just like normal (no return, no lock)
+            // Skip ALL normal game logic while downed
+            return;
         }
 
         // Muerte de Jugador: Revivir a otro
