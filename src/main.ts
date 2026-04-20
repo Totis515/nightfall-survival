@@ -2448,7 +2448,7 @@ let playerStamina = 100;
 let staminaExhausted = false;
 let staminaCooldown = 0;
 let isDowned = false;
-let downedTimer = 60.0;
+let downedTimer = 120.0;
 let isRevivingKey = false;
 let reviveProgress = 0.0;
 let reviveTargetId: string | null = null;
@@ -3087,7 +3087,7 @@ function takeDamage(amount: number) {
         if (isMultiplayer && (socket as any)?.connected) {
             if (!isDowned) {
                 isDowned = true;
-                downedTimer = 60.0;
+                downedTimer = 120.0;
                 const ds = document.getElementById('downed-screen');
                 if (ds) ds.style.display = 'flex';
                 (socket as any).emit('player-downed', { name: myUsername });
