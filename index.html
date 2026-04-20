@@ -1907,6 +1907,7 @@
             <div style="display: flex; gap: 40px;">
                 <button id="tab-lobby" class="lobby-tab active" data-i18n="TAB_LOBBY">LOBBY</button>
                 <button id="tab-skins" class="lobby-tab" data-i18n="TAB_SKINS">SKINS</button>
+                <button id="tab-achievements" class="lobby-tab" data-i18n="TAB_ACH">ACHIEVEMENTS</button>
             </div>
             <div style="width: 150px;"></div> <!-- Spacer to center tabs -->
         </div>
@@ -1927,21 +1928,7 @@
             <!-- 3D Kick system handled by Raycaster -->
 
             <!-- Achievements Panel (Left Side of Lobby) -->
-            <div id="achievements-panel">
-                <div class="ach-title">ACHIEVEMENTS</div>
-                <div class="ach-grid">
-                    <div class="ach-slot locked" id="ach-1" data-tooltip="First Blood: Kill 1 enemy"><img src="/ach_blood.png" onerror="this.src='/favicon.png'"/></div>
-                    <div class="ach-slot locked" id="ach-2" data-tooltip="Slayer: Kill 100 enemies"><img src="/ach_slayer.png" onerror="this.src='/favicon.png'"/></div>
-                    <div class="ach-slot locked" id="ach-3" data-tooltip="Consumer: Buy 5 items"><img src="/ach_consumer.png" onerror="this.src='/favicon.png'"/></div>
-                    <div class="ach-slot locked" id="ach-4" data-tooltip="Forest Master: Reach Wave 10"><img src="/ach_forest.png" onerror="this.src='/favicon.png'"/></div>
-                    <div class="ach-slot locked" id="ach-5" data-tooltip="Polar Explorer: Reach Wave 20"><img src="/ach_polar.png" onerror="this.src='/favicon.png'"/></div>
-                    <div class="ach-slot locked" id="ach-6" data-tooltip="Lava Walker: Reach Wave 30"><img src="/ach_lava.png" onerror="this.src='/favicon.png'"/></div>
-                    <div class="ach-slot locked" id="ach-7" data-tooltip="Castle Crusher: Win the game!"><img src="/ach_castle.png" onerror="this.src='/favicon.png'"/></div>
-                    <div class="ach-slot locked" id="ach-8" data-tooltip="Untouchable: Win with 0 deaths"><img src="/ach_shield.png" onerror="this.src='/favicon.png'"/></div>
-                    <div class="ach-slot locked" id="ach-9" data-tooltip="The Host: Create a Room"><img src="/ach_host.png" onerror="this.src='/favicon.png'"/></div>
-                    <div class="ach-slot locked" id="ach-10" data-tooltip="Wealthy: Gather 500 coins"><img src="/ach_coins.png" onerror="this.src='/favicon.png'"/></div>
-                </div>
-            </div>
+            <!-- Deleted achievements-panel float -->
 
             <!-- Play Button Area -->
             <div style="align-self: center; margin-bottom: 20px; width: 100%; display: flex; justify-content: center;">
@@ -2230,6 +2217,24 @@
     </div>
 
     <!-- Pantalla de carga que se muestra temporalmente mientras el motor 3D prepara el nivel -->
+    <!-- ──────────────── ACHIEVEMENTS CONTENT ──────────────── -->
+    <div id="achievements-content" style="display: none; width: 100%; height: 90vh; padding: 40px; box-sizing: border-box; flex-direction: column; background: radial-gradient(circle at left, rgba(0,0,0,0.85) 0%, transparent 70%); align-items: flex-start; overflow: hidden; justify-content: flex-start;">
+        <h2 style="color: #ffcc00; font-family: 'Impact', sans-serif; font-size: 36px; text-shadow: 0 0 10px #ffcc00; margin-bottom: 20px; letter-spacing: 2px;">ACHIEVEMENTS</h2>
+        
+        <div style="flex: 1; width: 100%; display: flex; gap: 20px; flex-wrap: wrap; font-family: 'Impact', sans-serif; align-content: flex-start; overflow-y: auto !important; overflow-x: hidden; padding-right: 10px; padding-bottom: 50px;">
+            <div class="ach-slot locked" id="ach-1" data-tooltip="First Blood: Kill 1 enemy" style="width: 100px; height: 100px;"><img src="/ach_blood.svg"/></div>
+            <div class="ach-slot locked" id="ach-2" data-tooltip="Slayer: Kill 100 enemies" style="width: 100px; height: 100px;"><img src="/ach_slayer.svg"/></div>
+            <div class="ach-slot locked" id="ach-3" data-tooltip="Consumer: Buy 5 items" style="width: 100px; height: 100px;"><img src="/ach_consumer.svg"/></div>
+            <div class="ach-slot locked" id="ach-4" data-tooltip="Forest Master: Reach Wave 10" style="width: 100px; height: 100px;"><img src="/ach_forest.svg"/></div>
+            <div class="ach-slot locked" id="ach-5" data-tooltip="Polar Explorer: Reach Wave 20" style="width: 100px; height: 100px;"><img src="/ach_polar.svg"/></div>
+            <div class="ach-slot locked" id="ach-6" data-tooltip="Lava Walker: Reach Wave 30" style="width: 100px; height: 100px;"><img src="/ach_lava.svg"/></div>
+            <div class="ach-slot locked" id="ach-7" data-tooltip="Castle Crusher: Win the game!" style="width: 100px; height: 100px;"><img src="/ach_castle.svg"/></div>
+            <div class="ach-slot locked" id="ach-8" data-tooltip="Untouchable: Win with 0 deaths" style="width: 100px; height: 100px;"><img src="/ach_shield.svg"/></div>
+            <div class="ach-slot locked" id="ach-9" data-tooltip="Headhunter: Get 20 Headshots" style="width: 100px; height: 100px;"><img src="/ach_headshot.svg"/></div>
+            <div class="ach-slot locked" id="ach-10" data-tooltip="Wealthy: Gather 500 coins" style="width: 100px; height: 100px;"><img src="/ach_coins.svg"/></div>
+        </div>
+    </div>
+
     <!-- Loading Screen -->
     <div id="loading-screen">
         <div class="loading-text" data-i18n="LOAD_TEXT">LOADING ELEMENTS...</div>

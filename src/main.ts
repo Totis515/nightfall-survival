@@ -395,6 +395,7 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
 // ── ACHIEVEMENTS LOGIC ────────────────────────────────────────────────────────
 let achievements: Record<number, boolean> = {};
 let localPlayerKills = 0;
+let localPlayerHeadshots = 0;
 let totalCoinsAmassed = 0;
 let localPlayerDeaths = 0;
 let itemsBought = 0;
@@ -2306,14 +2307,18 @@ function initMultiplayerUI() {
     // Sub-Tabs within Lobby Screen
     const tabLobby = document.getElementById('tab-lobby');
     const tabSkins = document.getElementById('tab-skins');
+    const tabAchievements = document.getElementById('tab-achievements');
     const lobbyContent = document.getElementById('lobby-content');
     const skinsContent = document.getElementById('skins-content');
+    const achievementsContent = document.getElementById('achievements-content');
 
     tabLobby?.addEventListener('click', () => {
         tabLobby.classList.add('active');
         tabSkins?.classList.remove('active');
+        tabAchievements?.classList.remove('active');
         if (lobbyContent) lobbyContent.style.display = 'flex';
         if (skinsContent) skinsContent.style.display = 'none';
+        if (achievementsContent) achievementsContent.style.display = 'none';
         inLobby3D = true;
         inSkinsTab = false;
         // Wide view: frame the 4 slots safely
@@ -2326,7 +2331,9 @@ function initMultiplayerUI() {
     tabSkins?.addEventListener('click', () => {
         tabSkins.classList.add('active');
         tabLobby?.classList.remove('active');
+        tabAchievements?.classList.remove('active');
         if (lobbyContent) lobbyContent.style.display = 'none';
+        if (achievementsContent) achievementsContent.style.display = 'none';
         if (skinsContent) skinsContent.style.display = 'flex';
         inLobby3D = true;
         inSkinsTab = true;
@@ -2335,6 +2342,20 @@ function initMultiplayerUI() {
         lobbyCamera.lookAt(0, 2.0, 0);
         rearrangeLobbySlots(); // Will center dummy at 0,0,0 and hide teammates
         refreshGameModeCardHostVisibility();
+    });
+
+    tabAchievements?.addEventListener('click', () => {
+        tabAchievements.classList.add('active');
+        tabLobby?.classList.remove('active');
+        tabSkins?.classList.remove('active');
+        if (lobbyContent) lobbyContent.style.display = 'none';
+        if (skinsContent) skinsContent.style.display = 'none';
+        if (achievementsContent) achievementsContent.style.display = 'flex';
+        inLobby3D = true;
+        inSkinsTab = true; 
+        lobbyCamera.position.set(0, 3.5, 5);
+        lobbyCamera.lookAt(0, 2.0, 0);
+        rearrangeLobbySlots();
     });
 
     // Skin Selection Logic — with real-time broadcast
@@ -7369,7 +7390,11 @@ if (socket) {
 function showHitMarker(isHeadshot: boolean = false) {
     if (!crosshair) return;
     crosshair.style.borderColor = isHeadshot ? '#ffaa00' : 'red';
-    if (isHeadshot) crosshair.style.borderWidth = '4px';
+    if (isHeadshot) {
+        crosshair.style.borderWidth = '4px';
+        localPlayerHeadshots++;
+        if (localPlayerHeadshots === 20) unlockAchievement(9, "Headhunter");
+    }
     crosshair.style.transform = isHeadshot ? 'translate(-50%, -50%) scale(2.0)' : 'translate(-50%, -50%) scale(1.5)';
     setTimeout(() => {
         crosshair.style.borderColor = 'white';
