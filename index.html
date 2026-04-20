@@ -2202,17 +2202,31 @@
         </div>
 
         <div style="width: 100%; max-width: 900px; display: grid; gap: 30px; grid-template-columns: repeat(5, 1fr); justify-items: center; align-items: center; padding-bottom: 50px;">
-            <div class="ach-slot locked" id="ach-1" data-tooltip="First Blood: Kill 1 enemy" style="width: 140px; height: 140px;"><img src="/ach_blood.svg"/></div>
-            <div class="ach-slot locked" id="ach-2" data-tooltip="Slayer: Kill 100 enemies" style="width: 140px; height: 140px;"><img src="/ach_slayer.svg"/></div>
-            <div class="ach-slot locked" id="ach-3" data-tooltip="Consumer: Buy 5 items" style="width: 140px; height: 140px;"><img src="/ach_consumer.svg"/></div>
-            <div class="ach-slot locked" id="ach-4" data-tooltip="Forest Master: Reach Wave 10" style="width: 140px; height: 140px;"><img src="/ach_forest.svg"/></div>
-            <div class="ach-slot locked" id="ach-5" data-tooltip="Polar Explorer: Reach Wave 20" style="width: 140px; height: 140px;"><img src="/ach_polar.svg"/></div>
-            <div class="ach-slot locked" id="ach-6" data-tooltip="Lava Walker: Reach Wave 30" style="width: 140px; height: 140px;"><img src="/ach_lava.svg"/></div>
-            <div class="ach-slot locked" id="ach-7" data-tooltip="Castle Crusher: Win the game!" style="width: 140px; height: 140px;"><img src="/ach_castle.svg"/></div>
-            <div class="ach-slot locked" id="ach-8" data-tooltip="Untouchable: Win with 0 deaths" style="width: 140px; height: 140px;"><img src="/ach_shield.svg"/></div>
-            <div class="ach-slot locked" id="ach-9" data-tooltip="Headhunter: Get 20 Headshots" style="width: 140px; height: 140px;"><img src="/ach_headshot.svg"/></div>
-            <div class="ach-slot locked" id="ach-10" data-tooltip="Wealthy: Gather 500 coins" style="width: 140px; height: 140px;"><img src="/ach_coins.svg"/></div>
+            <div class="ach-slot locked" id="ach-1" data-tooltip="First Blood: Kill 1 enemy" style="width: 140px; height: 140px;" onmouseenter="achHover(this)" onmouseleave="achOut()"><img src="/ach_blood.svg"/></div>
+            <div class="ach-slot locked" id="ach-2" data-tooltip="Slayer: Kill 100 enemies" style="width: 140px; height: 140px;" onmouseenter="achHover(this)" onmouseleave="achOut()"><img src="/ach_slayer.svg"/></div>
+            <div class="ach-slot locked" id="ach-3" data-tooltip="Consumer: Buy 5 items" style="width: 140px; height: 140px;" onmouseenter="achHover(this)" onmouseleave="achOut()"><img src="/ach_consumer.svg"/></div>
+            <div class="ach-slot locked" id="ach-4" data-tooltip="Forest Master: Reach Wave 10" style="width: 140px; height: 140px;" onmouseenter="achHover(this)" onmouseleave="achOut()"><img src="/ach_forest.svg"/></div>
+            <div class="ach-slot locked" id="ach-5" data-tooltip="Polar Explorer: Reach Wave 20" style="width: 140px; height: 140px;" onmouseenter="achHover(this)" onmouseleave="achOut()"><img src="/ach_polar.svg"/></div>
+            <div class="ach-slot locked" id="ach-6" data-tooltip="Lava Walker: Reach Wave 30" style="width: 140px; height: 140px;" onmouseenter="achHover(this)" onmouseleave="achOut()"><img src="/ach_lava.svg"/></div>
+            <div class="ach-slot locked" id="ach-7" data-tooltip="Castle Crusher: Win the game!" style="width: 140px; height: 140px;" onmouseenter="achHover(this)" onmouseleave="achOut()"><img src="/ach_castle.svg"/></div>
+            <div class="ach-slot locked" id="ach-8" data-tooltip="Untouchable: Win with 0 deaths" style="width: 140px; height: 140px;" onmouseenter="achHover(this)" onmouseleave="achOut()"><img src="/ach_shield.svg"/></div>
+            <div class="ach-slot locked" id="ach-9" data-tooltip="Headhunter: Get 20 Headshots" style="width: 140px; height: 140px;" onmouseenter="achHover(this)" onmouseleave="achOut()"><img src="/ach_headshot.svg"/></div>
+            <div class="ach-slot locked" id="ach-10" data-tooltip="Wealthy: Gather 500 coins" style="width: 140px; height: 140px;" onmouseenter="achHover(this)" onmouseleave="achOut()"><img src="/ach_coins.svg"/></div>
         </div>
+        
+        <script>
+            function achHover(el) {
+                const parts = el.getAttribute('data-tooltip').split(':');
+                document.getElementById('ach-hover-title').innerText = parts[0] ? parts[0].trim().toUpperCase() : 'ACHIEVEMENT';
+                document.getElementById('ach-hover-title').style.textShadow = '0 0 20px #ff0000, 0 0 40px #ffcc00';
+                document.getElementById('ach-hover-desc').innerText = parts[1] ? parts[1].trim() : '';
+            }
+            function achOut() {
+                document.getElementById('ach-hover-title').innerText = 'ACHIEVEMENTS';
+                document.getElementById('ach-hover-title').style.textShadow = '0 0 10px #ffaa00';
+                document.getElementById('ach-hover-desc').innerText = 'HOVER OVER AN ICON TO VIEW DETAILS';
+            }
+        </script>
     </div>
 
     <!-- Loading Screen -->
