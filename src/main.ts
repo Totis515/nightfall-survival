@@ -4,12 +4,12 @@ import { io, Socket } from 'socket.io-client';
 
 // ══════════════════════════════════════════════════════════════════
 // PHASE 12: MULTIPLAYER CLIENT
-// After deploying the server to Railway, replace SERVER_URL below
-// with your actual Railway deployment URL (e.g. https://xxx.railway.app)
+// After deploying the server to Render, replace SERVER_URL below
+// with your actual Render deployment URL (e.g. https://nightfall-survival-server.onrender.com)
 // ══════════════════════════════════════════════════════════════════
 const SERVER_URL = (window.location.hostname === 'localhost')
     ? 'http://localhost:3001'
-    : 'https://nightfall-survival-production.up.railway.app';
+    : 'https://nightfall-survival-server.onrender.com';
 
 let socket: Socket | null = null;
 let myUsername = '';
