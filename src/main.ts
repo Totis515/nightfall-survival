@@ -6177,9 +6177,9 @@ document.querySelectorAll('.lang-btn').forEach(btn => {
 
 // --- SINGLEPLAYER REDIRECT MOVED TO LOBBY "SOLO PLAY" BTN ---
 btnStart.addEventListener('click', () => {
-    // PLAY → go to Username/Lobby selection
+    // Proceed directly to the Username selection screen
     const menuButtonsDiv = document.getElementById('menu-buttons');
-    if (menuButtonsDiv) menuButtonsDiv.style.display = 'none';
+    if(menuButtonsDiv) menuButtonsDiv.style.display = 'none';
     showScreen('username-screen');
     (document.getElementById('username-input') as HTMLInputElement)?.focus();
 });
@@ -6188,68 +6188,16 @@ btnStart.addEventListener('click', () => {
 const optionsScreen = document.getElementById('options-screen') as HTMLElement;
 
 document.getElementById('btn-options')?.addEventListener('click', () => {
+    // Show options screen, hide main menu
     if (mainMenu) mainMenu.style.display = 'none';
     optionsScreen.style.display = 'flex';
 });
 
 document.getElementById('btn-options-back')?.addEventListener('click', () => {
+    // Return to main menu
     optionsScreen.style.display = 'none';
     if (mainMenu) mainMenu.style.display = 'flex';
 });
-
-// ---- EXIT button ----
-document.getElementById('btn-exit')?.addEventListener('click', () => {
-    // Fade out and close / go to a blank page
-    const menuEl = document.getElementById('main-menu');
-    if (menuEl) {
-        menuEl.style.transition = 'opacity 0.6s ease';
-        menuEl.style.opacity = '0';
-        setTimeout(() => { window.close(); }, 650);
-    }
-});
-
-// ---- Main Menu Keyboard Navigation (↑↓ + Enter) ----
-(function setupMenuKeyboardNav() {
-    const MENU_BTN_IDS = ['btn-start', 'btn-options', 'btn-exit'];
-    let menuFocusIdx = 0; // default: PLAY highlighted
-
-    function setMenuFocus(idx: number) {
-        menuFocusIdx = idx;
-        MENU_BTN_IDS.forEach((id, i) => {
-            const el = document.getElementById(id) as HTMLButtonElement | null;
-            if (!el) return;
-            if (i === idx) {
-                el.classList.add('active');
-                el.focus();
-            } else {
-                el.classList.remove('active');
-            }
-        });
-    }
-
-    document.addEventListener('keydown', (e: KeyboardEvent) => {
-        if (!mainMenu || mainMenu.style.display === 'none') return;
-        if (document.activeElement && (document.activeElement as HTMLElement).tagName === 'INPUT') return;
-
-        if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
-            e.preventDefault();
-            setMenuFocus((menuFocusIdx + 1) % MENU_BTN_IDS.length);
-        } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
-            e.preventDefault();
-            setMenuFocus((menuFocusIdx - 1 + MENU_BTN_IDS.length) % MENU_BTN_IDS.length);
-        } else if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            (document.getElementById(MENU_BTN_IDS[menuFocusIdx]) as HTMLButtonElement | null)?.click();
-        }
-    });
-
-    // Hover → sync keyboard focus index
-    MENU_BTN_IDS.forEach((id, i) => {
-        document.getElementById(id)?.addEventListener('mouseenter', () => {
-            if (mainMenu && mainMenu.style.display !== 'none') menuFocusIdx = i;
-        });
-    });
-})();
 
 // --- Volume Sliders ---
 let masterVolume = 0.8;
@@ -8119,6 +8067,8 @@ function animate() {
             if (hitPecho || hitPies) {
                 camera.position.x = oldPosX; velocity.x = 0; break;
             }
+        }
+
         }
 
         // 2. Colisión matemática (Cilindros) - Rápida e infalible

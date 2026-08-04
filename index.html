@@ -5,11 +5,8 @@
     <!-- Aquí inicia la configuración del documento y los estilos visuales -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Nightfall Survival</title>
+    <title>Nightfall Survival - Phase 16: Let's party</title>
     <link rel="icon" type="image/png" href="/favicon.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&display=swap" rel="stylesheet">
     <style>
         /* Mobile Landscape Optimizations */
         @media (max-height: 500px) {
@@ -251,85 +248,62 @@
             }
         }
 
-        /* ════════════════════════════════════════════════════
-           MAIN MENU — Reference Image Style
-           Layout: BG image | logo top-left | buttons left |
-                   zombie right | nav-bar bottom
-        ════════════════════════════════════════════════════ */
+        /* MAIN MENU */
         #main-menu {
             position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: url('menu_reference.png') center/cover no-repeat;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('menu_horde_bg.png');
+            background-size: cover;
+            background-position: center;
             display: flex;
             flex-direction: column;
-            justify-content: flex-end;
+            align-items: center;
+            justify-content: center;
             z-index: 20;
-            overflow: hidden;
         }
 
-        /* ─── BUTTONS OVERLAY (bottom-left, matching reference) ─── */
-        #menu-buttons {
-            position: absolute;
-            left: 4%;
-            top: 50%;
-            transform: translateY(-20%);
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            width: clamp(180px, 40%, 280px);
+        .title {
+            color: white;
+            font-size: 60px;
+            text-shadow: 0 0 20px rgba(255, 50, 50, 0.8);
+            margin-bottom: 50px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #ffaa00;
+            font-size: 24px;
+            margin-top: -40px;
+            margin-bottom: 50px;
+            letter-spacing: 5px;
+            text-shadow: 0 0 10px rgba(255, 170, 0, 0.5);
         }
 
         .menu-btn {
-            background: rgba(6, 1, 2, 0.82);
-            color: #ffffff;
-            border: 2px solid rgba(100, 20, 28, 0.7);
-            padding: 14px 20px;
-            font-size: clamp(17px, 2vw, 24px);
-            font-family: 'Impact', 'Arial Black', sans-serif;
-            letter-spacing: 3px;
+            background: rgba(50, 50, 50, 0.8);
+            color: white;
+            border: 2px solid #aaa;
+            padding: 15px 40px;
+            font-size: 24px;
+            font-family: inherit;
             cursor: pointer;
-            width: 100%;
+            width: 250px;
+            margin-bottom: 35px;
+            /* Separados un poco más */
             text-transform: uppercase;
-            text-align: left;
-            transition: background 0.16s, border-color 0.16s, box-shadow 0.16s, transform 0.14s;
-            border-radius: 2px;
-            box-shadow: 0 3px 12px rgba(0,0,0,0.9);
-            box-sizing: border-box;
-            outline: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .menu-btn:hover,
-        .menu-btn:focus-visible,
-        .menu-btn.active {
-            background: rgba(18, 2, 5, 0.97);
-            border: 2px solid #e8001e;
-            box-shadow:
-                0 0 20px rgba(232, 0, 30, 0.85),
-                inset 0 0 14px rgba(232, 0, 30, 0.3);
-            text-shadow: 0 0 8px rgba(255,255,255,0.6), 2px 2px 0 #000;
-            color: #fff;
-            transform: translateX(6px) scale(1.03);
-        }
-        .menu-btn:active {
-            transform: translateX(3px) scale(0.97);
-            box-shadow: 0 0 8px rgba(232, 0, 30, 0.4);
+            transition: all 0.2s;
+            border-radius: 5px;
         }
 
-        /* ─── RESPONSIVE (mobile) ─── */
-        @media (max-width: 600px) {
-            #menu-buttons {
-                left: 50%;
-                top: auto;
-                bottom: 12%;
-                transform: translateX(-50%);
-                width: 80%;
-                max-width: 280px;
-                align-items: center;
-            }
-            .menu-btn { text-align: center; }
+        .menu-btn:hover {
+            background: #fff;
+            color: #000;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px white;
         }
-
 
         /* SELECCIÓN DE PLATAFORMA (SUPERPUESTA) */
         #platform-selection {
@@ -1792,15 +1766,18 @@
 
 <body>
     <!-- Comienza la estructura visible de la página web y los diferentes contenedores del juego -->
-    <!-- Main Menu: background image has logo + zombie baked in -->
+    <!-- Main Menu -->
+    <!-- CONTENEDOR DEL MENÚ PRINCIPAL: Pantalla que recibe al jugador -->
     <div id="main-menu">
-        <nav id="menu-buttons" aria-label="Main menu">
-            <button class="menu-btn active" id="btn-start" aria-label="Play">PLAY</button>
-            <button class="menu-btn" id="btn-options" aria-label="Options">OPTIONS</button>
-            <button class="menu-btn" id="btn-exit" aria-label="Exit">EXIT</button>
-        </nav>
-    </div>
+        <h1 class="title">NIGHTFALL SURVIVAL</h1>
+        <h2 class="subtitle">Phase 16: Let's party</h2>
 
+        <div id="menu-buttons">
+            <button class="menu-btn" id="btn-start" data-i18n="MENU_START">Start Game</button>
+            <button class="menu-btn" id="btn-options" data-i18n="MENU_OPTIONS">Options</button>
+            <button class="menu-btn" id="btn-exit" data-i18n="MENU_EXIT">Exit</button>
+        </div>
+    </div>
 
     <!-- ──────────────── OPTIONS SCREEN ──────────────── -->
     <div id="options-screen"
