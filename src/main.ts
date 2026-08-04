@@ -1,41 +1,29 @@
-// ═══════════════════════════════════════════════════════════════════════════
-// NIGHTFALL SURVIVAL — LÓGICA PRINCIPAL DEL JUEGO
-// Archivo: src/main.ts
-// Tecnologías: Three.js (motor 3D), Socket.IO (multijugador)
-// El frontend se compila con Vite (TypeScript) y se despliega en Vercel
-// ═══════════════════════════════════════════════════════════════════════════
-
-// Importamos THREE.js, la librería que se encarga de todo el renderizado 3D
 import * as THREE from 'three';
-// PointerLockControls: controla la cámara con el ratón (mira FPS primera persona)
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
-// io y Socket: cliente de Socket.IO para comunicación en tiempo real con el servidor
 import { io, Socket } from 'socket.io-client';
 
-// URL del servidor multijugador:
-// - En desarrollo local: usa el servidor en la máquina (puerto 3001)
-// - En producción (Vercel): usa el servidor desplegado en Render.com
+// ══════════════════════════════════════════════════════════════════
+// PHASE 12: MULTIPLAYER CLIENT
+// After deploying the server to Render, replace SERVER_URL below
+// with your actual Render deployment URL (e.g. https://nightfall-survival-server.onrender.com)
+// ══════════════════════════════════════════════════════════════════
 const SERVER_URL = (window.location.hostname === 'localhost')
     ? 'http://localhost:3001'
     : 'https://nightfall-survival-server.onrender.com';
 
-// Variables globales del sistema multijugador
-let socket: Socket | null = null; // Conexión Socket.IO activa (null si no hay conexión)
-let myUsername = '';             // Nombre del jugador local
-let myRoomCode = '';             // Código de la sala actual
-let isMultiplayer = false;       // true si está en una partida multijugador
-let isHost = false;              // true si este cliente es el anfitrión (controla enemigos)
+let socket: Socket | null = null;
+let myUsername = '';
+let myRoomCode = '';
+let isMultiplayer = false;
+let isHost = false;
 
-// Skin del jugador seleccionada en el lobby (por defecto 'default')
 let currentSkin = 'default';
 
-// ═══════════════════════════════════════════════════════════════════════════
-// SISTEMA DE INTERNACIONALIZACIÓN (I18N)
-// El juego soporta 3 idiomas: Inglés (EN), Español (ES) y Francés (FR)
-// Para añadir un texto nuevo: agregar la clave en los 3 idiomas y usar t('CLAVE')
-// ═══════════════════════════════════════════════════════════════════════════
-type Lang = 'EN' | 'ES' | 'FR'; // Tipo TypeScript que limita los idiomas posibles
-let currentLanguage: Lang = 'EN'; // Idioma activo (se cambia en Opciones)
+// ══════════════════════════════════════════════════════════════════
+// I18N - TRANSLATION SYSTEM
+// ══════════════════════════════════════════════════════════════════
+type Lang = 'EN' | 'ES' | 'FR';
+let currentLanguage: Lang = 'EN';
 
 const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     EN: {
@@ -412,56 +400,45 @@ let totalCoinsAmassed = 0;
 let localPlayerDeaths = 0;
 let itemsBought = 0;
 
-// Inicializa los logros leyendo el progreso guardado en localStorage
-// Se ejecuta al cargar la página para restaurar logros ya desbloqueados
 function initAchievements() {
     const saved = localStorage.getItem('nightfall_achievements');
     if (saved) {
-        // Recuperamos el objeto de logros guardado
         achievements = JSON.parse(saved);
-        // Marcamos visualmente en el HTML cada logro que ya fue desbloqueado
         for(let i=1; i<=10; i++) {
             if (achievements[i]) {
                 const slot = document.getElementById(`ach-${i}`);
-                if (slot) slot.classList.remove('locked'); // Quitamos el candado visual
+                if (slot) slot.classList.remove('locked');
             }
         }
     }
 }
 
-// Desbloquea un logro por primera vez y muestra una notificación emergente (toast)
-// id: número del logro (1-10), title: texto a mostrar en la notificación
 function unlockAchievement(id: number, title: string) {
-    if (achievements[id]) return; // Si ya estaba desbloqueado, no hacemos nada
+    if (achievements[id]) return; // Ya desbloqueado
     achievements[id] = true;
-    // Guardamos el progreso en localStorage para que persista entre sesiones
     localStorage.setItem('nightfall_achievements', JSON.stringify(achievements));
     
-    // Actualizamos el icono del logro en la pantalla de logros (quitamos el candado)
+    // UI update
     const slot = document.getElementById(`ach-${id}`);
     if (slot) slot.classList.remove('locked');
     
-    // Mostramos la notificación emergente con el nombre del logro desbloqueado
+    // Toast
     const toast = document.getElementById('achievement-toast');
     const toastText = document.getElementById('toast-text');
     const toastImg = document.getElementById('toast-img') as HTMLImageElement;
     
     if (toast && toastText && toastImg) {
         toastText.innerText = title;
-        // Usamos la misma imagen del icono del logro en la notificación
         const slotImg = slot?.querySelector('img') as HTMLImageElement;
         if (slotImg) toastImg.src = slotImg.src;
         
-        // Mostramos el toast y lo ocultamos automáticamente después de 4.5 segundos
         toast.classList.add('show');
         setTimeout(() => toast.classList.remove('show'), 4500);
     }
 }
 
-// Reinicia completamente el juego y vuelve al lobby multijugador
-// Se llama cuando termina la partida (game over o victoria) en modo multijugador
 function resetGameToLobby() {
-    // 1. Ocultar todos los paneles de UI del juego (HUD, victoria, game over)
+    // 1. Ocultar HUDs
     const hud = document.getElementById('hud-container');
     const win = document.getElementById('victory-screen');
     const go = document.getElementById('game-over-screen');
@@ -469,59 +446,51 @@ function resetGameToLobby() {
     if(win) win.style.display = 'none';
     if(go) go.style.display = 'none';
     
-    // 2. Mostrar la interfaz del lobby nuevamente
+    // 2. Mostrar Lobby UI
     document.getElementById('lobby-screen')!.style.display = 'flex';
     document.getElementById('menu-background')!.style.display = 'block';
-    // Restauramos la barra de navegación del lobby (LOBBY / SKINS)
+    // Restore nav
     const navEl = document.getElementById('lobby-nav');
     if (navEl) navEl.style.display = 'flex';
 
-    // 3. Limpiar todas las entidades 3D del mundo de juego
-    gameStarted = false; // Permite que el sistema de lobby vuelva a renderizarse
-    // Eliminamos todos los enemigos de la escena 3D
+    // 3. Resetear Entidades 3D y Memoria
+    gameStarted = false;
     for (const enId in enemies) {
         if (enemies[enId] && enemies[enId].mesh && enemies[enId].mesh.parent) {
             scene.remove(enemies[enId].mesh);
         }
     }
     enemies = {};
-    // Reseteamos el gestor de oleadas a la oleada 1
     if (waveManager) waveManager.reset();
-    // Eliminamos todas las balas activas de la escena
     activeBullets.forEach(b => { if(b.mesh && b.mesh.parent) scene.remove(b.mesh); });
     activeBullets = [];
 
-    // Detenemos la música de batalla y volvemos a la música del menú
+    // Detener la musiquilla de batalla
     if (typeof startGameMusic !== 'undefined' && (window as any).bgmSource) {
         (window as any).bgmSource.stop();
         (window as any).bgmSource.disconnect();
         (window as any).bgmSource = null;
     }
-    soundManager.startMenuMusic(); // Iniciamos la música del lobby
+    soundManager.startMenuMusic(); // Start lobby music de nuevo
     
-    // 4. Reactivar el loop de renderizado del lobby 3D
+    // 4. Forzar que el loop renderice el lobby
     inLobby3D = true;
-    setup3DLobby();        // Reconfigura la cámara y escena del lobby
-    rearrangeLobbySlots(); // Reordena los avatares 3D de los jugadores
+    setup3DLobby();
+    rearrangeLobbySlots();
     
-    // 5. Resetear las estadísticas temporales de todos los jugadores
+    // 5. Resetear Stats Temporales del Jugador
     for(const pid in players) {
-        players[pid].hp = 100;       // Restauramos la vida
-        players[pid].isDead = false; // Quitamos el estado de muerto
+        players[pid].hp = 100;
+        players[pid].isDead = false;
     }
-    // Reseteamos contadores de kills/muertes para la próxima partida
     localPlayerKills = 0;
     localPlayerDeaths = 0;
     itemsBought = 0;
 }
 
 
-// Función de traducción: obtiene el texto en el idioma actual para una clave dada
-// Soporta parámetros dinámicos: t('WAVE', {wave: 3}) → "WAVE 3" ó "OLEADA 3" según el idioma
 function t(key: string, params?: Record<string, any>): string {
-    // Buscamos la clave en el diccionario del idioma actual; si no existe, devolvemos la clave tal cual
     let str = TRANSLATIONS[currentLanguage][key] || key;
-    // Si se pasaron parámetros, los interpolamos en el string (reemplazamos {variable})
     if (params) {
         for (const p in params) {
             str = str.replace(`{${p}}`, params[p]);
@@ -530,28 +499,23 @@ function t(key: string, params?: Record<string, any>): string {
     return str;
 }
 
-// Aplica las traducciones del idioma actual a todos los elementos HTML que tengan data-i18n
-// Se llama al cambiar de idioma o al cargar cada pantalla nueva
 function applyTranslations() {
-    // Buscamos todos los elementos del DOM que tienen el atributo data-i18n
     const els = document.querySelectorAll('[data-i18n]');
     const dict = TRANSLATIONS[currentLanguage];
     
     els.forEach(el => {
         const key = el.getAttribute('data-i18n');
         if (key && dict[key]) {
-            // Algunos textos (descripciones de victoria, nombres de skins) contienen HTML
-            // Para esos usamos innerHTML en vez de innerText para preservar el formato
+            // Using innerHTML for descriptions that might have <br> or 🏆 or skin names
             if (key === 'VICTORY_DESC' || key === 'VICTORY_SUB' || key.startsWith('SKIN_')) {
                 el.innerHTML = dict[key];
             } else {
-                // Para el resto de textos usamos innerText (más seguro contra XSS)
                 (el as HTMLElement).innerText = dict[key];
             }
         }
     });
 
-    // También actualizamos los placeholders de los inputs de texto
+    // Inputs placeholders
     const uiInput = document.getElementById('username-input') as HTMLInputElement;
     if (uiInput) uiInput.placeholder = dict.LOBBY_USERNAME + '...';
     const rcInput = document.getElementById('room-code-input') as HTMLInputElement;
@@ -587,32 +551,23 @@ function applyTranslations() {
     if (b2) b2.childNodes[0].nodeValue = dict.SHOP_BALANCE;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// SISTEMA DE LOBBY 3D
-// El lobby muestra avatares 3D de los jugadores en una escena separada
-// Esto permite que los jugadores vean sus personajes y skins antes de entrar al juego
-// ═══════════════════════════════════════════════════════════════════════════
-let lobbyLocalGroup: THREE.Group | null = null; // Modelo 3D del jugador local en el lobby
-let inLobby3D = false;   // true cuando el lobby 3D está activo y renderizándose
-let inSkinsTab = false;  // true cuando el jugador está en la pestaña de SKINS
+let lobbyLocalGroup: THREE.Group | null = null;
+let inLobby3D = false;
+let inSkinsTab = false;
 
-// Mapa que almacena los modelos 3D de los otros jugadores en la sala
-// Clave: socketId del jugador remoto, Valor: su grupo 3D y etiqueta de nombre
+// Map of other players in our room: socketId → { group, label }
 const remotePlayers: Map<string, { group: THREE.Group; label: THREE.Sprite }> = new Map();
 
-// Crea el modelo 3D de bloque estilo Minecraft para un jugador remoto
-// Cada skin tiene sus propios colores (piel, ropa, cabello/detalles, pantalones)
-// Los modelos son geométricos simples (BoxGeometry) por rendimiento
 function createRemotePlayerModel(skinId: string = 'default'): THREE.Group {
-    const group = new THREE.Group(); // Contenedor principal del jugador completo
-    const model = new THREE.Group(); // Sub-grupo para las partes del cuerpo
+    const group = new THREE.Group();
+    const model = new THREE.Group();
     
-    // Colores por defecto (skin azul tipo robot)
-    let skinHex = 0x4fc3f7;  // Color de la piel/cara
-    let clothHex = 0x1565c0;  // Color principal de ropa (torso)
-    let darkHex = 0x0d47a1;   // Color secundario (cabello, detalles oscuros)
+    // Default colors
+    let skinHex = 0x4fc3f7;
+    let clothHex = 0x1565c0;
+    let darkHex = 0x0d47a1;
 
-    let pantsHex = 0x1565c0; // Color de los pantalones (puede ser distinto al torso)
+    let pantsHex = 0x1565c0; // Default pants color
     // Apply Light Yagami colors
     if (skinId === 'light_yagami') {
         skinHex = 0xffe0bd; // Pale skin
@@ -1385,56 +1340,47 @@ function createNameLabel(username: string, platform: string = 'PC', isReady: boo
     return sprite;
 }
 
-// Crea y añade el modelo 3D de un jugador remoto a la escena correcta (lobby o juego)
-// isLocalLobbyDummy: true cuando creamos el maniqui local para el lobby (no es un jugador de red)
 function spawnRemotePlayer(id: string, username: string, x: number, y: number, z: number, skinId: string = 'default', isLocalLobbyDummy: boolean = false, platform: string = 'PC', isReady: boolean = false) {
-    // Evitamos crear duplicados (si ya existe este jugador, ignoramos la llamada)
     if (!isLocalLobbyDummy && remotePlayers.has(id)) return;
-    // Creamos el modelo 3D con los colores de la skin elegida
     const group = createRemotePlayerModel(skinId);
-    // Ajustamos la posición (y-1.6 porque la posición de red es la cámara del jugador, no los pies)
     group.position.set(x, y - 1.6, z);
-    group.userData.username = username; // Guardamos el nombre para poder actualizar la etiqueta
-    group.userData.platform = platform;  // 'pc' o 'mobile'
-    group.userData.isReady = isReady;    // Estado listo/no listo del jugador
+    group.userData.username = username; // store for skin-changed lookup
+    group.userData.platform = platform;
+    group.userData.isReady = isReady;
     
-    // En el lobby, ocultamos el arma del modelo para que se vea más limpio
+    // Hide default weapon gun barrel if creating the dummy for the locker/lobby
     if (group.userData.rArmRef) {
         const weapon = group.userData.rArmRef.children.find((c: any) => c.name === 'weapon_mesh');
         if (weapon) {
-            weapon.visible = !isLocalLobbyDummy && !inLobby3D; // Ocultar en lobby, visible en juego
+            weapon.visible = !isLocalLobbyDummy && !inLobby3D; // Hide in lobby
         }
     }
 
-    // Creamos la etiqueta flotante con el nombre y estado del jugador
     const label = createNameLabel(username, platform, isReady);
-    label.name = "name_label"; // Nombre interno para poder buscarlo y actualizarlo después
+    label.name = "name_label";
     group.add(label);
     
-    // Añadimos el modelo a la escena correspondiente
+    // Add to the appropriate scene
     if (inLobby3D || isLocalLobbyDummy) {
-        lobbyScene.add(group); // En el lobby (escena separada con el fondo de ruinas)
+        lobbyScene.add(group);
     } else {
-        scene.add(group);      // En el juego (escena principal del mundo)
+        scene.add(group);
     }
     
-    // Registramos el jugador en el mapa de remotePlayers (o como dummy local del lobby)
     if (!isLocalLobbyDummy) {
         remotePlayers.set(id, { group, label });
     } else {
-        lobbyLocalGroup = group; // Guardamos referencia al maniqui local del lobby
+        lobbyLocalGroup = group;
     }
 }
 
-// Elimina el modelo 3D de un jugador que se desconectó o fue expulsado
-// Lo busca en ambas escenas por si estaba en el lobby o en el juego
 function removeRemotePlayer(id: string) {
     const p = remotePlayers.get(id);
     if (p) {
-        // Intentamos quitarlo de ambas escenas (está en una sola, pero esto es más seguro)
+        // Remove from whichever scene it's in
         scene.remove(p.group);
         lobbyScene.remove(p.group);
-        remotePlayers.delete(id); // Liberamos la referencia de memoria
+        remotePlayers.delete(id);
     }
 }
 
@@ -1827,82 +1773,72 @@ function connectMultiplayer() {
     });
 }
 
-// Configura la escena 3D del lobby: posiciona la cámara del lobby y spawna el maniqui local
-// Se llama al volver al lobby después de una partida o al iniciar la sesión
 function setup3DLobby() {
     inLobby3D = true;
     inSkinsTab = false;
-    // Vista amplia: la cámara se aleja para ver los 4 slots de jugadores en el lobby
+    // WIDE view: show all 4 slots with extra spacing (Matches exactly what tabLobby sets)
     lobbyCamera.position.set(0, 3.5, 9);
     lobbyCamera.lookAt(0, 1.8, 0);
 
-    // Si ya había un maniqui local del lobby, lo eliminamos antes de crear uno nuevo
     if (lobbyLocalGroup) {
         lobbyScene.remove(lobbyLocalGroup);
         lobbyLocalGroup = null;
     }
-    // Creamos el maniqui local con la plataforma y skin actuales del jugador
     const platStr = isMobile ? 'mobile' : 'pc';
     spawnRemotePlayer('local_dummy', myUsername || 'YOU', 0, 1.6, 0, currentSkin, true, platStr, false);
 
-    rearrangeLobbySlots(); // Posicionamos todos los avatares
-    // Mostramos la tarjeta de modo de juego (solo visible en el lobby para el host)
+    rearrangeLobbySlots();
+    // Show and configure the game mode card
     refreshGameModeCardHostVisibility();
     updateGameModeCard({ mode: lobbyGameMode, waves: lobbyWaveCount, partyMode: lobbyPartyMode });
 }
 
-// Limpia la escena del lobby cuando el juego va a comenzar
-// Mueve los modelos de los jugadores remotos del lobby al mundo de juego
 function cleanup3DLobby() {
     inLobby3D = false;
-    // Ocultamos la tarjeta de modo de juego (solo visible en el lobby)
+    // Hide the game mode card — it's lobby-only
     const card = document.getElementById('game-mode-card');
     const modal = document.getElementById('game-mode-modal');
     if (card)  card.style.display = 'none';
     if (modal) modal.classList.remove('visible');
-    // Eliminamos el maniqui del jugador local (no es necesario en el juego)
     if (lobbyLocalGroup) {
         lobbyScene.remove(lobbyLocalGroup);
         lobbyLocalGroup = null;
     }
-    // Movemos los modelos de los compañeros de la escena del lobby a la escena del juego
-    // Esto es crucial para que sigan siendo visibles durante el gameplay
+    // Move remote players from lobby scene into the game scene for gameplay
     remotePlayers.forEach((p) => {
         lobbyScene.remove(p.group);
-        scene.add(p.group); // Ahora pertenecen al mundo de juego
-        // Reseteamos escala y posición para que empiecen correctamente
+        scene.add(p.group);
+        // Reset scale and position
         p.group.scale.set(1, 1, 1);
         p.group.visible = true;
         p.group.position.set(0, 0, 0);
     });
 }
 
-// Reposiciona los avatares 3D de todos los jugadores en el lobby
-// El jugador local siempre queda centrado al frente; los compañeros se colocan detrás
 function rearrangeLobbySlots() {
     if (!inLobby3D) return;
     
-    // El jugador local se coloca grande en el centro (o a la derecha si está en la pestaña de Skins)
+    // Position local player dead center in foreground (or moved right if in Skins Tab)
     if (lobbyLocalGroup) {
-        lobbyLocalGroup.scale.set(1.8, 1.8, 1.8); // Más grande para que destaque
-        lobbyLocalGroup.rotation.y = Math.PI;       // Mirando hacia la cámara
+        lobbyLocalGroup.scale.set(1.8, 1.8, 1.8);
+        lobbyLocalGroup.rotation.y = Math.PI;
         
         const localLabel = lobbyLocalGroup.children.find(c => c.name === 'name_label');
         if (inSkinsTab) {
-            lobbyLocalGroup.position.set(1.5, 0, 0); // Desplazado a la derecha en el Locker
-            if (localLabel) localLabel.visible = false; // Ocultamos la etiqueta en la pestaña de skins
+            lobbyLocalGroup.position.set(1.5, 0, 0); // Put model more to the right in the Locker
+            if (localLabel) localLabel.visible = false;
         } else {
-            lobbyLocalGroup.position.set(0, 0, 0); // Centrado en el lobby
+            lobbyLocalGroup.position.set(0, 0, 0);
             if (localLabel) localLabel.visible = true;
         }
         lobbyLocalGroup.visible = true;
     }
 
-    // Posiciones predefinidas para los compañeros (detrás y a los lados del jugador local)
+    // Teammates scattered behind and slightly offset
     const teammatePositions = [
-        new THREE.Vector3(-3.5, 0, -1.5), // Izquierda detrás
-        new THREE.Vector3(3.5, 0, -1.5),  // Derecha detrás
-        new THREE.Vector3(-6.5, 0, -3.0)  // Más atrás (4to jugador)
+        new THREE.Vector3(-3.5, 0, -1.5), // Left behind
+        new THREE.Vector3(3.5, 0, -1.5),  // Right behind
+        new THREE.Vector3(-6.5, 0, -3.0)  // Far behind
     ];
 
     let slotIndex = 0;
@@ -1998,60 +1934,51 @@ function showCustomConfirm(msg: string, onYes: () => void) {
     overlay.style.display = 'flex';
 }
 
-// Muestra una pantalla del flujo multijugador (username, room, lobby)
-// y gestiona la visibilidad del menú principal y el lobby 3D según corresponda
 function showScreen(id: string) {
     hideAllMpScreens();
     document.getElementById(id)?.classList.add('active');
     
-    // En las pantallas del flujo multijugador, ocultamos el menú principal
+    // Manage Main Menu overlay visibility 
     const mainMenu = document.getElementById('main-menu');
     if (id === 'username-screen' || id === 'room-screen' || id === 'lobby-screen') {
         if (mainMenu) mainMenu.style.display = 'none';
         
         if (id === 'lobby-screen') {
-            // El lobby usa fondo transparente (se ve la escena 3D del lobby detrás)
             document.getElementById(id)!.style.background = 'transparent';
         } else {
-            // Las demás pantallas (username, room) usan la imagen de fondo estándar
+            // Revert background to standard Phase 13 image
             document.getElementById(id)!.style.background = '';
         }
     } else {
-        // Para cualquier otra pantalla, mostramos el menú principal
         if (mainMenu) mainMenu.style.display = 'flex';
     }
     
-    // Si vamos al lobby, iniciamos el renderizado 3D del lobby
     if (id === 'lobby-screen') {
         setup3DLobby();
         const nav = document.getElementById('lobby-nav');
-        if (nav) nav.style.display = 'flex'; // Mostramos las pestañas LOBBY/SKINS
+        if (nav) nav.style.display = 'flex';
     } else {
-        cleanup3DLobby(); // Si salimos del lobby, detenemos el renderizado 3D del lobby
+        cleanup3DLobby();
         const nav = document.getElementById('lobby-nav');
         if (nav) nav.style.display = 'none';
     }
 }
 
-// Oculta todas las pantallas del flujo multijugador y limpia el lobby 3D
 function hideAllMpScreens() {
     document.querySelectorAll('.mp-screen').forEach(s => s.classList.remove('active'));
     cleanup3DLobby();
 }
 
-// Actualiza la UI del lobby cuando cambia la lista de jugadores
-// (En la Fase 14 solo reordena los slots 3D, la lista HTML fue reemplazada por avatares 3D)
 function updateLobbyUI(players: Record<string, { id: string; username: string; platform?: string; ready?: boolean }>, myId: string) {
     const container = document.getElementById('lobby-players');
-    // La lista HTML del lobby fue eliminada en favor del display 3D
-    // Solo nos aseguramos de que los slots estén correctamente posicionados
+    // The HTML lobby list has been removed in favor of 3D display
+    // We just ensure slots are arranged properly.
     rearrangeLobbySlots();
 }
 
-// ═════════════════════════════════════════════════════════════════
-// ESTADO Y UI DEL MODO DE JUEGO EN EL LOBBY
-// El host puede seleccionar el modo de juego, número de oleadas y si es "Fiesta"
-// ═════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// LOBBY GAME MODE STATE & UI
+// ═══════════════════════════════════════════════════════════════
 let lobbyGameMode  = 'survival';
 let lobbyWaveCount = 40;
 let lobbyPartyMode = false;
@@ -2444,61 +2371,53 @@ function initMultiplayerUI() {
     });
 
 
-    // SELECCIÓN DE SKIN: cuando el jugador hace clic en una carta de skin
-    // Actualiza el modelo 3D local y lo transmite a todos en la sala
+    // Skin Selection Logic — with real-time broadcast
     document.querySelectorAll('.skin-card').forEach(card => {
         card.addEventListener('click', () => {
-            // Deseleccionamos todas las cartas y seleccionamos la que fue clicada
             document.querySelectorAll('.skin-card').forEach(c => c.classList.remove('active'));
             card.classList.add('active');
             const chosen = card.getAttribute('data-skin') || 'default';
             currentSkin = chosen;
-            // Enviamos el cambio de skin a todos en la sala por Socket.IO
+            // Broadcast skin change to all players in room
             if (socket?.connected) {
                 socket.emit('skin-changed', { skin: chosen });
             }
             if (inLobby3D) {
-                // Recreamos el maniqui local con la nueva skin (más simple que modificar el existente)
+                // Rebuild local dummy instead of resetting the whole lobby camera structure
                 if (lobbyLocalGroup) {
                     lobbyScene.remove(lobbyLocalGroup);
                     lobbyLocalGroup = null;
                 }
                 const platStr = isMobile ? 'mobile' : 'pc';
                 spawnRemotePlayer('local_dummy', myUsername || 'YOU', 0, 1.6, 0, currentSkin, true, platStr, false);
-                rearrangeLobbySlots(); // Reposicionamos todo correctamente
+                rearrangeLobbySlots(); // Gracefully snap everything using existing state
             }
         });
     });
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// SINCRONIZACIÓN DE POSICIÓN MULTIJUGADOR
-// Se llama cada frame para enviar la posición del jugador al servidor
-// Usa compresión delta: solo envía si hubo un cambio real para reducir tráfico
-// ═══════════════════════════════════════════════════════════════════════════
-let _mpFrame = 0;                         // Contador de frames para limitar la frecuencia de envío
-let _lastSentPos = new THREE.Vector3();   // Última posición enviada (para detectar cambios)
-let _lastSentYaw = 0;                     // Última rotación Y enviada
-let _lastSentWeapon = -1;                 // Último índice de arma enviado
+// Position sync – called in animate() loop
+let _mpFrame = 0;
+let _lastSentPos = new THREE.Vector3();
+let _lastSentYaw = 0;
+let _lastSentWeapon = -1;
 function multiplayerUpdate() {
-    // Solo ejecutar si estamos en multijugador, conectados y en juego
     if (!isMultiplayer || !socket?.connected || !gameStarted) return;
-    if (isSpectator || playerHealth <= 0) return; // Los muertos/espectadores no envían posición
-    if (++_mpFrame % 3 !== 0) return; // Limitamos a ~20fps (cada 3 frames a 60fps)
+    if (isSpectator || playerHealth <= 0) return;
+    if (++_mpFrame % 3 !== 0) return; // Ejecutar a ~20fps
 
-    // Calculamos la dirección de la cámara para obtener la rotación Y (yaw)
     const dir = new THREE.Vector3();
     controls.getDirection(dir);
     const yaw = Math.atan2(dir.x, dir.z);
 
-    // Compresión delta: calculamos cuánto se movió el jugador desde el último envío
+    // Delta-compression: solo enviar si hubo un cambio real de posición o arma
     const dx = Math.abs(camera.position.x - _lastSentPos.x);
     const dy = Math.abs(camera.position.y - _lastSentPos.y);
     const dz = Math.abs(camera.position.z - _lastSentPos.z);
     const dYaw = Math.abs(yaw - _lastSentYaw);
     const weaponChanged = currentWeaponIndex !== _lastSentWeapon;
 
-    // Solo enviamos si hubo un cambio significativo (evita saturar el servidor con datos idénticos)
+    // Solo emitir si el jugador se movió más de 0.02 unidades, giró > 0.01 rad, o cambió arma
     if (dx > 0.02 || dy > 0.02 || dz > 0.02 || dYaw > 0.01 || weaponChanged) {
         _lastSentPos.copy(camera.position);
         _lastSentYaw = yaw;
@@ -2573,23 +2492,19 @@ const BLACK_MARKET_POS = new THREE.Vector3(30, 0, -40); // Posición del Black M
 // Seguimiento del 'Kill Feed' para la Phase 9
 let lastAttackerName = "UNKNOWN";
 
-// ═══════════════════════════════════════════════════════════════════════════
-// SISTEMA DE ARMAS
-// Define los atributos y el estado de todas las armas disponibles en el juego
-// ═══════════════════════════════════════════════════════════════════════════
 interface Weapon {
     name: string;
-    damage: number;       // Daño base por impacto
-    fireRate: number;     // Cadencia de disparo (ms entre cada tiro)
-    magSize: number;      // Tamaño del cargador (balas antes de recargar)
-    ammoCurrent: number;  // Balas actuales en el cargador
-    ammoReserve: number;  // Balas extra en reserva (mochila)
-    reloadTime: number;   // Tiempo que tarda en recargar (ms)
-    recoilAmount: number; // Intensidad del retroceso de la cámara al disparar
-    isReloading: boolean; // true si el arma está actualmente recargándose
-    lastShotTime: number; // Marca de tiempo (Date.now()) del último disparo
-    isAutomatic: boolean; // true si dispara continuamente al mantener presionado el ratón
-    pellets: number;      // Cantidad de proyectiles por disparo (útil para escopetas)
+    damage: number;
+    fireRate: number; // Cadencia de disparo en milisegundos
+    magSize: number;
+    ammoCurrent: number;
+    ammoReserve: number;
+    reloadTime: number; // Tiempo de recarga en milisegundos
+    recoilAmount: number;
+    isReloading: boolean;
+    lastShotTime: number;
+    isAutomatic: boolean;
+    pellets: number;
 }
 
 const weapons: Weapon[] = [
@@ -2605,36 +2520,29 @@ const weapons: Weapon[] = [
     { name: "FIRE GUN", damage: 10, fireRate: 80, magSize: 100, ammoCurrent: 100, ammoReserve: 300, reloadTime: 2000, recoilAmount: 0.01, isReloading: false, lastShotTime: 0, isAutomatic: true, pellets: 1 },
 ];
 
-// ---- CONFIGURACIÓN DE LA ESCENA PRINCIPAL (JUEGO) ----
-// Escena, cámara y renderizador para el mapa de combate
+// ---- CONFIGURACIÓN DE LA ESCENA ----
+// Configuración principal del mundo 3D (escena, cámara y renderizador)
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x1a0a25); // Cielo nocturno con tinte púrpura
-scene.fog = new THREE.FogExp2(0x3a105a, 0.006); // Niebla púrpura para dar atmósfera y ocultar el horizonte
+scene.background = new THREE.Color(0x1a0a25); // Lighter purple tinted night sky
+scene.fog = new THREE.FogExp2(0x3a105a, 0.006); // Lighter purple fog
 
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, 1.6, 0); // Altura típica de los ojos de un humano (1.6m)
+camera.position.set(0, 1.6, 0);
 
-// ═══════════════════════════════════════════════════════════════════════════
-// ESCENA DEL LOBBY 3D
-// Totalmente aislada del mundo del juego para que los cambios climáticos (niebla, lluvia)
-// de la partida no afecten la visibilidad del menú de espera.
-// ═══════════════════════════════════════════════════════════════════════════
+// ── LOBBY: dedicated isolated scene so the game world never contaminates the lobby view ──
 const lobbyScene = new THREE.Scene();
 const lobbyCamera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
-lobbyCamera.position.set(0, 1.8, 4); // Cámara mirando a los avatares de frente
+lobbyCamera.position.set(0, 1.8, 4);
 lobbyCamera.lookAt(0, 1.4, 0);
-
-// Iluminación frontal fuerte + ambiente para que los personajes de bloque se vean claros
+// Bright front + ambient lights so the block characters show their colours
 const _lobbyDir = new THREE.DirectionalLight(0xffffff, 2.5);
 _lobbyDir.position.set(2, 5, 6);
 lobbyScene.add(_lobbyDir);
 lobbyScene.add(new THREE.AmbientLight(0xffffff, 1.5));
-
-// Usamos fondo.png (castillo/ruinas) como fondo estático 2D en la escena 3D
+// fondo.png as background (no fog), darkened for moody atmosphere
 new THREE.TextureLoader().load('fondo.png', (tex) => {
     lobbyScene.background = tex;
-    // Atenuamos el brillo de la imagen a 0.3 para dar un ambiente oscuro y tenebroso
-    lobbyScene.backgroundIntensity = 0.3; 
+    lobbyScene.backgroundIntensity = 0.3; // 0 = black, 1 = full brightness. Set to 0.3 for requested darkness.
 });
 
 // Handle Lobby 3D Kick clicks
@@ -7787,21 +7695,16 @@ function showPurchaseFeedback(success: boolean) {
 document.getElementById('shop-close')?.addEventListener('click', toggleShopReady);
 document.getElementById('shop-close-mobile')?.addEventListener('click', toggleShopReady);
 
-// ---- VARIABLES GLOBALES PARA EL ESPECTADOR Y EL LOOP ----
-let isSpectator = false;               // true si el jugador murió definitivamente y está observando
-let spectatingPlayerId: string | null = null; // ID del jugador al que estamos observando
-
-// ═══════════════════════════════════════════════════════════════════════════
-// CICLO DE ANIMACIÓN PRINCIPAL (RENDER LOOP)
-// Esta función se ejecuta en cada frame (~60 veces por segundo).
-// Se encarga de dibujar los gráficos 3D, actualizar físicas, lógica de armas y enemigos.
-// ═══════════════════════════════════════════════════════════════════════════
-let bobAngle = 0;   // Ángulo para el "cabeceo" de la cámara al caminar
-let frameCount = 0; // Contador para calcular FPS
-let lastFpsTime = performance.now(); // Última vez que se calcularon los FPS
+// ---- SPECTATOR GLOBALS ----
+let isSpectator = false;
+let spectatingPlayerId: string | null = null;
+// ---- CICLO DE ANIMACIÓN (RENDER LOOP) ----
+// Ciclo principal que corre en cada frame: dibuja la escena y actualiza todas las físicas
+let bobAngle = 0;
+let frameCount = 0;
+let lastFpsTime = performance.now();
 
 function animate() {
-    // requestAnimationFrame pide al navegador que vuelva a llamar a animate() en el siguiente frame
     requestAnimationFrame(animate);
     const time = performance.now();
 
@@ -7819,35 +7722,29 @@ function animate() {
     const delta = Math.min((time - prevTime) / 1000, 0.1);
     prevTime = time;
 
-    // Si el juego está en pausa, no actualizamos físicas ni lógica, solo renderizamos estáticamente el frame actual
+    // Si el juego está en pausa, no actualizamos físicas ni enemigos, solo renderizamos el frame
     if (isPaused) {
         renderer.render(inLobby3D ? lobbyScene : scene, inLobby3D ? lobbyCamera : camera);
         return;
     }
 
-    // MODO ESPECTADOR: si el jugador local murió permanentemente
     if (isSpectator) {
-        // Ignoramos las físicas normales y enganchamos la cámara al jugador observado
+        // SPECTATOR MODE: bypass normal physics, snap camera to alive player
         const p = spectatingPlayerId ? remotePlayers.get(spectatingPlayerId) : null;
         if (p) {
-            // lerp (interpolación lineal) hace que la cámara siga al jugador de forma suave
             camera.position.lerp(p.group.position, 0.2); 
-            camera.position.y += 1.6; // Mantenemos la cámara a la altura de los ojos
+            camera.position.y += 1.6;
         } else {
-            // Si el jugador al que observábamos se desconectó o murió, buscamos otro
+            // Find another one if current target is gone
             const pids = Array.from(remotePlayers.keys());
             if (pids.length > 0) spectatingPlayerId = pids[0];
-            else spectatingPlayerId = null; // Si no hay nadie vivo, la cámara se queda donde está
+            else spectatingPlayerId = null;
         }
     } else if ((controls.isLocked === true || isMobile) && gameStarted) {
-        // LÓGICA DE JUEGO ACTIVA (solo corre si los controles están bloqueados y el juego ha iniciado)
-        // ESTADO ABATIDO (DOWNED): cuando la salud llega a 0 pero un compañero puede revivirte
         if (isDowned) {
-            downedTimer -= delta; // El tiempo se agota progresivamente
+            downedTimer -= delta;
             const dtEl = document.getElementById('downed-timer');
             if (dtEl) dtEl.innerText = Math.max(0, downedTimer).toFixed(1);
-            
-            // Si el tiempo se acaba, el jugador muere de forma permanente
             if (downedTimer <= 0) {
                 isDowned = false;
                 const ds = document.getElementById('downed-screen');
@@ -7855,16 +7752,15 @@ function animate() {
                 if (socket?.connected) socket.emit('player-died-final', { name: myUsername });
                 gameOver();
             } else {
-                // Durante el estado abatido, se bloquea el movimiento y la cámara cae al suelo
+                // Lock all movement and camera when downed
                 speed = 0;
                 velocity.x = 0;
                 velocity.z = 0;
-                velocity.y -= 9.8 * 4.0 * delta; // Gravedad ligera
+                velocity.y -= 9.8 * 4.0 * delta; // Light gravity
                 camera.position.y += (velocity.y * delta);
-                // Evitamos que la cámara atraviese el suelo (se queda a ras de piso)
                 if (camera.position.y <= 0.5) { camera.position.y = 0.5; velocity.y = 0; }
             }
-            // Ignoramos toda la demás lógica del juego (disparo, curación, saltos) mientras está abatido
+            // Skip ALL normal game logic while downed
             return;
         }
 
@@ -7951,25 +7847,21 @@ function animate() {
             isSprinting = false; // Block sprinting visually & logically
         }
 
-        // Movimiento: determinar si el jugador presiona alguna tecla direccional
         const isMoving = moveForward || moveBackward || moveLeft || moveRight;
-        // Si intenta correr, tiene stamina y no está en cooldown
         if (isSprinting && isMoving && playerStamina > 0 && camera.position.y <= 1.7 && staminaCooldown <= 0) {
-            // Al aplicar debuff de nieve, el sprint se reduce a la mitad de velocidad
+            // Al aplicar slow, el sprint se fuerza a velocidad de caminata
             const slowFactor = playerSlowDebuff > 0 ? 0.5 : 1.0;
             speed = sprintSpeed * walkSpeedMultiplier * slowFactor;
-            playerStamina -= 20 * delta; // Gasta stamina
+            playerStamina -= 20 * delta;
             if (playerStamina <= 0) {
                 playerStamina = 0;
-                staminaCooldown = 2.0; // 2 segundos de penalización por agotarla por completo
+                staminaCooldown = 2.0; // 2 seconds penalty
                 isSprinting = false;
             }
             updateStatsHUD();
         } else {
-            // Velocidad normal de caminata
             const slowFactor = playerSlowDebuff > 0 ? 0.5 : 1.0;
             speed = walkSpeed * walkSpeedMultiplier * slowFactor;
-            // Recuperar stamina si no corre y está tocando el suelo
             if (staminaCooldown <= 0 && playerStamina < MAX_STAMINA && camera.position.y <= 1.7) {
                 playerStamina += 10 * delta;
                 if (playerStamina > MAX_STAMINA) playerStamina = MAX_STAMINA;
@@ -7977,22 +7869,22 @@ function animate() {
             }
         }
 
-        // Fricción horizontal (desaceleración suave cuando se suelta la tecla)
+        // Aplicar fricción
         velocity.x -= velocity.x * 10.0 * delta;
         velocity.z -= velocity.z * 10.0 * delta;
 
-        // SISTEMA DE JETPACK Y GRAVEDAD
+        // Aplicar Gravedad y Lógica de Jetpack
         if (isJetpacking && hasJetpack && playerJetpackFuel > 0) {
-            // LÍMITE DE ALTITUD: Solo se puede subir hasta Y=45 (nivel de las nubes)
+            // LÍMITE DE ALTITUD: Solo aplicar fuerza ascendente si está por debajo de las nubes (Y=45)
             if (camera.position.y < 45.0) {
-                velocity.y += 35.0 * delta; // Fuerza ascendente del motor
+                velocity.y += 35.0 * delta; // Fuerza ascendente del Jetpack
             } else {
-                // Al llegar al techo, cancelamos la fuerza extra para que el jugador se quede flotando
-                velocity.y += 9.8 * 8.0 * delta; 
-                velocity.y = Math.sin(time / 200) * 0.5; // Efecto de levitación oscilante (bobbing)
+                velocity.y += 9.8 * 8.0 * delta; // Cancelar gravedad precisamente para flotar, o dejar caer ligeramente
+                // Para solo flotar con un pequeño balanceo:
+                velocity.y = Math.sin(time / 200) * 0.5;
             }
 
-            playerJetpackFuel -= 5 * delta; // El combustible dura aproximadamente 20 segundos de vuelo continuo
+            playerJetpackFuel -= 5 * delta; // Consumir combustible más lento para ~20s de vuelo total
             updateStatsHUD();
             jetpackParticles.spawn(camera.position, 3);
 
@@ -8029,19 +7921,13 @@ function animate() {
             const lp = enemyProjectiles[i];
             lp.update(delta);
             if (lp.isDead) {
-                lp.destroy(); // Limpia la malla 3D de memoria
+                lp.destroy();
                 enemyProjectiles.splice(i, 1);
             }
         }
 
-        // ══════════════════════════════════════════════════════════════════════
-        // SISTEMA DE COLISIONES DEL JUGADOR
-        // ══════════════════════════════════════════════════════════════════════
-        
-        // 1. Colisión con mallas 3D complejas usando Raycasters (deslizamiento en paredes)
-        // Se calculan por separado Z y X para permitir que el jugador se deslice por las paredes
-        // en lugar de quedarse atascado "pegado" a ellas.
-        const collisionY = camera.position.y - 1.0;  // Altura del pecho
+        // Lógica de colisión con deslizamiento (Sliding Collision)
+        const collisionY = camera.position.y - 1.0; 
         const oldPosZ = camera.position.z;
         controls.moveForward(-velocity.z * delta);
         for (let i = 0; i < collisionDirections.length; i++) {
@@ -8069,42 +7955,36 @@ function animate() {
             }
         }
 
-        }
-
-        // 2. Colisión matemática (Cilindros) - Rápida e infalible
-        // Utilizada para pilares, árboles y la base de los biomas. Expulsa al jugador si entra al radio.
+        // Lógica matemática infalible (Cilindros) para estructuras grandes
         for (const cyl of collisionCylinders) {
             const dx = camera.position.x - cyl.x;
             const dz = camera.position.z - cyl.z;
             const dist = Math.sqrt(dx * dx + dz * dz);
-            // Solo colisiona si el jugador no ha volado por encima del objeto
+            // Solo empujar si los pies del jugador están por debajo de la altura máxima del cuerpo
             if (dist < cyl.radius && (camera.position.y - 1.6) < cyl.height) {
                 const push = cyl.radius - dist;
-                camera.position.x += (dx / dist) * push; // Vector de empuje X
-                camera.position.z += (dz / dist) * push; // Vector de empuje Z
+                camera.position.x += (dx / dist) * push;
+                camera.position.z += (dz / dist) * push;
             }
         }
 
-        // 3. Colisión estricta AABB (Cajas Invisibles)
-        // Utilizada para los bordes del mapa (muros invisibles) y las grandes ruinas
+        // Lógica de colisión estricta AABB paralela a cilindros
         const px = camera.position.x;
         const pz = camera.position.z;
-        const py = camera.position.y - 1.6; // Altura de los pies
+        const py = camera.position.y - 1.6;
         for (const box of environmentBoxes) {
-            // Expandimos la caja de colisión 0.5 unidades para simular el ancho del cuerpo del jugador
+            // Expandir hitbox virtualmente 0.5 unidades por cada cara
             const minX = box.min.x - 0.5;
             const maxX = box.max.x + 0.5;
             const minZ = box.min.z - 0.5;
             const maxZ = box.max.z + 0.5;
-            // Evaluamos si el jugador está completamente dentro de la caja (en X, Z e Y)
+            // No limitamos py superior para no bloquear caer sobre cajas
             if (px > minX && px < maxX && pz > minZ && pz < maxZ && py < box.max.y) {
-                // Si entró, calculamos cuál es la pared más cercana a su posición
                 const dx1 = px - minX;
                 const dx2 = maxX - px;
                 const dz1 = pz - minZ;
                 const dz2 = maxZ - pz;
                 const min = Math.min(dx1, dx2, dz1, dz2);
-                // Y lo expulsamos agresivamente por esa pared (bloqueando su velocidad)
                 if (min === dx1) { camera.position.x = minX; velocity.x = 0; }
                 else if (min === dx2) { camera.position.x = maxX; velocity.x = 0; }
                 else if (min === dz1) { camera.position.z = minZ; velocity.z = 0; }
@@ -8112,7 +7992,7 @@ function animate() {
             }
         }
 
-        // 4. Movimiento vertical y aterrizaje
+        // Movimiento vertical
         camera.position.y += (velocity.y * delta);
 
         // Colisión con el suelo y techos: raycast hacia abajo para aterrizar en edificios / terreno
@@ -8144,23 +8024,20 @@ function animate() {
     }
 
     if (gameStarted) {
-        // EFECTO DE BALANCEO DEL ARMA (Weapon Bobbing)
-        // Crea un movimiento realista del arma al caminar. Funciona independiente del bloqueo del ratón.
+        // Balanceo de arma y recuperación de retroceso (Independiente del bloqueo del mouse para mayor suavidad)
         const isMoving = moveForward || moveBackward || moveLeft || moveRight;
         if (controls.isLocked || isMobile) {
-            if (isMoving && camera.position.y <= 1.7) { // Solo balancea si está caminando y tocando el suelo
-                bobAngle += delta * 15; // Velocidad del balanceo
-                weaponGroup.position.y = -0.3 + Math.sin(bobAngle) * 0.015; // Movimiento vertical (seno)
-                weaponGroup.position.x = 0.25 + Math.cos(bobAngle / 2) * 0.02; // Movimiento horizontal (coseno)
+            if (isMoving && camera.position.y <= 1.7) {
+                bobAngle += delta * 15;
+                weaponGroup.position.y = -0.3 + Math.sin(bobAngle) * 0.015;
+                weaponGroup.position.x = 0.25 + Math.cos(bobAngle / 2) * 0.02;
             } else {
-                // Si se detiene, el arma vuelve suavemente a su posición de descanso usando lerp
                 weaponGroup.position.y = THREE.MathUtils.lerp(weaponGroup.position.y, -0.3, 0.1);
                 weaponGroup.position.x = THREE.MathUtils.lerp(weaponGroup.position.x, 0.25, 0.1);
                 bobAngle = 0;
             }
         }
 
-        // Recuperación suave del retroceso después de disparar (el arma vuelve hacia adelante)
         weaponGroup.position.z = THREE.MathUtils.lerp(weaponGroup.position.z, -0.4, 0.15);
         weaponGroup.rotation.x = THREE.MathUtils.lerp(weaponGroup.rotation.x, 0, 0.15);
 
@@ -8171,44 +8048,34 @@ function animate() {
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // ══════════════════════════════════════════════════════════════════════
-        // ACTUALIZACIÓN DE MÓDULOS DEL JUEGO
-        // ══════════════════════════════════════════════════════════════════════
-        // El administrador de oleadas (WaveManager) controla el spawn de enemigos y físicas
-        // Se ejecuta cada 2 frames para ahorrar CPU sin perder mucha precisión
+        // Actualizar el ciclo de la lógica del juego
         if (frameCount % 2 === 0) {
             waveManager.update(delta * 2, camera.position, time);
         }
-        
-        // Actualizar todos los sistemas de partículas
         bloodParticles.update(delta);
         flameParticles.update(delta);
         jetpackParticles.update(delta);
         snowImpactParticles.update(delta);
         healingParticles.update(delta);
         snowflakes.update(delta, camera.position);
-        
-        // Actualizar físicas de proyectiles enemigos (bolas de nieve)
+        // Actualizar bolas de nieve
         for (let i = snowballProjectiles.length - 1; i >= 0; i--) {
             snowballProjectiles[i].update(delta);
             if (snowballProjectiles[i].isDead) snowballProjectiles.splice(i, 1);
         }
-        
-        // Enviar nuestra posición actual al servidor
-        multiplayerUpdate(); // Phase 12: sincronización de posición
+        multiplayerUpdate(); // Phase 12: sync position to server
 
-        // INTERPOLACIÓN MULTIJUGADOR (Client-side prediction smoothing)
-        // Suaviza el movimiento de los jugadores remotos que llegan a ~20fps
+        // Interpolación suave de jugadores remotos cada frame (independiente de la tasa de red)
         if (isMultiplayer) {
-            const lerpFactor = Math.min(1, delta * 18); // ~18 = balance entre suavidad y precisión
+            const lerpFactor = Math.min(1, delta * 18); // ~18 = suave pero sin retraso notable
             remotePlayers.forEach(rp => {
                 const target = rp.group.userData.targetPos as THREE.Vector3 | undefined;
                 const targetRotY = rp.group.userData.targetRotY as number | undefined;
                 if (target) {
-                    rp.group.position.lerp(target, lerpFactor); // Interpola la posición
+                    rp.group.position.lerp(target, lerpFactor);
                 }
                 if (targetRotY !== undefined) {
-                    // Interpolar rotación Y (calculando la diferencia más corta para evitar giros de 360°)
+                    // Interpolar ángulo con wrap-around para evitar giro de 360° falso
                     let diff = targetRotY - rp.group.rotation.y;
                     while (diff > Math.PI) diff -= 2 * Math.PI;
                     while (diff < -Math.PI) diff += 2 * Math.PI;
