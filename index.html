@@ -248,174 +248,238 @@
             }
         }
 
-        /* MAIN MENU (EXACT ZOMBIE ARMY 4 MATCH) */
+        /* ════════════════════════════════════════════════════
+           MAIN MENU — Reference Image Style
+           Layout: BG image | logo top-left | buttons left |
+                   zombie right | nav-bar bottom
+        ════════════════════════════════════════════════════ */
         #main-menu {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at 75% 45%, rgba(120, 10, 25, 0.45) 0%, rgba(30, 2, 8, 0.85) 45%, rgba(4, 1, 2, 0.98) 100%),
-                        url('phase13_official.png') center/cover no-repeat;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background:
+                linear-gradient(to right, rgba(2,0,1,0.72) 0%, rgba(5,0,2,0.45) 55%, rgba(2,0,1,0.15) 100%),
+                url('menu_bg_crimson.png') center/cover no-repeat;
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 60px 100px;
-            box-sizing: border-box;
+            flex-direction: column;
             z-index: 20;
             overflow: hidden;
+            font-family: 'Impact', 'Arial Black', sans-serif;
         }
 
+        /* Floating ember particles */
         .menu-embers {
             position: absolute;
             inset: 0;
             pointer-events: none;
-            background: radial-gradient(2px 2px at 20px 30px, #ff1a38, rgba(0,0,0,0)),
-                        radial-gradient(3px 3px at 150px 150px, #ff4d66, rgba(0,0,0,0)),
-                        radial-gradient(2px 2px at 300px 450px, #e60026, rgba(0,0,0,0)),
-                        radial-gradient(3px 3px at 700px 200px, #ff1a38, rgba(0,0,0,0)),
-                        radial-gradient(2px 2px at 1100px 550px, #ff3355, rgba(0,0,0,0)),
-                        radial-gradient(3px 3px at 1400px 350px, #e60026, rgba(0,0,0,0));
-            background-size: 800px 800px;
-            animation: floatEmbers 12s linear infinite;
-            opacity: 0.7;
+            overflow: hidden;
+            z-index: 1;
+        }
+        .menu-embers::before,
+        .menu-embers::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                radial-gradient(2px 2px at 8%  80%, #ff2244, transparent),
+                radial-gradient(2px 2px at 15% 60%, #e60020, transparent),
+                radial-gradient(3px 3px at 22% 40%, #ff3355, transparent),
+                radial-gradient(2px 2px at 35% 70%, #cc0018, transparent),
+                radial-gradient(2px 2px at 12% 90%, #ff1133, transparent),
+                radial-gradient(3px 3px at 5%  50%, #ff4466, transparent),
+                radial-gradient(2px 2px at 28% 20%, #e60020, transparent);
+            animation: riseEmbers 8s ease-in infinite;
+            opacity: 0.85;
+        }
+        .menu-embers::after {
+            background-image:
+                radial-gradient(2px 2px at 18% 85%, #ff2244, transparent),
+                radial-gradient(3px 3px at 30% 55%, #cc0018, transparent),
+                radial-gradient(2px 2px at 40% 75%, #ff3355, transparent),
+                radial-gradient(2px 2px at  7% 30%, #e60020, transparent);
+            animation-delay: 4s;
+        }
+        @keyframes riseEmbers {
+            0%   { transform: translateY(0)    scaleX(1);   opacity: 0.9; }
+            50%  { transform: translateY(-40px) scaleX(1.1); opacity: 0.6; }
+            100% { transform: translateY(-80px) scaleX(0.9); opacity: 0; }
         }
 
-        @keyframes floatEmbers {
-            0% { transform: translateY(0) scale(1); }
-            50% { transform: translateY(-30px) scale(1.05); }
-            100% { transform: translateY(0) scale(1); }
+        /* ─── Main content area (fills between top & nav-bar) ─── */
+        .menu-content-area {
+            flex: 1;
+            display: flex;
+            align-items: stretch;
+            padding: 36px 48px 12px 48px;
+            box-sizing: border-box;
+            position: relative;
+            z-index: 2;
         }
 
+        /* ─── LEFT COLUMN: logo + buttons ─── */
         .menu-left-column {
             display: flex;
             flex-direction: column;
             align-items: flex-start;
-            position: relative;
-            z-index: 2;
-            padding-right: 50px;
-            border-right: 2px solid rgba(230, 0, 38, 0.35);
+            justify-content: flex-start;
+            width: 42%;
+            max-width: 340px;
+            flex-shrink: 0;
         }
 
+        /* Logo */
         #main-menu .logo-container {
-            display: flex;
-            flex-direction: column;
-            margin-bottom: 45px;
-            position: relative;
+            margin-bottom: 32px;
         }
-
         #main-menu .title {
-            color: #cc001b;
-            font-size: 72px;
-            font-family: 'Impact', 'Arial Black', sans-serif;
-            letter-spacing: 4px;
-            line-height: 0.9;
+            color: #cc0018;
+            font-size: clamp(40px, 6vw, 74px);
+            letter-spacing: 3px;
+            line-height: 0.88;
             margin: 0;
-            text-shadow: 0 0 25px rgba(204, 0, 27, 0.7), 4px 4px 0px #000;
             text-transform: uppercase;
-            text-align: left;
-            filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.9));
+            text-shadow:
+                0 0 30px rgba(220, 0, 30, 0.9),
+                3px 3px 0 #000,
+                -1px -1px 0 rgba(0,0,0,0.8);
+            filter: drop-shadow(0 2px 12px rgba(0,0,0,0.95));
         }
-
         #main-menu .title-sub {
-            color: #cc001b;
-            font-size: 54px;
-            font-family: 'Impact', 'Arial Black', sans-serif;
-            letter-spacing: 6px;
+            color: #cc0018;
+            font-size: clamp(28px, 4vw, 56px);
+            letter-spacing: 5px;
             line-height: 0.95;
-            margin-top: 2px;
-            text-shadow: 0 0 25px rgba(204, 0, 27, 0.7), 4px 4px 0px #000;
+            margin-top: 0;
             text-transform: uppercase;
+            text-shadow:
+                0 0 30px rgba(220, 0, 30, 0.9),
+                3px 3px 0 #000;
         }
 
+        /* Buttons */
         #menu-buttons {
             display: flex;
             flex-direction: column;
-            gap: 18px;
-            width: 340px;
+            gap: 14px;
+            width: 100%;
         }
-
         .menu-btn {
-            background: rgba(12, 2, 4, 0.9);
+            background: rgba(8, 1, 3, 0.88);
             color: #ffffff;
-            border: 2px solid rgba(60, 20, 25, 0.8);
-            padding: 16px 24px;
-            font-size: 26px;
+            border: 2px solid rgba(80, 20, 28, 0.75);
+            padding: 15px 22px;
+            font-size: clamp(18px, 2.2vw, 26px);
             font-family: 'Impact', 'Arial Black', sans-serif;
             letter-spacing: 3px;
             cursor: pointer;
             width: 100%;
-            margin-bottom: 0;
             text-transform: uppercase;
-            transition: all 0.2s ease-in-out;
-            border-radius: 4px;
-            text-align: center;
-            position: relative;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8);
+            text-align: left;
+            transition: background 0.18s, border-color 0.18s, box-shadow 0.18s, transform 0.15s;
+            border-radius: 3px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.85);
             box-sizing: border-box;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .menu-btn:hover,
+        .menu-btn:focus-visible,
+        .menu-btn.active {
+            background: rgba(20, 2, 6, 0.96);
+            border: 2px solid #e8001e;
+            box-shadow:
+                0 0 22px rgba(232, 0, 30, 0.9),
+                inset 0 0 18px rgba(232, 0, 30, 0.35);
+            text-shadow: 0 0 8px rgba(255,255,255,0.7), 2px 2px 0 #000;
+            color: #fff;
+            transform: translateX(5px) scale(1.02);
+        }
+        .menu-btn:active {
+            transform: translateX(3px) scale(0.98);
+            box-shadow: 0 0 10px rgba(232, 0, 30, 0.5);
         }
 
-        /* Active Highlight Button (Red Glowing Rectangular Border) */
-        .menu-btn:hover, .menu-btn:focus, .menu-btn.active {
-            background: rgba(25, 3, 7, 0.95);
-            color: #ffffff !important;
-            border: 2px solid #ff1a38 !important;
-            outline: 1px solid rgba(255, 26, 56, 0.5);
-            box-shadow: 0 0 20px rgba(255, 26, 56, 0.85), inset 0 0 15px rgba(255, 26, 56, 0.45);
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 2px 2px 0px #000;
-            transform: scale(1.03);
-        }
-
+        /* ─── RIGHT: zombie showcase ─── */
         .menu-right-showcase {
             flex: 1;
+            display: flex;
+            align-items: flex-end;
+            justify-content: flex-end;
+            position: relative;
+        }
+        .geometric-zombie-art {
             height: 100%;
+            width: 100%;
+            max-height: 88vh;
+            background: url('phase16_official.png') bottom right / contain no-repeat;
+            filter:
+                drop-shadow(0 0 40px rgba(230, 0, 30, 0.55))
+                drop-shadow(0 0 10px rgba(0,0,0,0.9));
+        }
+
+        /* ─── BOTTOM NAV BAR ─── */
+        .menu-nav-bar {
+            position: relative;
+            z-index: 3;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.78);
+            border-top: 1px solid rgba(180, 0, 20, 0.5);
             display: flex;
             align-items: center;
             justify-content: center;
-            position: relative;
-            z-index: 1;
-            pointer-events: none;
+            gap: 28px;
+            padding: 8px 24px;
+            box-sizing: border-box;
+            flex-shrink: 0;
+        }
+        .nav-hint {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            color: #ccc;
+            font-size: clamp(10px, 1.2vw, 14px);
+            font-family: 'Impact', 'Arial Black', sans-serif;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .nav-hint .nav-badge {
+            background: rgba(60, 60, 60, 0.9);
+            border: 1.5px solid #666;
+            border-radius: 4px;
+            padding: 2px 7px;
+            font-size: clamp(9px, 1vw, 12px);
+            color: #eee;
+            letter-spacing: 1px;
+        }
+        .nav-hint .nav-badge.double {
+            padding: 2px 5px;
+        }
+        .nav-divider {
+            width: 1px;
+            height: 18px;
+            background: rgba(180, 0, 20, 0.4);
         }
 
-        .geometric-zombie-art {
-            width: 100%;
-            height: 100%;
-            background: url('phase16_official.png') center right/contain no-repeat;
-            filter: drop-shadow(0 0 35px rgba(255, 26, 56, 0.4));
-        }
-
-        @media (max-width: 768px) {
-            #main-menu {
-                padding: 30px 20px;
+        /* ─── RESPONSIVE (mobile) ─── */
+        @media (max-width: 700px) {
+            .menu-content-area {
                 flex-direction: column;
-                justify-content: center;
+                padding: 28px 20px 8px;
                 align-items: center;
             }
             .menu-left-column {
-                padding-right: 0;
-                border-right: none;
+                width: 100%;
+                max-width: 100%;
                 align-items: center;
-                width: 100%;
             }
-            #main-menu .title {
-                font-size: 44px;
-                text-align: center;
-            }
-            #main-menu .title-sub {
-                font-size: 34px;
-                text-align: center;
-            }
-            #menu-buttons {
-                width: 100%;
-                max-width: 320px;
-            }
-            .menu-btn {
-                font-size: 22px;
-                padding: 14px 20px;
-            }
-            .menu-right-showcase {
-                display: none;
-            }
+            #main-menu .title    { text-align: center; }
+            #main-menu .title-sub { text-align: center; }
+            #menu-buttons { max-width: 300px; }
+            .menu-btn { text-align: center; }
+            .menu-right-showcase { display: none; }
+            .menu-nav-bar { gap: 14px; }
+            .nav-hint { font-size: 10px; }
         }
 
         /* SELECCIÓN DE PLATAFORMA (SUPERPUESTA) */
@@ -1882,22 +1946,60 @@
     <!-- Main Menu -->
     <!-- CONTENEDOR DEL MENÚ PRINCIPAL: Pantalla que recibe al jugador -->
     <div id="main-menu">
-        <div class="menu-embers"></div>
-        <div class="menu-left-column">
-            <div class="logo-container">
-                <h1 class="title">NIGHTFALL</h1>
-                <div class="title-sub">SURVIVAL</div>
+        <!-- Ember particles layer -->
+        <div class="menu-embers" aria-hidden="true"></div>
+
+        <!-- Main content row -->
+        <div class="menu-content-area">
+            <!-- LEFT: Logo + Buttons -->
+            <div class="menu-left-column">
+                <div class="logo-container">
+                    <h1 class="title">NIGHTFALL</h1>
+                    <div class="title-sub">SURVIVAL</div>
+                </div>
+
+                <nav id="menu-buttons" aria-label="Main menu">
+                    <button class="menu-btn" id="btn-start"
+                            data-i18n="MENU_START"
+                            aria-label="Campaña">CAMPAÑA</button>
+                    <button class="menu-btn active" id="btn-survival"
+                            aria-label="Survival mode">SURVIVAL</button>
+                    <button class="menu-btn" id="btn-shop-menu"
+                            data-i18n="SHOP_TITLE"
+                            aria-label="Mercado Negro">MERCADO NEGRO</button>
+                    <button class="menu-btn" id="btn-options"
+                            data-i18n="MENU_OPTIONS"
+                            aria-label="Opciones">OPCIONES</button>
+                </nav>
             </div>
 
-            <div id="menu-buttons">
-                <button class="menu-btn" id="btn-start" data-i18n="MENU_START">CAMPAÑA</button>
-                <button class="menu-btn active" id="btn-survival">SURVIVAL</button>
-                <button class="menu-btn" id="btn-shop-menu" data-i18n="SHOP_TITLE">MERCADO NEGRO</button>
-                <button class="menu-btn" id="btn-options" data-i18n="MENU_OPTIONS">OPCIONES</button>
+            <!-- RIGHT: Zombie showcase -->
+            <div class="menu-right-showcase" aria-hidden="true">
+                <div class="geometric-zombie-art"></div>
             </div>
         </div>
-        <div class="menu-right-showcase">
-            <div class="geometric-zombie-art"></div>
+
+        <!-- Bottom navigation hints bar -->
+        <div class="menu-nav-bar" aria-hidden="true">
+            <span class="nav-hint">
+                <span class="nav-badge double">↑↓</span> NAVEGAR
+            </span>
+            <div class="nav-divider"></div>
+            <span class="nav-hint">
+                <span class="nav-badge">ENTER</span> SELECCIONAR
+            </span>
+            <div class="nav-divider"></div>
+            <span class="nav-hint">
+                <span class="nav-badge">ESC</span> ATRÁS
+            </span>
+            <div class="nav-divider"></div>
+            <span class="nav-hint">
+                <span class="nav-badge">TAB</span> PERFIL
+            </span>
+            <div class="nav-divider"></div>
+            <span class="nav-hint">
+                <span class="nav-badge">F1</span> CONFIG
+            </span>
         </div>
     </div>
 

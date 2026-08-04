@@ -6199,6 +6199,71 @@ document.getElementById('btn-options-back')?.addEventListener('click', () => {
     if (mainMenu) mainMenu.style.display = 'flex';
 });
 
+// ---- SURVIVAL button → same flow as btnStart (lobby) ----
+document.getElementById('btn-survival')?.addEventListener('click', () => {
+    const menuButtonsDiv = document.getElementById('menu-buttons');
+    if (menuButtonsDiv) menuButtonsDiv.style.display = 'none';
+    showScreen('username-screen');
+    (document.getElementById('username-input') as HTMLInputElement)?.focus();
+});
+
+// ---- Main Menu Keyboard Navigation (↑↓ + Enter) ----
+(function setupMenuKeyboardNav() {
+    const MENU_BTN_IDS = ['btn-start', 'btn-survival', 'btn-shop-menu', 'btn-options'];
+    let menuFocusIdx = 1; // default: SURVIVAL highlighted
+
+    function setMenuFocus(idx: number) {
+        menuFocusIdx = idx;
+        MENU_BTN_IDS.forEach((id, i) => {
+            const el = document.getElementById(id) as HTMLButtonElement | null;
+            if (!el) return;
+            if (i === idx) {
+                el.classList.add('active');
+                el.focus();
+            } else {
+                el.classList.remove('active');
+            }
+        });
+    }
+
+    document.addEventListener('keydown', (e: KeyboardEvent) => {
+        // Only active when main menu is visible
+        if (!mainMenu || mainMenu.style.display === 'none') return;
+        if (document.activeElement && (document.activeElement as HTMLElement).tagName === 'INPUT') return;
+
+        if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+            e.preventDefault();
+            setMenuFocus((menuFocusIdx + 1) % MENU_BTN_IDS.length);
+        } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+            e.preventDefault();
+            setMenuFocus((menuFocusIdx - 1 + MENU_BTN_IDS.length) % MENU_BTN_IDS.length);
+        } else if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            const btn = document.getElementById(MENU_BTN_IDS[menuFocusIdx]) as HTMLButtonElement | null;
+            btn?.click();
+        } else if (e.key === 'Tab') {
+            // Cycle profile or skip — open options as CONFIG shortcut via F1
+        }
+    });
+
+    // F1 → open options
+    document.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'F1' && mainMenu && mainMenu.style.display !== 'none') {
+            e.preventDefault();
+            (document.getElementById('btn-options') as HTMLButtonElement)?.click();
+        }
+    });
+
+    // Hover → sync keyboard focus index
+    MENU_BTN_IDS.forEach((id, i) => {
+        document.getElementById(id)?.addEventListener('mouseenter', () => {
+            if (mainMenu && mainMenu.style.display !== 'none') {
+                menuFocusIdx = i;
+            }
+        });
+    });
+})();
+
 // --- Volume Sliders ---
 let masterVolume = 0.8;
 let musicVolume = 0.6;
