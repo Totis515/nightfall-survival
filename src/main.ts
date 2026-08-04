@@ -6177,9 +6177,9 @@ document.querySelectorAll('.lang-btn').forEach(btn => {
 
 // --- SINGLEPLAYER REDIRECT MOVED TO LOBBY "SOLO PLAY" BTN ---
 btnStart.addEventListener('click', () => {
-    // Proceed directly to the Username selection screen
+    // PLAY → go to Username/Lobby selection
     const menuButtonsDiv = document.getElementById('menu-buttons');
-    if(menuButtonsDiv) menuButtonsDiv.style.display = 'none';
+    if (menuButtonsDiv) menuButtonsDiv.style.display = 'none';
     showScreen('username-screen');
     (document.getElementById('username-input') as HTMLInputElement)?.focus();
 });
@@ -6188,29 +6188,30 @@ btnStart.addEventListener('click', () => {
 const optionsScreen = document.getElementById('options-screen') as HTMLElement;
 
 document.getElementById('btn-options')?.addEventListener('click', () => {
-    // Show options screen, hide main menu
     if (mainMenu) mainMenu.style.display = 'none';
     optionsScreen.style.display = 'flex';
 });
 
 document.getElementById('btn-options-back')?.addEventListener('click', () => {
-    // Return to main menu
     optionsScreen.style.display = 'none';
     if (mainMenu) mainMenu.style.display = 'flex';
 });
 
-// ---- SURVIVAL button → same flow as btnStart (lobby) ----
-document.getElementById('btn-survival')?.addEventListener('click', () => {
-    const menuButtonsDiv = document.getElementById('menu-buttons');
-    if (menuButtonsDiv) menuButtonsDiv.style.display = 'none';
-    showScreen('username-screen');
-    (document.getElementById('username-input') as HTMLInputElement)?.focus();
+// ---- EXIT button ----
+document.getElementById('btn-exit')?.addEventListener('click', () => {
+    // Fade out and close / go to a blank page
+    const menuEl = document.getElementById('main-menu');
+    if (menuEl) {
+        menuEl.style.transition = 'opacity 0.6s ease';
+        menuEl.style.opacity = '0';
+        setTimeout(() => { window.close(); }, 650);
+    }
 });
 
 // ---- Main Menu Keyboard Navigation (↑↓ + Enter) ----
 (function setupMenuKeyboardNav() {
-    const MENU_BTN_IDS = ['btn-start', 'btn-survival', 'btn-shop-menu', 'btn-options'];
-    let menuFocusIdx = 1; // default: SURVIVAL highlighted
+    const MENU_BTN_IDS = ['btn-start', 'btn-options', 'btn-exit'];
+    let menuFocusIdx = 0; // default: PLAY highlighted
 
     function setMenuFocus(idx: number) {
         menuFocusIdx = idx;
@@ -6227,7 +6228,6 @@ document.getElementById('btn-survival')?.addEventListener('click', () => {
     }
 
     document.addEventListener('keydown', (e: KeyboardEvent) => {
-        // Only active when main menu is visible
         if (!mainMenu || mainMenu.style.display === 'none') return;
         if (document.activeElement && (document.activeElement as HTMLElement).tagName === 'INPUT') return;
 
@@ -6239,27 +6239,14 @@ document.getElementById('btn-survival')?.addEventListener('click', () => {
             setMenuFocus((menuFocusIdx - 1 + MENU_BTN_IDS.length) % MENU_BTN_IDS.length);
         } else if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            const btn = document.getElementById(MENU_BTN_IDS[menuFocusIdx]) as HTMLButtonElement | null;
-            btn?.click();
-        } else if (e.key === 'Tab') {
-            // Cycle profile or skip — open options as CONFIG shortcut via F1
-        }
-    });
-
-    // F1 → open options
-    document.addEventListener('keydown', (e: KeyboardEvent) => {
-        if (e.key === 'F1' && mainMenu && mainMenu.style.display !== 'none') {
-            e.preventDefault();
-            (document.getElementById('btn-options') as HTMLButtonElement)?.click();
+            (document.getElementById(MENU_BTN_IDS[menuFocusIdx]) as HTMLButtonElement | null)?.click();
         }
     });
 
     // Hover → sync keyboard focus index
     MENU_BTN_IDS.forEach((id, i) => {
         document.getElementById(id)?.addEventListener('mouseenter', () => {
-            if (mainMenu && mainMenu.style.display !== 'none') {
-                menuFocusIdx = i;
-            }
+            if (mainMenu && mainMenu.style.display !== 'none') menuFocusIdx = i;
         });
     });
 })();

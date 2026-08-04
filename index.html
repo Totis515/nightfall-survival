@@ -5,8 +5,11 @@
     <!-- Aquí inicia la configuración del documento y los estilos visuales -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Nightfall Survival - Phase 16: Let's party</title>
+    <title>Nightfall Survival</title>
     <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&display=swap" rel="stylesheet">
     <style>
         /* Mobile Landscape Optimizations */
         @media (max-height: 500px) {
@@ -333,26 +336,28 @@
         }
         #main-menu .title {
             color: #cc0018;
-            font-size: clamp(40px, 6vw, 74px);
-            letter-spacing: 3px;
-            line-height: 0.88;
+            font-size: clamp(38px, 5.5vw, 72px);
+            font-family: 'Black Ops One', 'Impact', 'Arial Black', sans-serif;
+            letter-spacing: 2px;
+            line-height: 0.9;
             margin: 0;
             text-transform: uppercase;
             text-shadow:
-                0 0 30px rgba(220, 0, 30, 0.9),
+                0 0 30px rgba(220, 0, 30, 0.85),
                 3px 3px 0 #000,
-                -1px -1px 0 rgba(0,0,0,0.8);
+                1px 1px 0 rgba(0,0,0,0.9);
             filter: drop-shadow(0 2px 12px rgba(0,0,0,0.95));
         }
         #main-menu .title-sub {
             color: #cc0018;
-            font-size: clamp(28px, 4vw, 56px);
-            letter-spacing: 5px;
+            font-size: clamp(26px, 3.8vw, 54px);
+            font-family: 'Black Ops One', 'Impact', 'Arial Black', sans-serif;
+            letter-spacing: 4px;
             line-height: 0.95;
-            margin-top: 0;
+            margin-top: 2px;
             text-transform: uppercase;
             text-shadow:
-                0 0 30px rgba(220, 0, 30, 0.9),
+                0 0 30px rgba(220, 0, 30, 0.85),
                 3px 3px 0 #000;
         }
 
@@ -411,54 +416,10 @@
             height: 100%;
             width: 100%;
             max-height: 88vh;
-            background: url('phase16_official.png') bottom right / contain no-repeat;
+            background: url('phase15_official.png') bottom right / contain no-repeat;
             filter:
                 drop-shadow(0 0 40px rgba(230, 0, 30, 0.55))
                 drop-shadow(0 0 10px rgba(0,0,0,0.9));
-        }
-
-        /* ─── BOTTOM NAV BAR ─── */
-        .menu-nav-bar {
-            position: relative;
-            z-index: 3;
-            width: 100%;
-            background: rgba(0, 0, 0, 0.78);
-            border-top: 1px solid rgba(180, 0, 20, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 28px;
-            padding: 8px 24px;
-            box-sizing: border-box;
-            flex-shrink: 0;
-        }
-        .nav-hint {
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            color: #ccc;
-            font-size: clamp(10px, 1.2vw, 14px);
-            font-family: 'Impact', 'Arial Black', sans-serif;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            white-space: nowrap;
-        }
-        .nav-hint .nav-badge {
-            background: rgba(60, 60, 60, 0.9);
-            border: 1.5px solid #666;
-            border-radius: 4px;
-            padding: 2px 7px;
-            font-size: clamp(9px, 1vw, 12px);
-            color: #eee;
-            letter-spacing: 1px;
-        }
-        .nav-hint .nav-badge.double {
-            padding: 2px 5px;
-        }
-        .nav-divider {
-            width: 1px;
-            height: 18px;
-            background: rgba(180, 0, 20, 0.4);
         }
 
         /* ─── RESPONSIVE (mobile) ─── */
@@ -478,8 +439,6 @@
             #menu-buttons { max-width: 300px; }
             .menu-btn { text-align: center; }
             .menu-right-showcase { display: none; }
-            .menu-nav-bar { gap: 14px; }
-            .nav-hint { font-size: 10px; }
         }
 
         /* SELECCIÓN DE PLATAFORMA (SUPERPUESTA) */
@@ -1959,17 +1918,12 @@
                 </div>
 
                 <nav id="menu-buttons" aria-label="Main menu">
-                    <button class="menu-btn" id="btn-start"
-                            data-i18n="MENU_START"
-                            aria-label="Campaña">CAMPAÑA</button>
-                    <button class="menu-btn active" id="btn-survival"
-                            aria-label="Survival mode">SURVIVAL</button>
-                    <button class="menu-btn" id="btn-shop-menu"
-                            data-i18n="SHOP_TITLE"
-                            aria-label="Mercado Negro">MERCADO NEGRO</button>
+                    <button class="menu-btn active" id="btn-start"
+                            aria-label="Play">PLAY</button>
                     <button class="menu-btn" id="btn-options"
-                            data-i18n="MENU_OPTIONS"
-                            aria-label="Opciones">OPCIONES</button>
+                            aria-label="Options">OPTIONS</button>
+                    <button class="menu-btn" id="btn-exit"
+                            aria-label="Exit">EXIT</button>
                 </nav>
             </div>
 
@@ -1977,29 +1931,6 @@
             <div class="menu-right-showcase" aria-hidden="true">
                 <div class="geometric-zombie-art"></div>
             </div>
-        </div>
-
-        <!-- Bottom navigation hints bar -->
-        <div class="menu-nav-bar" aria-hidden="true">
-            <span class="nav-hint">
-                <span class="nav-badge double">↑↓</span> NAVEGAR
-            </span>
-            <div class="nav-divider"></div>
-            <span class="nav-hint">
-                <span class="nav-badge">ENTER</span> SELECCIONAR
-            </span>
-            <div class="nav-divider"></div>
-            <span class="nav-hint">
-                <span class="nav-badge">ESC</span> ATRÁS
-            </span>
-            <div class="nav-divider"></div>
-            <span class="nav-hint">
-                <span class="nav-badge">TAB</span> PERFIL
-            </span>
-            <div class="nav-divider"></div>
-            <span class="nav-hint">
-                <span class="nav-badge">F1</span> CONFIG
-            </span>
         </div>
     </div>
 
